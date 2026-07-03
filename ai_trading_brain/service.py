@@ -738,6 +738,7 @@ class AITradingBrainService:
                 }
                 self.database.insert_market_snapshot(payload)
                 self._last_collected_at_by_symbol[self._symbol_key(symbol)] = time.monotonic()
+                self._mark_api_recovered()
                 collected += 1
             except Exception as ex:
                 self._last_api_error = str(ex)
@@ -906,6 +907,7 @@ class AITradingBrainService:
             try:
                 candles_5m = self.market_data.get_candles(symbol=symbol, interval="5m", limit=20)
                 self._api_calls_today += 1
+                self._mark_api_recovered()
             except Exception as ex:
                 candles_5m = []
                 self._last_api_error = str(ex)
@@ -1275,6 +1277,7 @@ class AITradingBrainService:
             clock = self.broker.get_clock()
             self._api_calls_today += 1
             self._market_open_cached = bool(clock.get("is_open", False))
+            self._mark_api_recovered()
         except Exception as ex:
             self._last_api_error = str(ex)
             # On transient API failures, keep last known value to avoid noisy toggling.
@@ -1310,6 +1313,7 @@ class AITradingBrainService:
             response.raise_for_status()
             self._api_calls_today += 1
             payload = response.json()
+            self._mark_api_recovered()
             result: list[dict[str, str]] = []
             for row in payload.get("results", [])[:4]:
                 result.append(
@@ -1356,6 +1360,7 @@ class AITradingBrainService:
             response.raise_for_status()
             self._api_calls_today += 1
             root = ElementTree.fromstring(response.text)
+            self._mark_api_recovered()
             result: list[dict[str, str]] = []
             for item in root.findall(".//item")[:5]:
                 title = str(item.findtext("title", default="") or "").strip()
@@ -1474,10 +1479,16 @@ class AITradingBrainService:
     def _is_broker_supported(self, symbol: str, asset_type: str) -> bool:
         try:
             assets = self.broker.list_cryptos(status="active", only_tradable=True) if asset_type == "crypto" else self.broker.list_stocks(status="active", only_tradable=True)
+            self._mark_api_recovered()
         except Exception:
             return False
         target = self._symbol_key(symbol)
         return any(self._symbol_key(str(asset.get("symbol", ""))) == target for asset in assets)
+
+    def _mark_api_recovered(self) -> None:
+        if self._last_api_error:
+            self.logger.info("API recuperada. Limpiando ultimo error: %s", self._last_api_error)
+            self._last_api_error = ""
 
     @staticmethod
     def _is_rate_limit_error(error: Exception) -> bool:

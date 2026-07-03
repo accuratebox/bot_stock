@@ -2,7 +2,7 @@ import json
 import threading
 import tkinter as tk
 import time
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from tkinter import ttk
 from typing import Any
@@ -407,6 +407,7 @@ class BotControlWindow:
 
     def _ai_runtime_loop(self) -> None:
         if self.ai_window is not None and self.ai_window.winfo_exists() and str(self.ai_window.state()) != "withdrawn":
+            threading.Thread(target=self._ensure_ai_automation_running, daemon=True).start()
             self._run_async(self._refresh_ai_runtime_view)
         self.root.after(5000, self._ai_runtime_loop)
 
@@ -2787,10 +2788,13 @@ class BotControlWindow:
         best = ranked[0]
         best_action = str(best.get("signal_type", "")).upper()
         actionable = {"WATCH", "BUY_SMALL", "BUY", "SELL_ALLOWED"}
+        best_timestamp = str(best.get("timestamp", "N/A") or "N/A")
+        best_openai = best.get("openai_analysis_json") or {}
         if best_action in actionable:
             self._latest_ai_signal_id = int(best.get("id"))
             lines = [
                 f"Mejor activo ahora: {best.get('symbol', 'N/A')}",
+                f"Generada: {best_timestamp}",
                 f"Tipo: {best.get('asset_type', 'N/A')}",
                 f"Score: {float(best.get('features_json', {}).get('composite_score', 0.0) or 0.0):.2f}",
                 f"Accion: {best.get('signal_type', 'N/A')}",
@@ -2800,20 +2804,49 @@ class BotControlWindow:
                 f"Take profit sugerido: {float(best.get('take_profit_price', 0.0) or 0.0):.6f}",
                 f"Average cost: {float(best.get('average_cost', 0.0) or 0.0):.6f}",
                 f"Estado de proteccion: {best.get('protection_status', 'N/A')}",
-                "",
-                "Mejores señales (arriba = mayor score):",
             ]
+            if best_openai:
+                lines.extend(
+                    [
+                        f"OpenAI sentiment: {best_openai.get('sentiment', 'N/A')}",
+                        f"OpenAI event_type: {best_openai.get('event_type', 'N/A')}",
+                        f"OpenAI summary: {best_openai.get('summary', '') or 'N/A'}",
+                    ]
+                )
+            lines.extend(["", "Mejores señales (arriba = mayor score):"])
         else:
             self._latest_ai_signal_id = None
             lines = [
                 "No hay activo apto ahora",
+                f"Ultima señal apta evaluada: {best_timestamp}",
                 "",
                 "Mejores señales (arriba = mayor score):",
             ]
         for item in ranked[:10]:
             lines.append(
-                f"- {item.get('symbol', 'N/A')} | {item.get('signal_type', 'N/A')} | conf={float(item.get('confidence_score', 0.0) or 0.0):.2f}"
+                f"- {item.get('timestamp', 'N/A')} | {item.get('symbol', 'N/A')} | {item.get('signal_type', 'N/A')} | conf={float(item.get('confidence_score', 0.0) or 0.0):.2f}"
             )
+
+        recent_news = self.ai_trading_brain.database.list_news_events_since(
+            since_iso=(datetime.now(timezone.utc) - timedelta(hours=24)).isoformat(),
+            limit=8,
+        )
+        lines.extend(["", "Textos/noticias para OpenAI Analyzer (ultimas 24h):"])
+        if not recent_news:
+            lines.append("- Sin noticias/textos recientes analizados")
+        else:
+            for event in recent_news[:8]:
+                lines.append(
+                    "- "
+                    f"{event.get('timestamp', 'N/A')} | {event.get('symbol', 'N/A')} | {event.get('source', 'N/A')} | "
+                    f"sent={float(event.get('sentiment_score', 0.0) or 0.0):.2f} | infl={float(event.get('influence_score', 0.0) or 0.0):.2f}"
+                )
+                text_preview = str(event.get("title_or_text", "") or "").strip()
+                summary = str(event.get("ai_summary", "") or "").strip()
+                if text_preview:
+                    lines.append(f"  texto: {text_preview[:140]}")
+                if summary:
+                    lines.append(f"  resumen: {summary[:180]}")
         self._set_text_widget(self.ai_signal_text, "\n".join(lines))
 
     def _refresh_ai_history_view(self) -> None:
