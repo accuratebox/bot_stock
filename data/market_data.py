@@ -132,6 +132,10 @@ class MarketDataService:
         else:
             source_bars = payload.get("bars", [])
 
+        if source_bars is None:
+            self.logger.warning("Alpaca devolvio barras vacias para %s (%s)", normalized, interval)
+            source_bars = []
+
         for bar in source_bars:
             bars.append(
                 {

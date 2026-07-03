@@ -1,3 +1,5 @@
+from ai_trading_brain import AITradingBrainService
+import requests
 from broker.broker_client import AlpacaBrokerClient
 from config import settings
 from data.market_data import MarketDataService
@@ -35,13 +37,26 @@ def main() -> None:
         logger=logger,
         settings=settings,
     )
-    recovery = position_manager.synchronize_open_positions()
-    logger.info(
-        "Recuperacion inicial | abiertas=%s sincronizadas=%s ya_linkeadas=%s",
-        recovery.get("open_positions", 0),
-        recovery.get("synced", 0),
-        recovery.get("already_linked", 0),
-    )
+    try:
+        recovery = position_manager.synchronize_open_positions()
+        logger.info(
+            "Recuperacion inicial | abiertas=%s sincronizadas=%s ya_linkeadas=%s",
+            recovery.get("open_positions", 0),
+            recovery.get("synced", 0),
+            recovery.get("already_linked", 0),
+        )
+    except requests.exceptions.HTTPError as ex:
+        response = getattr(ex, "response", None)
+        status = getattr(response, "status_code", None)
+        if status == 401:
+            logger.warning(
+                "No se pudo sincronizar posiciones al iniciar: HTTP 401 Unauthorized. "
+                "La UI seguira iniciando para permitir cambiar o corregir la cuenta."
+            )
+        else:
+            raise
+    except requests.exceptions.RequestException as ex:
+        logger.warning("No se pudo sincronizar posiciones al iniciar: %s", ex)
     scheduler = MarketOpenScheduler(
         broker=broker,
         market_data=market_data,
@@ -50,6 +65,15 @@ def main() -> None:
         risk_manager=risk_manager,
         logger=logger,
         settings=settings,
+    )
+    ai_trading_brain = AITradingBrainService(
+        broker=broker,
+        market_data=market_data,
+        order_manager=order_manager,
+        position_manager=position_manager,
+        risk_manager=risk_manager,
+        settings=settings,
+        logger=logger,
     )
 
     app = BotControlWindow(
@@ -60,6 +84,7 @@ def main() -> None:
         order_manager=order_manager,
         position_manager=position_manager,
         scheduler=scheduler,
+        ai_trading_brain=ai_trading_brain,
         logger=logger,
     )
     app.run()

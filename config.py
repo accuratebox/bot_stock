@@ -2,47 +2,82 @@ import os
 import json
 import re
 from dataclasses import dataclass
+from pathlib import Path
+
+
+def _load_local_env_file() -> None:
+    env_path = Path(__file__).resolve().parent / ".env"
+    if not env_path.exists():
+        return
+
+    try:
+        for raw_line in env_path.read_text(encoding="utf-8").splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            key = key.strip()
+            if not key or key in os.environ:
+                continue
+            value = value.strip()
+            if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
+                value = value[1:-1]
+            os.environ[key] = value
+    except Exception:
+        # Ignore malformed local env files and keep process env as source of truth.
+        return
+
+
+_load_local_env_file()
+
+
+def _env(*names: str, default: str = "") -> str:
+    for name in names:
+        value = os.getenv(name)
+        if value is not None and str(value).strip() != "":
+            return str(value).strip()
+    return default
+
+
+def _env_bool(*names: str, default: bool) -> bool:
+    raw = _env(*names, default="true" if default else "false")
+    return raw.lower() == "true"
 
 
 @dataclass(frozen=True)
 class Settings:
-    alpaca_endpoint: str = os.getenv("ALPACA_ENDPOINT", "https://paper-api.alpaca.markets/v2")
-    alpaca_api_key: str = os.getenv("ALPACA_API_KEY", "PKOA2TP3QI7GK5MRWQJVM5CYBC")
-    alpaca_api_secret: str = os.getenv("ALPACA_API_SECRET", "4VporwXFvWbNiAZiuuGZFwvViMahWh6nrB3m67A57vjC")
+    alpaca_endpoint: str = _env("ALPACA_BASE_URL", "ALPACA_ENDPOINT", default="https://paper-api.alpaca.markets/v2")
+    alpaca_api_key: str = _env("ALPACA_API_KEY", "ALPACA_KEY", default="")
+    alpaca_api_secret: str = _env("ALPACA_SECRET_KEY", "ALPACA_API_SECRET", default="")
 
-    alpaca_paper_endpoint: str = os.getenv(
+    alpaca_paper_endpoint: str = _env(
+        "ALPACA_PAPER_BASE_URL",
         "ALPACA_PAPER_ENDPOINT",
-        "https://paper-api.alpaca.markets/v2",
+        default="https://paper-api.alpaca.markets/v2",
     )
-    alpaca_paper_key: str = os.getenv("ALPACA_PAPER_KEY", "PKOA2TP3QI7GK5MRWQJVM5CYBC")
-    alpaca_paper_secret: str = os.getenv(
-        "ALPACA_PAPER_SECRET",
-        "4VporwXFvWbNiAZiuuGZFwvViMahWh6nrB3m67A57vjC",
-    )
+    alpaca_paper_key: str = _env("ALPACA_PAPER_KEY", "ALPACA_API_KEY", default="")
+    alpaca_paper_secret: str = _env("ALPACA_PAPER_SECRET", "ALPACA_SECRET_KEY", "ALPACA_API_SECRET", default="")
 
-    alpaca_paper2_endpoint: str = os.getenv(
+    alpaca_paper2_endpoint: str = _env(
         "ALPACA_PAPER2_ENDPOINT",
-        os.getenv("ALPACA_PAPER_2_ENDPOINT", "https://paper-api.alpaca.markets/v2"),
+        "ALPACA_PAPER_2_ENDPOINT",
+        default="https://paper-api.alpaca.markets/v2",
     )
-    alpaca_paper2_key: str = os.getenv("ALPACA_PAPER2_KEY", os.getenv("ALPACA_PAPER_2_KEY", "PKJSDK6MR2VREKERVJ77GH5BUZ"))
-    alpaca_paper2_secret: str = os.getenv(
-        "ALPACA_PAPER2_SECRET",
-        os.getenv("ALPACA_PAPER_2_SECRET", "GgdQvbKw1bnBBr52VFaNKyj24tVWiwWFgUJcVahQ6mxQ"),
-    )
+    alpaca_paper2_key: str = _env("ALPACA_PAPER2_KEY", "ALPACA_PAPER_2_KEY", default="")
+    alpaca_paper2_secret: str = _env("ALPACA_PAPER2_SECRET", "ALPACA_PAPER_2_SECRET", default="")
 
-    alpaca_paper3_endpoint: str = os.getenv(
-        "ALPACA_PAPER3_ENDPOINT",
-        os.getenv("ALPACA_PAPER_3_ENDPOINT", ""),
-    )
-    alpaca_paper3_key: str = os.getenv("ALPACA_PAPER3_KEY", os.getenv("ALPACA_PAPER_3_KEY", ""))
-    alpaca_paper3_secret: str = os.getenv("ALPACA_PAPER3_SECRET", os.getenv("ALPACA_PAPER_3_SECRET", ""))
+    alpaca_paper3_endpoint: str = _env("ALPACA_PAPER3_ENDPOINT", "ALPACA_PAPER_3_ENDPOINT", default="")
+    alpaca_paper3_key: str = _env("ALPACA_PAPER3_KEY", "ALPACA_PAPER_3_KEY", default="")
+    alpaca_paper3_secret: str = _env("ALPACA_PAPER3_SECRET", "ALPACA_PAPER_3_SECRET", default="")
 
-    alpaca_live_endpoint: str = os.getenv(
-        "ALPACA_LIVE_ENDPOINT",
-        "https://api.alpaca.markets/v2",
-    )
-    alpaca_live_key: str = os.getenv("ALPACA_LIVE_KEY", "AKUW6PSXZNYZBLDD7PC5J5UOQV")
-    alpaca_live_secret: str = os.getenv("ALPACA_LIVE_SECRET", "9emBDPmtFgxNkYVBvZ25Pebzsj1NopsSA3kRzbVFXdLb")
+    alpaca_live_endpoint: str = _env("ALPACA_LIVE_ENDPOINT", default="https://api.alpaca.markets/v2")
+    alpaca_live_key: str = _env("ALPACA_LIVE_KEY", default="")
+    alpaca_live_secret: str = _env("ALPACA_LIVE_SECRET", default="")
+
+    openai_api_key: str = _env("OPENAI_API_KEY", default="")
+    openai_model: str = _env("OPENAI_MODEL", default="gpt-4.1-mini")
+    coingecko_api_key: str = _env("COINGECKO_API_KEY", default="")
+    cryptopanic_api_key: str = _env("CRYPTOPANIC_API_KEY", default="")
 
     default_symbol: str = os.getenv("BOT_SYMBOL", "AAPL")
     default_interval: str = os.getenv("BOT_INTERVAL", "1m")
@@ -62,11 +97,39 @@ class Settings:
     close_only_profitable_positions_before_close: bool = (
         os.getenv("CLOSE_ONLY_PROFITABLE_POSITIONS_BEFORE_CLOSE", "True").lower() == "true"
     )
-    use_paper_trading: bool = os.getenv("USE_PAPER_TRADING", "True").lower() == "true"
+    paper_trading: bool = _env_bool("PAPER_TRADING", default=True)
+    live_trading_enabled: bool = _env_bool("LIVE_TRADING_ENABLED", default=False)
+    manual_approval_required: bool = _env_bool("MANUAL_APPROVAL_REQUIRED", default=True)
+    use_paper_trading: bool = _env_bool("USE_PAPER_TRADING", default=True)
     position_monitor_interval_seconds: int = int(os.getenv("POSITION_MONITOR_INTERVAL_SECONDS", "30"))
     default_trade_capital: float = float(os.getenv("DEFAULT_TRADE_CAPITAL", "500.0"))
     min_hold_seconds_before_auto_sell: int = int(os.getenv("MIN_HOLD_SECONDS_BEFORE_AUTO_SELL", "20"))
     crypto_entry_time_in_force: str = os.getenv("CRYPTO_ENTRY_TIME_IN_FORCE", "ioc").lower()
+
+    ai_brain_db_path: str = _env("AI_BRAIN_DB_PATH", default=str(os.path.join(os.path.dirname(__file__), "ai_trading_brain.sqlite")))
+    ai_models_dir: str = _env("AI_MODELS_DIR", default=str(os.path.join(os.path.dirname(__file__), "models")))
+    ai_signal_only_mode: bool = _env_bool("AI_SIGNAL_ONLY_MODE", default=True)
+    ai_default_max_capital_assigned: float = float(_env("AI_DEFAULT_MAX_CAPITAL_ASSIGNED", default="1000.0"))
+    ai_default_max_position_size: float = float(_env("AI_DEFAULT_MAX_POSITION_SIZE", default="250.0"))
+    ai_default_max_daily_loss: float = float(_env("AI_DEFAULT_MAX_DAILY_LOSS", default="100.0"))
+    ai_fees_buffer: float = float(_env("AI_FEES_BUFFER", default="0.02"))
+    ai_slippage_buffer: float = float(_env("AI_SLIPPAGE_BUFFER", default="0.03"))
+    ai_minimum_profit: float = float(_env("AI_MINIMUM_PROFIT", default="0.05"))
+    ai_min_volume_required: float = float(_env("AI_MIN_VOLUME_REQUIRED", default="1000"))
+    ai_max_spread_allowed: float = float(_env("AI_MAX_SPREAD_ALLOWED", default="0.05"))
+    ai_snapshots_1m_days: int = int(_env("AI_SNAPSHOTS_1M_DAYS", default="60"))
+    ai_snapshots_5m_days: int = int(_env("AI_SNAPSHOTS_5M_DAYS", default="365"))
+    ai_logs_retention_days: int = int(_env("AI_LOGS_RETENTION_DAYS", default="90"))
+    ai_keep_model_versions: int = int(_env("AI_KEEP_MODEL_VERSIONS", default="5"))
+    ai_crypto_collection_interval_seconds: int = int(_env("AI_CRYPTO_COLLECTION_INTERVAL_SECONDS", default="20"))
+    ai_stock_open_collection_interval_seconds: int = int(_env("AI_STOCK_OPEN_COLLECTION_INTERVAL_SECONDS", default="45"))
+    ai_stock_closed_collection_interval_seconds: int = int(_env("AI_STOCK_CLOSED_COLLECTION_INTERVAL_SECONDS", default="240"))
+    ai_news_social_interval_seconds: int = int(_env("AI_NEWS_SOCIAL_INTERVAL_SECONDS", default="180"))
+    ai_openai_signal_trigger_score: float = float(_env("AI_OPENAI_SIGNAL_TRIGGER_SCORE", default="85"))
+    ai_openai_news_trigger_importance: float = float(_env("AI_OPENAI_NEWS_TRIGGER_IMPORTANCE", default="65"))
+    ai_min_volume_24h_usd: float = float(_env("AI_MIN_VOLUME_24H_USD", default="100000"))
+    ai_auto_train_mode: str = _env("AI_AUTO_TRAIN_MODE", default="12h").lower()
+    ai_dev_mode: bool = _env_bool("AI_DEV_MODE", default=False)
 
     def account_profiles(self) -> dict[str, dict[str, str]]:
         profiles: dict[str, dict[str, str]] = {
