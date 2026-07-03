@@ -1,0 +1,485 @@
+2026-06-30 18:09:03 | INFO | trading_bot | Iniciando trading bot
+2026-06-30 18:09:03 | INFO | trading_bot | Simbolo de trabajo: BTC/USD
+2026-06-30 18:09:03 | INFO | trading_bot | Sin operacion para BTC/USD
+2026-06-30 18:10:37 | INFO | trading_bot | Iniciando trading bot UI
+2026-06-30 18:10:45 | ERROR | trading_bot | Error en accion de UI
+Traceback (most recent call last):
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 142, in _run_action
+    fn()
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 148, in _view_account
+    account = self.broker.get_account()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fbautista/Documents/Alpaca/trading_bot/broker/broker_client.py", line 24, in get_account
+    response.raise_for_status()
+  File "/usr/lib/python3/dist-packages/requests/models.py", line 1021, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 401 Client Error: Unauthorized for url: https://paper-api.alpaca.markets/v2/account
+2026-06-30 18:10:57 | ERROR | trading_bot | Error en accion de UI
+Traceback (most recent call last):
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 142, in _run_action
+    fn()
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 205, in _view_orders
+    orders = self.order_manager.review_orders(status="open", limit=20)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fbautista/Documents/Alpaca/trading_bot/orders/order_manager.py", line 26, in review_orders
+    orders = self.broker.list_orders(status=status, limit=limit)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fbautista/Documents/Alpaca/trading_bot/broker/broker_client.py", line 52, in list_orders
+    response.raise_for_status()
+  File "/usr/lib/python3/dist-packages/requests/models.py", line 1021, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 401 Client Error: Unauthorized for url: https://paper-api.alpaca.markets/v2/orders?status=open&limit=20
+2026-06-30 18:19:28 | INFO | trading_bot | Iniciando trading bot UI
+2026-06-30 18:19:35 | ERROR | trading_bot | Error en accion de UI
+Traceback (most recent call last):
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 198, in _run_action
+    fn()
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 229, in _switch_account
+    self._apply_selected_account(update_status=True, require_credentials=True)
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 336, in _apply_selected_account
+    raise ValueError(
+ValueError: Faltan credenciales de la cuenta Paper. Revisa variables de entorno.
+2026-06-30 18:19:40 | ERROR | trading_bot | Error en accion de UI
+Traceback (most recent call last):
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 198, in _run_action
+    fn()
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 229, in _switch_account
+    self._apply_selected_account(update_status=True, require_credentials=True)
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 336, in _apply_selected_account
+    raise ValueError(
+ValueError: Faltan credenciales de la cuenta Real. Revisa variables de entorno.
+2026-06-30 18:22:36 | INFO | trading_bot | Iniciando trading bot UI
+2026-06-30 18:22:41 | ERROR | trading_bot | Error en accion de UI
+Traceback (most recent call last):
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 198, in _run_action
+    fn()
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 230, in _switch_account
+    self._view_account()
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 204, in _view_account
+    account = self.broker.get_account()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fbautista/Documents/Alpaca/trading_bot/broker/broker_client.py", line 29, in get_account
+    response.raise_for_status()
+  File "/usr/lib/python3/dist-packages/requests/models.py", line 1021, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 401 Client Error: Unauthorized for url: https://paper-api.alpaca.markets/v2/account
+2026-06-30 18:22:53 | ERROR | trading_bot | Error en accion de UI
+Traceback (most recent call last):
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 198, in _run_action
+    fn()
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 230, in _switch_account
+    self._view_account()
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 204, in _view_account
+    account = self.broker.get_account()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fbautista/Documents/Alpaca/trading_bot/broker/broker_client.py", line 29, in get_account
+    response.raise_for_status()
+  File "/usr/lib/python3/dist-packages/requests/models.py", line 1021, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 401 Client Error: Unauthorized for url: https://paper-api.alpaca.markets/v2/account
+2026-06-30 18:23:45 | INFO | trading_bot | Iniciando trading bot UI
+2026-06-30 18:23:48 | ERROR | trading_bot | Error en accion de UI
+Traceback (most recent call last):
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 198, in _run_action
+    fn()
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 230, in _switch_account
+    self._view_account()
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 204, in _view_account
+    account = self.broker.get_account()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fbautista/Documents/Alpaca/trading_bot/broker/broker_client.py", line 29, in get_account
+    response.raise_for_status()
+  File "/usr/lib/python3/dist-packages/requests/models.py", line 1021, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 401 Client Error: Unauthorized for url: https://paper-api.alpaca.markets/v2/account
+2026-06-30 18:23:55 | ERROR | trading_bot | Error en accion de UI
+Traceback (most recent call last):
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 198, in _run_action
+    fn()
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 230, in _switch_account
+    self._view_account()
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 204, in _view_account
+    account = self.broker.get_account()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fbautista/Documents/Alpaca/trading_bot/broker/broker_client.py", line 29, in get_account
+    response.raise_for_status()
+  File "/usr/lib/python3/dist-packages/requests/models.py", line 1021, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 401 Client Error: Unauthorized for url: https://paper-api.alpaca.markets/v2/account
+2026-06-30 18:26:28 | INFO | trading_bot | Iniciando trading bot UI
+2026-06-30 18:28:21 | INFO | trading_bot | Iniciando trading bot UI
+2026-06-30 18:31:38 | INFO | trading_bot | Iniciando trading bot UI
+2026-06-30 20:28:44 | INFO | trading_bot | Iniciando trading bot UI
+2026-06-30 20:30:33 | INFO | trading_bot | Iniciando trading bot UI
+2026-06-30 20:32:03 | INFO | trading_bot | Iniciando trading bot UI
+2026-06-30 20:32:07 | WARNING | trading_bot | Rate limit (429). Reintentando en 1.0 s
+2026-06-30 20:32:08 | WARNING | trading_bot | Rate limit (429). Reintentando en 2.0 s
+2026-06-30 20:32:26 | WARNING | trading_bot | Rate limit (429). Reintentando en 1.0 s
+2026-06-30 20:32:27 | WARNING | trading_bot | Rate limit (429). Reintentando en 2.0 s
+2026-06-30 20:35:14 | INFO | trading_bot | Iniciando trading bot UI
+2026-06-30 20:36:12 | ERROR | trading_bot | Error en accion de UI
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/urllib3/response.py", line 894, in _error_catcher
+    yield
+  File "/usr/lib/python3/dist-packages/urllib3/response.py", line 1286, in read_chunked
+    chunk = self._handle_chunk(amt)
+            ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/urllib3/response.py", line 1232, in _handle_chunk
+    value = self._fp._safe_read(amt)  # type: ignore[union-attr]
+            ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/http/client.py", line 646, in _safe_read
+    data = self.fp.read(cursize)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/socket.py", line 707, in readinto
+    return self._sock.recv_into(b)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/ssl.py", line 1252, in recv_into
+    return self.read(nbytes, buffer)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/ssl.py", line 1104, in read
+    return self._sslobj.read(len, buffer)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TimeoutError: The read operation timed out
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/requests/models.py", line 816, in generate
+    yield from self.raw.stream(chunk_size, decode_content=True)
+  File "/usr/lib/python3/dist-packages/urllib3/response.py", line 1139, in stream
+    yield from self.read_chunked(amt, decode_content=decode_content)
+  File "/usr/lib/python3/dist-packages/urllib3/response.py", line 1271, in read_chunked
+    with self._error_catcher():
+  File "/usr/lib/python3.12/contextlib.py", line 158, in __exit__
+    self.gen.throw(value)
+  File "/usr/lib/python3/dist-packages/urllib3/response.py", line 899, in _error_catcher
+    raise ReadTimeoutError(self._pool, None, "Read timed out.") from e  # type: ignore[arg-type]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+urllib3.exceptions.ReadTimeoutError: HTTPSConnectionPool(host='paper-api.alpaca.markets', port=443): Read timed out.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 230, in _run_action
+    fn()
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 359, in _view_stocks
+    stocks = self.broker.list_stocks(status="active", only_tradable=False)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fbautista/Documents/Alpaca/trading_bot/broker/broker_client.py", line 63, in list_stocks
+    response = requests.get(url, headers=self._headers(), params=params, timeout=30)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/requests/api.py", line 73, in get
+    return request("get", url, params=params, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/requests/api.py", line 59, in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/requests/sessions.py", line 589, in request
+    resp = self.send(prep, **send_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/requests/sessions.py", line 747, in send
+    r.content
+  File "/usr/lib/python3/dist-packages/requests/models.py", line 899, in content
+    self._content = b"".join(self.iter_content(CONTENT_CHUNK_SIZE)) or b""
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/requests/models.py", line 822, in generate
+    raise ConnectionError(e)
+requests.exceptions.ConnectionError: HTTPSConnectionPool(host='paper-api.alpaca.markets', port=443): Read timed out.
+2026-06-30 21:06:19 | INFO | trading_bot | Iniciando trading bot UI
+2026-06-30 21:07:28 | INFO | trading_bot | Ordenes consultadas: 0
+2026-06-30 21:07:36 | ERROR | trading_bot | Error en accion de UI
+Traceback (most recent call last):
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 251, in _run_action
+    fn()
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 320, in _manual_sell_selected_stock
+    result = self.position_manager.manual_sell(symbol)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fbautista/Documents/Alpaca/trading_bot/portfolio/position_manager.py", line 263, in manual_sell
+    raise ValueError(f"No hay posicion abierta para {symbol}")
+ValueError: No hay posicion abierta para AAPB
+2026-06-30 21:11:02 | INFO | trading_bot | Iniciando trading bot UI
+2026-06-30 21:23:08 | INFO | trading_bot | Iniciando trading bot UI
+2026-06-30 21:23:43 | INFO | trading_bot | Stock programado para apertura: AAPL
+2026-06-30 21:24:17 | INFO | trading_bot | Ordenes consultadas: 0
+2026-06-30 21:24:19 | INFO | trading_bot | Ordenes consultadas: 0
+2026-06-30 21:24:25 | INFO | trading_bot | Ordenes consultadas: 0
+2026-06-30 21:24:27 | INFO | trading_bot | Ordenes consultadas: 0
+2026-06-30 22:16:51 | INFO | trading_bot | Stock programado para apertura: AAPR
+2026-07-01 18:46:52 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-01 19:58:53 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-01 19:58:53 | INFO | trading_bot | Recuperacion inicial | abiertas=0 sincronizadas=0 ya_linkeadas=0
+2026-07-01 20:12:39 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-01 20:12:39 | INFO | trading_bot | Recuperacion inicial | abiertas=0 sincronizadas=0 ya_linkeadas=0
+2026-07-01 20:15:08 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-01 20:15:08 | INFO | trading_bot | Recuperacion inicial | abiertas=0 sincronizadas=0 ya_linkeadas=0
+2026-07-01 20:16:38 | INFO | trading_bot | Ordenes consultadas: 0
+2026-07-01 20:16:43 | INFO | trading_bot | Ordenes consultadas: 0
+2026-07-01 20:17:06 | INFO | trading_bot | Ordenes consultadas: 0
+2026-07-02 08:20:44 | INFO | trading_bot | Stock programado para apertura: TSLL
+2026-07-02 08:20:50 | INFO | trading_bot | Stock programado para apertura: TSLQ
+2026-07-02 08:20:57 | INFO | trading_bot | Stock programado para apertura: TSLT
+2026-07-02 08:21:07 | INFO | trading_bot | Ordenes consultadas: 0
+2026-07-02 21:01:28 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-02 21:01:28 | INFO | trading_bot | Recuperacion inicial | abiertas=0 sincronizadas=0 ya_linkeadas=0
+2026-07-02 21:02:16 | INFO | trading_bot | Ordenes consultadas: 0
+2026-07-02 21:05:38 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-02 21:05:38 | INFO | trading_bot | Recuperacion inicial | abiertas=0 sincronizadas=0 ya_linkeadas=0
+2026-07-02 21:07:08 | INFO | trading_bot | Ordenes consultadas: 0
+2026-07-02 21:07:23 | INFO | trading_bot | Stock programado para apertura: UNI/USDT
+2026-07-02 21:10:52 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-02 21:10:52 | INFO | trading_bot | Recuperacion inicial | abiertas=0 sincronizadas=0 ya_linkeadas=0
+2026-07-02 21:30:14 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-02 21:30:14 | INFO | trading_bot | Recuperacion inicial | abiertas=0 sincronizadas=0 ya_linkeadas=0
+2026-07-02 22:24:29 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-02 22:24:29 | INFO | trading_bot | Recuperacion inicial | abiertas=0 sincronizadas=0 ya_linkeadas=0
+2026-07-02 22:29:25 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-02 22:29:25 | INFO | trading_bot | Recuperacion inicial | abiertas=0 sincronizadas=0 ya_linkeadas=0
+2026-07-02 22:37:20 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-02 22:37:20 | INFO | trading_bot | Recuperacion inicial | abiertas=0 sincronizadas=0 ya_linkeadas=0
+2026-07-02 22:38:01 | INFO | trading_bot | Orden creada: adf0c543-60f3-4608-a9a0-9de69f324982
+2026-07-02 22:38:01 | INFO | trading_bot | Entrada registrada SOL/USD qty=6.1935 entry=80.73
+2026-07-02 22:38:53 | INFO | trading_bot | Ordenes consultadas: 1
+2026-07-02 22:38:56 | INFO | trading_bot | Ordenes consultadas: 1
+2026-07-02 22:50:01 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-02 22:50:01 | INFO | trading_bot | Recuperacion de posiciones abierta(s): 1
+2026-07-02 22:50:01 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=1 ya_linkeadas=0
+2026-07-02 22:50:55 | INFO | trading_bot | Orden creada: ab120066-6bc5-4054-945c-64ccc2c6ce0d
+2026-07-02 22:50:55 | INFO | trading_bot | Entrada registrada BTC/USD qty=0.0082 entry=61241.27
+2026-07-02 22:51:59 | INFO | trading_bot | Ordenes consultadas: 2
+2026-07-02 22:54:03 | INFO | trading_bot | Salida registrada SOLUSD pnl=0.7308593223749428
+2026-07-02 22:55:03 | INFO | trading_bot | Salida registrada BTCUSD pnl=0.294462
+2026-07-02 22:56:50 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-02 22:56:50 | INFO | trading_bot | Recuperacion inicial | abiertas=0 sincronizadas=0 ya_linkeadas=0
+2026-07-02 22:56:57 | INFO | trading_bot | Ordenes consultadas: 4
+2026-07-02 22:57:16 | INFO | trading_bot | Ordenes consultadas: 4
+2026-07-02 22:57:18 | INFO | trading_bot | Ordenes consultadas: 4
+2026-07-02 22:58:05 | INFO | trading_bot | Ordenes consultadas: 4
+2026-07-02 23:02:46 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-02 23:02:46 | INFO | trading_bot | Recuperacion inicial | abiertas=0 sincronizadas=0 ya_linkeadas=0
+2026-07-02 23:03:18 | INFO | trading_bot | Ordenes consultadas: 4
+2026-07-02 23:10:22 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-02 23:10:22 | INFO | trading_bot | Recuperacion inicial | abiertas=0 sincronizadas=0 ya_linkeadas=0
+2026-07-02 23:10:30 | INFO | trading_bot | Ordenes consultadas: 4
+2026-07-02 23:10:38 | INFO | trading_bot | Ordenes consultadas: 4
+2026-07-02 23:11:14 | INFO | trading_bot | Orden creada: bb7aa4a7-08eb-4504-b389-e385e47a49e7
+2026-07-02 23:11:14 | INFO | trading_bot | Entrada registrada SOL/USD qty=12.41 entry=80.58
+2026-07-02 23:11:24 | INFO | trading_bot | Salida registrada SOLUSD pnl=1.0051727699999442
+2026-07-02 23:17:10 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-02 23:17:10 | INFO | trading_bot | Recuperacion inicial | abiertas=0 sincronizadas=0 ya_linkeadas=0
+2026-07-02 23:18:15 | INFO | trading_bot | Orden creada: 369b8c77-5bd3-41aa-8dee-7462f94f95fb
+2026-07-02 23:18:15 | INFO | trading_bot | Entrada registrada SOL/USD qty=37.2292 entry=80.582
+2026-07-02 23:18:42 | INFO | trading_bot | Salida registrada SOLUSD pnl=0.07195648225632624
+2026-07-02 23:19:38 | INFO | trading_bot | Orden creada: e2b975db-3239-434e-ada9-2def7218d652
+2026-07-02 23:19:38 | INFO | trading_bot | Entrada registrada SOL/USD qty=37.2292 entry=80.582
+2026-07-02 23:21:39 | INFO | trading_bot | Ordenes consultadas: 9
+2026-07-02 23:22:36 | INFO | trading_bot | Ordenes consultadas: 9
+2026-07-02 23:25:56 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-02 23:25:56 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-02 23:29:35 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-02 23:29:35 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-02 23:30:06 | INFO | trading_bot | Ordenes consultadas: 9
+2026-07-02 23:31:19 | INFO | trading_bot | Orden creada: c2de81d3-d984-4020-bd5d-a03d5a5aba1a
+2026-07-02 23:31:19 | INFO | trading_bot | Entrada registrada SOL/USD qty=24.8194 entry=80.582
+2026-07-02 23:40:44 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-02 23:40:44 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-02 23:40:56 | INFO | trading_bot | Ordenes consultadas: 11
+2026-07-02 23:42:49 | INFO | trading_bot | Ordenes consultadas: 11
+2026-07-02 23:46:12 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-02 23:46:12 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-02 23:46:35 | INFO | trading_bot | Ordenes consultadas: 11
+2026-07-02 23:47:20 | INFO | trading_bot | Ordenes consultadas: 11
+2026-07-02 23:47:21 | INFO | trading_bot | Ordenes consultadas: 11
+2026-07-02 23:49:05 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-02 23:49:05 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 00:04:23 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 00:04:23 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 01:27:55 | INFO | trading_bot | Salida registrada SOLUSD pnl=2.207768336121126
+2026-07-03 02:21:22 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 02:21:22 | INFO | trading_bot | Recuperacion inicial | abiertas=0 sincronizadas=0 ya_linkeadas=0
+2026-07-03 02:22:27 | INFO | trading_bot | Orden creada: 8c91a46f-ee6f-497e-8800-7cf072ea6f0c
+2026-07-03 02:22:27 | INFO | trading_bot | Entrada registrada SOL/USD qty=37.0741 entry=80.919
+2026-07-03 02:26:27 | INFO | trading_bot | Orden creada: 5c2b6a63-d9ef-4d1e-aaef-7bd6630c9cc5
+2026-07-03 02:26:27 | INFO | trading_bot | Entrada registrada DOGE/USD qty=665690.3209 entry=0.07511
+2026-07-03 02:29:10 | INFO | trading_bot | Orden creada: ef2fab92-c843-4f12-85d8-dde92d01bdc0
+2026-07-03 02:29:10 | INFO | trading_bot | Entrada registrada DOGE/USD qty=532552.2567 entry=0.07511
+2026-07-03 02:30:38 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 02:30:38 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 02:37:08 | INFO | trading_bot | Orden creada: 95538748-d714-485a-8bef-d6eb7a03cd34
+2026-07-03 02:37:08 | INFO | trading_bot | Entrada registrada HYPE/USD qty=75.5599 entry=66.1727
+2026-07-03 02:38:11 | INFO | trading_bot | Ordenes consultadas: 3
+2026-07-03 02:38:20 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 02:38:20 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 02:38:34 | INFO | trading_bot | Ordenes consultadas: 3
+2026-07-03 02:50:26 | INFO | trading_bot | Orden creada: 8bcac156-82ed-476e-b643-a6c20350b763
+2026-07-03 02:50:26 | INFO | trading_bot | Entrada registrada HYPE/USD qty=45.3359 entry=66.1727
+2026-07-03 02:53:14 | INFO | trading_bot | Orden creada: bc6e3dba-d4ca-48cb-9c19-58cd2c18c12d
+2026-07-03 02:53:14 | INFO | trading_bot | Entrada registrada HYPE/USD qty=7.556 entry=66.1727
+2026-07-03 02:53:31 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 02:53:31 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 02:53:45 | INFO | trading_bot | Ordenes consultadas: 13
+2026-07-03 02:53:46 | INFO | trading_bot | Ordenes consultadas: 13
+2026-07-03 03:02:00 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 03:02:00 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 03:02:09 | INFO | trading_bot | Ordenes consultadas: 13
+2026-07-03 03:02:15 | INFO | trading_bot | Ordenes consultadas: 13
+2026-07-03 03:02:15 | INFO | trading_bot | Ordenes consultadas: 13
+2026-07-03 03:02:40 | INFO | trading_bot | Ordenes consultadas: 5
+2026-07-03 03:02:41 | INFO | trading_bot | Ordenes consultadas: 5
+2026-07-03 03:02:51 | INFO | trading_bot | Ordenes consultadas: 5
+2026-07-03 03:02:52 | INFO | trading_bot | Orden cancelada: bc6e3dba-d4ca-48cb-9c19-58cd2c18c12d
+2026-07-03 03:02:52 | INFO | trading_bot | Orden cancelada: 8bcac156-82ed-476e-b643-a6c20350b763
+2026-07-03 03:02:52 | INFO | trading_bot | Orden cancelada: 95538748-d714-485a-8bef-d6eb7a03cd34
+2026-07-03 03:03:11 | INFO | trading_bot | Ordenes consultadas: 5
+2026-07-03 03:04:04 | INFO | trading_bot | Orden creada: 45781002-d014-4448-aa6b-79f57433770d
+2026-07-03 03:04:04 | INFO | trading_bot | Entrada registrada HYPE/USD qty=30.2239 entry=66.1727
+2026-07-03 03:04:54 | INFO | trading_bot | Ordenes consultadas: 6
+2026-07-03 03:04:54 | INFO | trading_bot | Orden cancelada: 45781002-d014-4448-aa6b-79f57433770d
+2026-07-03 03:05:05 | INFO | trading_bot | Ordenes consultadas: 6
+2026-07-03 03:05:10 | INFO | trading_bot | Orden creada: 94d785c3-964b-4e68-8e56-bb44bb77f4aa
+2026-07-03 03:05:10 | INFO | trading_bot | Entrada registrada HYPE/USD qty=30.2239 entry=66.1727
+2026-07-03 03:05:11 | INFO | trading_bot | Ordenes consultadas: 7
+2026-07-03 03:05:14 | INFO | trading_bot | Ordenes consultadas: 7
+2026-07-03 03:05:16 | INFO | trading_bot | Ordenes consultadas: 7
+2026-07-03 03:05:16 | INFO | trading_bot | Ordenes consultadas: 7
+2026-07-03 03:05:19 | INFO | trading_bot | Ordenes consultadas: 7
+2026-07-03 03:05:26 | INFO | trading_bot | Ordenes consultadas: 7
+2026-07-03 03:05:26 | INFO | trading_bot | Orden cancelada: 94d785c3-964b-4e68-8e56-bb44bb77f4aa
+2026-07-03 03:06:13 | INFO | trading_bot | Orden creada: 75ae53c1-109f-4aac-acc2-a290190e80e5
+2026-07-03 03:06:13 | INFO | trading_bot | Entrada registrada ARB/USD qty=26079.0194 entry=0.07669
+2026-07-03 03:09:25 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 03:09:25 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 03:10:10 | INFO | trading_bot | Orden creada: 19bf408b-d032-44a3-b520-abd4535208e1
+2026-07-03 03:10:10 | INFO | trading_bot | Orden creada: 6f2b59d1-4c79-4cf0-a5c6-9924b6a17663
+2026-07-03 03:10:53 | INFO | trading_bot | Orden creada: 402840ac-4304-4b5f-9074-af719973ad61
+2026-07-03 03:10:57 | INFO | trading_bot | Orden creada: eb7d5dd8-f9b2-4d51-bef5-cfc5dcee8c74
+2026-07-03 03:17:17 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 03:17:18 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 03:18:21 | INFO | trading_bot | Ordenes consultadas: 12
+2026-07-03 03:23:09 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 03:23:09 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 03:23:10 | INFO | trading_bot | Salida registrada SOLUSD pnl=0.09865476540756839
+2026-07-03 03:23:19 | INFO | trading_bot | Ordenes consultadas: 12
+2026-07-03 03:24:11 | INFO | trading_bot | Ordenes consultadas: 12
+2026-07-03 03:27:29 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 03:27:29 | INFO | trading_bot | Recuperacion inicial | abiertas=0 sincronizadas=0 ya_linkeadas=0
+2026-07-03 03:30:06 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 03:30:06 | INFO | trading_bot | Recuperacion inicial | abiertas=0 sincronizadas=0 ya_linkeadas=0
+2026-07-03 03:31:25 | INFO | trading_bot | Orden creada: f7fa4930-26e0-4690-bfe9-e3ea2820839e
+2026-07-03 03:31:25 | INFO | trading_bot | Entrada registrada SOL/USD qty=49.2078 entry=81.078064637
+2026-07-03 03:31:37 | INFO | trading_bot | Salida registrada SOLUSD pnl=-8.501906258966248
+2026-07-03 03:32:32 | INFO | trading_bot | Orden creada: dd7c9a8a-9897-4b15-821a-dcc045d7c03e
+2026-07-03 03:32:33 | INFO | trading_bot | Entrada registrada SOL/USD qty=49.5118 entry=81.052479328
+2026-07-03 03:36:07 | INFO | trading_bot | Salida registrada SOLUSD pnl=-0.062074518878227736
+2026-07-03 03:37:31 | INFO | trading_bot | Orden creada: 20925f59-f99b-45d6-9a45-0e875bfb6c0f
+2026-07-03 03:37:32 | INFO | trading_bot | Entrada registrada SOL/USD qty=49.192 entry=81.094712352
+2026-07-03 03:37:37 | INFO | trading_bot | Salida registrada SOLUSD pnl=-4.936217059273681
+2026-07-03 03:39:35 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 03:39:35 | INFO | trading_bot | Recuperacion inicial | abiertas=0 sincronizadas=0 ya_linkeadas=0
+2026-07-03 03:40:33 | INFO | trading_bot | Orden creada: 426aee67-5aa8-433f-bbca-b275f12753a3
+2026-07-03 03:40:34 | INFO | trading_bot | Entrada registrada SOL/USD qty=49.4507 entry=81.154197344
+2026-07-03 03:41:07 | INFO | trading_bot | Salida registrada SOLUSD pnl=-5.20992656186044
+2026-07-03 03:45:00 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 03:45:00 | INFO | trading_bot | Recuperacion inicial | abiertas=0 sincronizadas=0 ya_linkeadas=0
+2026-07-03 03:45:01 | INFO | trading_bot | Salida limit registrada SOL/USD pnl=15.714486898082633
+2026-07-03 03:45:01 | INFO | trading_bot | Salida limit registrada BTC/USD pnl=0.7846594350000023
+2026-07-03 03:45:01 | INFO | trading_bot | Salida limit registrada SOL/USD pnl=23.113547885582914
+2026-07-03 03:45:01 | INFO | trading_bot | Salida limit registrada SOL/USD pnl=23.014893739083142
+2026-07-03 03:46:02 | INFO | trading_bot | Orden creada: 4ce572d8-1189-42fb-a435-d9b60f7460b5
+2026-07-03 03:46:03 | INFO | trading_bot | Entrada registrada SOL/USD qty=43.0199 entry=81.23632249
+2026-07-03 03:46:32 | INFO | trading_bot | Orden limite creada: 37a98b91-c314-4ad3-b1e6-12ab23a6b1ad
+2026-07-03 03:49:01 | INFO | trading_bot | Salida limit registrada SOL/USD pnl=5.2085942215923575
+2026-07-03 03:50:01 | INFO | trading_bot | Orden creada: 1551ee52-33ca-4f5a-8638-5a79756d4b9a
+2026-07-03 03:50:02 | INFO | trading_bot | Entrada registrada SOL/USD qty=43.0199 entry=81.378994681
+2026-07-03 03:53:00 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 03:53:00 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 03:54:31 | INFO | trading_bot | Salida limit registrada DOGE/USD pnl=-1059.8792754377196
+2026-07-03 03:54:31 | INFO | trading_bot | Salida limit registrada DOGE/USD pnl=-1059.8792754377196
+2026-07-03 03:54:31 | INFO | trading_bot | Salida limit registrada ARB/USD pnl=37.54236728142945
+2026-07-03 03:54:58 | INFO | trading_bot | Orden creada: df895093-681f-4034-9d52-0e17bdc4dc11
+2026-07-03 03:54:58 | INFO | trading_bot | Entrada registrada SOL/USD qty=24.5828 entry=81.275945458
+2026-07-03 03:55:32 | INFO | trading_bot | Orden limite creada: a2c1cc17-7e0f-4bbd-8dc5-d154c2a6c07f
+2026-07-03 04:00:05 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 04:00:05 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 04:00:20 | INFO | trading_bot | Salida registrada SOLUSD pnl=-11.709679381054551
+2026-07-03 04:00:36 | INFO | trading_bot | Salida limit registrada SOL/USD pnl=-11.709679381054551
+2026-07-03 04:01:09 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 04:01:09 | INFO | trading_bot | Recuperacion inicial | abiertas=0 sincronizadas=0 ya_linkeadas=0
+2026-07-03 04:01:54 | INFO | trading_bot | Orden creada: 48107d16-2b13-4c36-bb4b-d45bda2c2e26
+2026-07-03 04:01:55 | INFO | trading_bot | Entrada registrada SOL/USD qty=24.6051 entry=81.225159833
+2026-07-03 04:06:11 | INFO | trading_bot | Orden limite creada: b018baeb-72c4-4aaf-aea2-8bd95a2640f5
+2026-07-03 04:13:00 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 04:13:01 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 04:17:50 | INFO | trading_bot | Ordenes consultadas: 1
+2026-07-03 04:18:19 | INFO | trading_bot | Orden cancelada: b018baeb-72c4-4aaf-aea2-8bd95a2640f5
+2026-07-03 04:18:33 | INFO | trading_bot | Orden limite creada: 6f8db11d-d45b-47eb-a177-11eba65e79c2
+2026-07-03 04:18:37 | INFO | trading_bot | Ordenes consultadas: 1
+2026-07-03 04:20:44 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 04:20:44 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 04:20:52 | INFO | trading_bot | Ordenes consultadas: 1
+2026-07-03 04:20:53 | INFO | trading_bot | Ordenes consultadas: 29
+2026-07-03 04:22:23 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 04:22:23 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 04:22:35 | INFO | trading_bot | Ordenes consultadas: 1
+2026-07-03 04:22:35 | INFO | trading_bot | Ordenes consultadas: 29
+2026-07-03 04:22:53 | INFO | trading_bot | Ordenes consultadas: 1
+2026-07-03 04:22:53 | INFO | trading_bot | Ordenes consultadas: 29
+2026-07-03 04:24:42 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 04:24:43 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 04:25:03 | INFO | trading_bot | Ordenes consultadas: 1
+2026-07-03 04:25:03 | INFO | trading_bot | Ordenes consultadas: 29
+2026-07-03 04:26:54 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 04:26:54 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 04:27:06 | INFO | trading_bot | Ordenes consultadas: 1
+2026-07-03 04:27:06 | INFO | trading_bot | Ordenes consultadas: 29
+2026-07-03 04:29:57 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 04:29:57 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 04:30:29 | INFO | trading_bot | Ordenes consultadas: 1
+2026-07-03 04:30:29 | INFO | trading_bot | Ordenes consultadas: 29
+2026-07-03 04:31:02 | INFO | trading_bot | Ordenes consultadas: 1
+2026-07-03 04:31:02 | INFO | trading_bot | Ordenes consultadas: 29
+2026-07-03 04:31:34 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 04:31:34 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 04:34:06 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 04:34:06 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 04:34:23 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 04:34:23 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 04:35:16 | INFO | trading_bot | Ordenes consultadas: 1
+2026-07-03 04:35:16 | INFO | trading_bot | Ordenes consultadas: 29
+2026-07-03 04:35:18 | INFO | trading_bot | Ordenes consultadas: 1
+2026-07-03 04:35:18 | INFO | trading_bot | Ordenes consultadas: 29
+2026-07-03 04:35:21 | INFO | trading_bot | Ordenes consultadas: 1
+2026-07-03 04:35:21 | INFO | trading_bot | Ordenes consultadas: 29
+2026-07-03 04:35:22 | INFO | trading_bot | Ordenes consultadas: 1
+2026-07-03 04:35:22 | INFO | trading_bot | Ordenes consultadas: 29
+2026-07-03 04:35:22 | INFO | trading_bot | Ordenes consultadas: 1
+2026-07-03 04:35:22 | INFO | trading_bot | Ordenes consultadas: 29
+2026-07-03 04:35:27 | INFO | trading_bot | Ordenes consultadas: 1
+2026-07-03 04:35:27 | INFO | trading_bot | Ordenes consultadas: 29
+2026-07-03 04:35:27 | INFO | trading_bot | Ordenes consultadas: 1
+2026-07-03 04:35:28 | INFO | trading_bot | Ordenes consultadas: 29
+2026-07-03 04:35:28 | INFO | trading_bot | Ordenes consultadas: 1
+2026-07-03 04:35:28 | INFO | trading_bot | Ordenes consultadas: 29
+2026-07-03 04:35:29 | INFO | trading_bot | Ordenes consultadas: 1
+2026-07-03 04:35:30 | INFO | trading_bot | Ordenes consultadas: 29
+2026-07-03 04:35:34 | INFO | trading_bot | Ordenes consultadas: 1
+2026-07-03 04:35:35 | INFO | trading_bot | Ordenes consultadas: 29
+2026-07-03 04:36:48 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 04:36:49 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 04:36:58 | INFO | trading_bot | Ordenes consultadas: 1
+2026-07-03 04:36:58 | INFO | trading_bot | Ordenes consultadas: 29
+2026-07-03 04:37:13 | INFO | trading_bot | Ordenes consultadas: 1
+2026-07-03 04:37:14 | INFO | trading_bot | Ordenes consultadas: 29
+2026-07-03 04:37:14 | INFO | trading_bot | Orden cancelada: 6f8db11d-d45b-47eb-a177-11eba65e79c2
+2026-07-03 04:37:45 | INFO | trading_bot | Salida registrada SOLUSD pnl=-7.314792852069899
+2026-07-03 04:39:35 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 04:39:35 | INFO | trading_bot | Recuperacion inicial | abiertas=0 sincronizadas=0 ya_linkeadas=0
+2026-07-03 04:39:57 | INFO | trading_bot | Ordenes consultadas: 0
+2026-07-03 04:39:57 | INFO | trading_bot | Ordenes consultadas: 30
+2026-07-03 04:40:12 | INFO | trading_bot | Orden creada: 813405c0-1b71-41bc-bfe5-aae7f471f959
+2026-07-03 04:40:13 | INFO | trading_bot | Entrada registrada SOLUSD qty=6.1639 entry=81.0467
+2026-07-03 04:44:37 | INFO | trading_bot | Orden limite creada: 928cd621-a0c0-4023-b284-b1b3d5fd7d31
+2026-07-03 04:47:31 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 04:47:31 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 04:47:44 | INFO | trading_bot | Ordenes consultadas: 1
+2026-07-03 04:47:44 | INFO | trading_bot | Ordenes consultadas: 32
+2026-07-03 04:48:33 | INFO | trading_bot | Salida limit registrada SOLUSD pnl=-0.8671167180619997
