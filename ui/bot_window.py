@@ -15,6 +15,7 @@ from portfolio.position_manager import PositionManager, PositionSnapshot
 from scheduling.market_open_scheduler import MarketOpenScheduler
 from risk.risk_manager import RiskManager
 from strategies.scalping_strategy import ScalpingStrategy
+from utils.power_inhibit import PowerInhibitor, start_power_inhibitor
 
 
 class BotControlWindow:
@@ -78,8 +79,11 @@ class BotControlWindow:
         self._watch_counter = 0
         self._watch_state_path = Path(__file__).resolve().parents[1] / "watch_tabs_state.json"
         self._history_tab_frame: ttk.Frame | None = None
+        self._power_inhibitor: PowerInhibitor | None = None
+        self._network_degraded = False
 
         self._build_ui()
+        self._power_inhibitor = start_power_inhibitor(self.logger)
         self._apply_selected_account(update_status=False, require_credentials=False)
         self._restore_watch_tabs()
         self._restore_open_positions_tabs()
@@ -320,11 +324,18 @@ class BotControlWindow:
         self.output.configure(state="disabled")
 
     def run(self) -> None:
+        self.root.protocol("WM_DELETE_WINDOW", self._on_close)
         self.root.after(1000, self._monitor_positions_loop)
         self.root.after(1000, lambda: self._run_async(self._refresh_stock_selector))
         self.root.after(1200, lambda: threading.Thread(target=self._refresh_nyse_status, daemon=True).start())
         self.root.after(60000, self._nyse_status_loop)
         self.root.mainloop()
+
+    def _on_close(self) -> None:
+        if self._power_inhibitor is not None:
+            self._power_inhibitor.stop()
+            self._power_inhibitor = None
+        self.root.destroy()
 
     def _nyse_status_loop(self) -> None:
         threading.Thread(target=self._refresh_nyse_status, daemon=True).start()
@@ -339,6 +350,7 @@ class BotControlWindow:
     def _run_action(self, fn: Any) -> None:
         try:
             fn()
+            self._mark_network_recovered()
         except requests.exceptions.HTTPError as ex:
             status = ex.response.status_code if ex.response is not None else "N/A"
             detail = ex.response.text if ex.response is not None else ""
@@ -370,10 +382,29 @@ class BotControlWindow:
                 )
                 return
 
+            if isinstance(status, int) and status >= 500:
+                self._mark_network_degraded(f"Servidor/API no disponible (HTTP {status}). Reintentando automaticamente...")
+                return
+
             self.root.after(0, self._show_error, f"HTTP {status}: {detail}")
+        except requests.exceptions.RequestException as ex:
+            self._mark_network_degraded(f"Sin conexion de red ({ex.__class__.__name__}). Reintentando automaticamente...")
         except Exception as ex:
             self.logger.exception("Error en accion de UI")
             self.root.after(0, self._show_error, str(ex))
+
+    def _mark_network_degraded(self, message: str) -> None:
+        if not self._network_degraded:
+            self._network_degraded = True
+            self.root.after(0, self.status_var.set, "Conexion de red perdida. Reintentando...")
+            self.root.after(0, self._set_output, message, False)
+            self.logger.warning(message)
+
+    def _mark_network_recovered(self) -> None:
+        if self._network_degraded:
+            self._network_degraded = False
+            self.root.after(0, self.status_var.set, "Conexion restaurada")
+            self.logger.info("Conexion restaurada. Reanudando flujos automaticamente.")
 
     def _view_account(self) -> None:
         account = self.broker.get_account()
@@ -474,9 +505,11 @@ class BotControlWindow:
     def _switch_account(self) -> None:
         self._cancel_all_watch_tabs()
         self._apply_selected_account(update_status=True, require_credentials=True)
-        self._restore_open_positions_tabs()
-        self._view_account()
-        self._refresh_stock_selector()
+        # Tkinter widgets must be created/updated on the main thread.
+        self.root.after(0, self._restore_watch_tabs)
+        self.root.after(0, self._restore_open_positions_tabs)
+        self.root.after(0, lambda: self._run_async(self._view_account))
+        self.root.after(0, lambda: self._run_async(self._refresh_stock_selector))
 
     def _manual_sell_selected_stock(self) -> None:
         symbol = self._selected_symbol_for_market()
@@ -946,7 +979,21 @@ class BotControlWindow:
     def _entry_watch_loop(self, watch_id: str, symbol: str, asset_type: str) -> None:
         try:
             while not self._watch_should_stop(watch_id):
-                result = self._attempt_strategy_entry(symbol=symbol, asset_type=asset_type)
+                try:
+                    result = self._attempt_strategy_entry(symbol=symbol, asset_type=asset_type)
+                    self._mark_network_recovered()
+                except requests.exceptions.RequestException as ex:
+                    wait_seconds = max(settings.position_monitor_interval_seconds, 5)
+                    self._mark_network_degraded(
+                        f"Internet caido durante busqueda de entrada ({symbol}). Reintentando en {wait_seconds}s..."
+                    )
+                    self._watch_log(
+                        watch_id,
+                        f"Sin conexion en busqueda de entrada ({ex.__class__.__name__}). Reintentando en {wait_seconds}s.",
+                    )
+                    self._set_watch_status(watch_id, f"Sin conexion. Reintentando en {wait_seconds}s...")
+                    time.sleep(wait_seconds)
+                    continue
                 if result.get("action") == "buy":
                     self._watch_log(watch_id, result.get("message", "Entrada ejecutada"))
                     self.root.after(0, self._show_success, f"Entrada ejecutada para {symbol}", False)
@@ -1523,11 +1570,19 @@ class BotControlWindow:
             time.sleep(sleep_seconds)
         return False
 
-    def _finalize_close_watch_tab(self, watch_id: str, stop_reason: str, status_message: str) -> None:
+    def _finalize_close_watch_tab(
+        self,
+        watch_id: str,
+        stop_reason: str,
+        status_message: str,
+        persist_state: bool = True,
+    ) -> None:
         with self._watch_lock:
             context = self._watch_tabs.get(watch_id)
         if context is None:
             return
+
+        account_name = str(context.get("account", "")).strip()
 
         stop_event = context.get("stop_event")
         if stop_event is not None:
@@ -1548,7 +1603,9 @@ class BotControlWindow:
 
         with self._watch_lock:
             self._watch_tabs.pop(watch_id, None)
-        self._save_watch_tabs_state()
+        if persist_state:
+            replace_accounts = {account_name} if account_name else None
+            self._save_watch_tabs_state(replace_accounts=replace_accounts)
         self.status_var.set(status_message)
 
     def _cancel_all_watch_tabs(self) -> None:
@@ -1561,6 +1618,7 @@ class BotControlWindow:
                 watch_id,
                 "account_switch",
                 "Pestañas cerradas por cambio de cuenta",
+                False,
             )
 
     def _watch_should_stop(self, watch_id: str) -> bool:
@@ -1695,7 +1753,22 @@ class BotControlWindow:
                 if track_stop_event is not None and track_stop_event.is_set():
                     return
 
-                position = self._find_open_position_by_symbol(symbol)
+                try:
+                    position = self._find_open_position_by_symbol(symbol)
+                    self._mark_network_recovered()
+                except requests.exceptions.RequestException as ex:
+                    wait_seconds = max(settings.position_monitor_interval_seconds, 5)
+                    self._mark_network_degraded(
+                        f"Internet caido durante monitoreo de posicion ({symbol}). Reintentando en {wait_seconds}s..."
+                    )
+                    self._watch_log(
+                        watch_id,
+                        f"Sin conexion en monitoreo ({ex.__class__.__name__}). Reintentando en {wait_seconds}s.",
+                    )
+                    self._set_watch_status(watch_id, f"Sin conexion. Reintentando en {wait_seconds}s...")
+                    time.sleep(wait_seconds)
+                    continue
+
                 if position is None:
                     if had_open_position:
                         self._watch_log(
@@ -1750,7 +1823,7 @@ class BotControlWindow:
                 if context is not None:
                     context["tracking_active"] = False
 
-    def _save_watch_tabs_state(self) -> None:
+    def _save_watch_tabs_state(self, replace_accounts: set[str] | None = None) -> None:
         with self._watch_lock:
             payload = [
                 {
@@ -1763,7 +1836,34 @@ class BotControlWindow:
                 for context in self._watch_tabs.values()
             ]
 
-        self._watch_state_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+        if replace_accounts is None:
+            replace_accounts = {
+                str(item.get("account", "")).strip()
+                for item in payload
+                if str(item.get("account", "")).strip()
+            }
+
+        existing_payload = []
+        if self._watch_state_path.exists():
+            try:
+                raw_existing = json.loads(self._watch_state_path.read_text(encoding="utf-8"))
+                if isinstance(raw_existing, list):
+                    existing_payload = [item for item in raw_existing if isinstance(item, dict)]
+            except Exception:
+                existing_payload = []
+
+        merged_payload = []
+        for item in existing_payload:
+            account = str(item.get("account", "")).strip()
+            if account in replace_accounts:
+                continue
+            merged_payload.append(item)
+        merged_payload.extend(payload)
+
+        self._watch_state_path.write_text(
+            json.dumps(merged_payload, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
 
     def _restore_watch_tabs(self) -> None:
         if not self._watch_state_path.exists():
@@ -1802,12 +1902,15 @@ class BotControlWindow:
             self._apply_auto_rebuy_button_state(watch_id, auto_rebuy)
             restored += 1
             if mode == "waiting":
-                self._watch_log(watch_id, "Pestaña restaurada tras reinicio. Reanudando busqueda de entrada.")
-                threading.Thread(
-                    target=self._entry_watch_loop,
-                    args=(watch_id, symbol, asset_type),
-                    daemon=True,
-                ).start()
+                with self._watch_lock:
+                    context = self._watch_tabs.get(watch_id)
+                    if context is not None:
+                        context["active"] = False
+                        stop_event = context.get("stop_event")
+                        if stop_event is not None:
+                            stop_event.set()
+                self._watch_log(watch_id, "Pestaña restaurada en pausa para evitar compras automaticas.")
+                self._set_watch_status(watch_id, "Entrada restaurada en pausa")
             else:
                 self._watch_log(watch_id, "Pestaña restaurada tras reinicio. Reanudando monitoreo en vivo.")
                 self._start_position_tracking(watch_id=watch_id, symbol=symbol, entry_price_hint=0.0)
@@ -1863,21 +1966,54 @@ class BotControlWindow:
         return str(symbol or "").upper().replace(" ", "").replace("/", "")
 
     def _view_orders(self) -> None:
-        # Merge open + recent all to surface edge statuses like done_for_day that still represent active intent.
-        combined: dict[str, dict[str, Any]] = {}
-        for status in ("open", "all"):
-            for order in self.order_manager.review_orders(status=status, limit=200):
+        # Show actionable orders first: open orders are the ones that can still be cancelled/managed.
+        open_orders = self.order_manager.review_orders(status="open", limit=200)
+        combined_open: dict[str, dict[str, Any]] = {}
+        for order in open_orders:
+            order_id = str(order.get("id", "")).strip()
+            if not order_id:
+                continue
+            combined_open[order_id] = order
+
+        pending_orders = list(combined_open.values())
+
+        # Optional fallback for rare API inconsistencies: include recent non-terminal orders only.
+        hidden_old = 0
+        terminal_statuses = {"filled", "canceled", "rejected", "expired", "replaced"}
+        try:
+            open_ids = set(combined_open.keys())
+            for order in self.order_manager.review_orders(status="all", limit=200):
+                order_id = str(order.get("id", "")).strip()
+                if not order_id or order_id in open_ids:
+                    continue
+                status = str(order.get("status", "")).lower().strip()
+                if status not in terminal_statuses:
+                    hidden_old += 1
+        except Exception:
+            hidden_old = 0
+
+        if not pending_orders:
+            combined_all: dict[str, dict[str, Any]] = {}
+            for order in self.order_manager.review_orders(status="all", limit=200):
                 order_id = str(order.get("id", "")).strip()
                 if not order_id:
                     continue
-                combined[order_id] = order
+                combined_all[order_id] = order
+            pending_orders = [
+                order
+                for order in combined_all.values()
+                if str(order.get("status", "")).lower().strip() not in terminal_statuses
+            ]
 
-        terminal_statuses = {"filled", "canceled", "rejected", "expired", "replaced"}
-        pending_orders = [
-            order
-            for order in combined.values()
-            if str(order.get("status", "")).lower().strip() not in terminal_statuses
-        ]
+        positions_by_symbol: dict[str, float] = {}
+        try:
+            for position in self.broker.get_positions():
+                symbol = self._symbol_key(str(position.get("symbol", "")))
+                if not symbol:
+                    continue
+                positions_by_symbol[symbol] = float(position.get("avg_entry_price", 0.0) or 0.0)
+        except Exception:
+            positions_by_symbol = {}
 
         trimmed = [
             {
@@ -1889,6 +2025,11 @@ class BotControlWindow:
                 "qty": order.get("qty"),
                 "filled_qty": order.get("filled_qty"),
                 "limit_price": order.get("limit_price"),
+                "entry_price": float(
+                    order.get("filled_avg_price")
+                    or positions_by_symbol.get(self._symbol_key(str(order.get("symbol", ""))), 0.0)
+                    or 0.0
+                ),
                 "notional": order.get("notional"),
                 "time_in_force": order.get("time_in_force"),
                 "status": order.get("status"),
@@ -1920,9 +2061,12 @@ class BotControlWindow:
         lines.append("=================")
         lines.append(f"Cuenta activa: {self.account_var.get().strip()}")
         lines.append(f"Total pendientes: {len(trimmed)}")
+        lines.append("Filtro aplicado: solo ordenes abiertas/cancelables")
+        if hidden_old > 0:
+            lines.append(f"Ordenes viejas/no-cancelables ocultadas: {hidden_old}")
         lines.append("")
         header = (
-            f"{'OID':<4} {'SYMBOL':<12} {'SIDE':<6} {'QTY':>10} {'FILLED':>10} {'LIMIT':>12} "
+            f"{'OID':<4} {'SYMBOL':<12} {'SIDE':<6} {'QTY':>10} {'FILLED':>10} {'ENTRY':>12} {'LIMIT':>12} "
             f"{'STATUS':<20} {'TIF':<6} {'MOTIVO':<40}"
         )
         lines.append(header)
@@ -1934,6 +2078,8 @@ class BotControlWindow:
             side = str(order.get("side", "N/A"))[:6]
             qty = float(order.get("qty", 0.0) or 0.0)
             filled_qty = float(order.get("filled_qty", 0.0) or 0.0)
+            entry_price = float(order.get("entry_price", 0.0) or 0.0)
+            entry_text = "-" if entry_price <= 0 else f"{entry_price:.6f}"
             raw_limit = order.get("limit_price")
             limit_text = "-"
             if raw_limit not in (None, ""):
@@ -1945,7 +2091,7 @@ class BotControlWindow:
             tif = str(order.get("time_in_force", "N/A"))[:6]
             reason = str(order.get("why_not_filled", "N/A"))[:40]
             lines.append(
-                f"{alias:<4} {symbol:<12} {side:<6} {qty:>10.4f} {filled_qty:>10.4f} {limit_text:>12} "
+                f"{alias:<4} {symbol:<12} {side:<6} {qty:>10.4f} {filled_qty:>10.4f} {entry_text:>12} {limit_text:>12} "
                 f"{status:<20} {tif:<6} {reason:<40}"
             )
 
@@ -1957,20 +2103,15 @@ class BotControlWindow:
         self.root.after(0, self._show_success, "\n".join(lines))
 
     def _cancel_all_pending_orders(self) -> None:
-        combined: dict[str, dict[str, Any]] = {}
-        for status in ("open", "all"):
-            for order in self.order_manager.review_orders(status=status, limit=200):
-                order_id = str(order.get("id", "")).strip()
-                if not order_id:
-                    continue
-                combined[order_id] = order
+        open_orders = self.order_manager.review_orders(status="open", limit=200)
+        combined_open: dict[str, dict[str, Any]] = {}
+        for order in open_orders:
+            order_id = str(order.get("id", "")).strip()
+            if not order_id:
+                continue
+            combined_open[order_id] = order
 
-        terminal_statuses = {"filled", "canceled", "rejected", "expired", "replaced"}
-        pending_orders = [
-            order
-            for order in combined.values()
-            if str(order.get("status", "")).lower().strip() not in terminal_statuses
-        ]
+        pending_orders = list(combined_open.values())
         if not pending_orders:
             self.root.after(0, self._show_success, "No hay ordenes pendientes para cancelar.")
             return
@@ -2198,8 +2339,13 @@ class BotControlWindow:
                     self._apply_runtime_settings()
                     schedule_actions = self.scheduler.process_pending_schedules()
                     actions = self.position_manager.auto_manage_positions()
+                    self._mark_network_recovered()
                     message = self._format_monitor_result(schedule_actions, actions)
                     self.root.after(0, self._on_monitor_result, message)
+                except requests.exceptions.RequestException as ex:
+                    self._mark_network_degraded(
+                        f"Sin conexion durante monitoreo general ({ex.__class__.__name__}). Reintentando automaticamente..."
+                    )
                 except Exception as ex:
                     self.root.after(0, self._show_error, f"Monitoreo fallido: {ex}")
                 finally:

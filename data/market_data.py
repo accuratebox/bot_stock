@@ -202,23 +202,37 @@ class MarketDataService:
         params: dict[str, str],
         headers: dict[str, str] | None = None,
     ) -> dict:
+        last_error: Exception | None = None
         for attempt in range(self._max_retries):
-            response = self._session.get(url, params=params, headers=headers, timeout=15)
-            if response.status_code == 429 and attempt < (self._max_retries - 1):
-                retry_after = response.headers.get("Retry-After")
-                if retry_after is not None and retry_after.isdigit():
-                    wait_seconds = float(retry_after)
-                else:
-                    wait_seconds = float(2 ** attempt)
+            try:
+                response = self._session.get(url, params=params, headers=headers, timeout=15)
+                if response.status_code == 429 and attempt < (self._max_retries - 1):
+                    retry_after = response.headers.get("Retry-After")
+                    if retry_after is not None and retry_after.isdigit():
+                        wait_seconds = float(retry_after)
+                    else:
+                        wait_seconds = float(2 ** attempt)
 
-                self.logger.warning("Rate limit (429). Reintentando en %.1f s", wait_seconds)
+                    self.logger.warning("Rate limit (429). Reintentando en %.1f s", wait_seconds)
+                    time.sleep(wait_seconds)
+                    continue
+
+                response.raise_for_status()
+                return response.json()
+            except requests.exceptions.RequestException as ex:
+                last_error = ex
+                if attempt >= (self._max_retries - 1):
+                    break
+                wait_seconds = float(2 ** attempt)
+                self.logger.warning(
+                    "Fallo de red/HTTP en market data (%s). Reintentando en %.1f s",
+                    ex.__class__.__name__,
+                    wait_seconds,
+                )
                 time.sleep(wait_seconds)
-                continue
 
-            response.raise_for_status()
-            return response.json()
-
-        response.raise_for_status()
+        if last_error is not None:
+            raise last_error
         return {}
 
     def get_candles(self, symbol: str, interval: str = "1m", limit: int = 100) -> list[dict]:

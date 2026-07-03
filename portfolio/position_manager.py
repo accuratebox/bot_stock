@@ -267,6 +267,10 @@ class PositionManager:
     def can_open_new_trade(self, symbol: str, ignore_close_window: bool = False) -> tuple[bool, str]:
         symbol = symbol.upper()
         is_crypto = self._is_crypto_symbol(symbol)
+
+        if self._has_pending_buy_order(symbol):
+            return False, f"{symbol} tiene una compra pendiente en broker"
+
         open_positions = self.get_open_positions()
         hold_count = 0
         open_count = 0
@@ -303,23 +307,27 @@ class PositionManager:
         if not can_open:
             raise ValueError(reason_text)
 
+        requested_qty = float(qty)
+        if requested_qty <= 0:
+            raise ValueError("La cantidad de compra debe ser mayor que cero")
+
         current_price = self.market_data.get_last_price(symbol)
         quote = self.market_data.get_latest_quote(symbol)
         entry_tif = "gtc"
         if self._is_crypto_symbol(symbol):
             configured_tif = str(getattr(self.settings, "crypto_entry_time_in_force", "ioc") or "ioc").lower().strip()
             entry_tif = configured_tif or "ioc"
-        order = self.order_manager.create_market_order(symbol=symbol, qty=qty, side="buy", time_in_force=entry_tif)
+        order = self.order_manager.create_market_order(symbol=symbol, qty=requested_qty, side="buy", time_in_force=entry_tif)
 
-        resolved_order = self._wait_order_fill(order)
+        resolved_order = self._wait_order_fill(order, requested_qty=requested_qty, max_attempts=30, sleep_seconds=0.5)
         order_status = str(resolved_order.get("status", "")).lower()
-        if order_status != "filled":
+        filled_qty = float(resolved_order.get("filled_qty", 0.0) or 0.0)
+        if order_status != "filled" or filled_qty < (requested_qty - 1e-8):
             order_id = str(resolved_order.get("id", order.get("id", "")))
-            filled_qty = float(resolved_order.get("filled_qty", 0.0) or 0.0)
             raise ValueError(
                 (
-                    f"Orden enviada pero no llenada todavia (status={order_status}, "
-                    f"filled_qty={filled_qty}, order_id={order_id})."
+                    f"Orden market sin llenado completo (status={order_status}, "
+                    f"filled_qty={filled_qty:.8f}, requested_qty={requested_qty:.8f}, order_id={order_id})."
                 )
             )
 
@@ -330,6 +338,7 @@ class PositionManager:
             or order.get("avg_entry_price")
             or current_price
         )
+        entry_cost = filled_price * filled_qty
         trade_id = str(uuid.uuid4())
         slippage = abs(filled_price - current_price)
         self.journal.record(
@@ -339,7 +348,8 @@ class PositionManager:
                 "symbol": symbol,
                 "entry_time": self._now_iso(),
                 "entry_price": filled_price,
-                "qty": qty,
+                "qty": filled_qty,
+                "entry_cost": entry_cost,
                 "current_price": current_price,
                 "floating_pnl": 0.0,
                 "state": "OPEN",
@@ -354,16 +364,30 @@ class PositionManager:
             }
         )
 
-        self.logger.info("Entrada registrada %s qty=%s entry=%s", symbol, qty, filled_price)
+        self.logger.info(
+            "Entrada registrada %s qty=%.8f entry=%.8f cost=%.8f",
+            symbol,
+            filled_qty,
+            filled_price,
+            entry_cost,
+        )
         return {
             "trade_id": trade_id,
             "order": resolved_order,
             "entry_price": filled_price,
+            "filled_qty": filled_qty,
+            "entry_cost": entry_cost,
             "current_price": current_price,
             "spread_pct": quote.get("spread_pct", spread_pct),
         }
 
-    def _wait_order_fill(self, order: dict[str, Any], max_attempts: int = 8, sleep_seconds: float = 0.5) -> dict[str, Any]:
+    def _wait_order_fill(
+        self,
+        order: dict[str, Any],
+        requested_qty: float | None = None,
+        max_attempts: int = 8,
+        sleep_seconds: float = 0.5,
+    ) -> dict[str, Any]:
         order_id = str(order.get("id", "")).strip()
         if not order_id or not hasattr(self.broker, "get_order"):
             return order
@@ -371,6 +395,9 @@ class PositionManager:
         current = order
         for _ in range(max_attempts):
             status = str(current.get("status", "")).lower()
+            filled_qty = float(current.get("filled_qty", 0.0) or 0.0)
+            if requested_qty is not None and filled_qty >= (float(requested_qty) - 1e-8):
+                return current
             if status in {"filled", "canceled", "rejected", "expired"}:
                 return current
             time.sleep(sleep_seconds)
@@ -379,6 +406,33 @@ class PositionManager:
             except Exception:
                 break
         return current
+
+    def _has_pending_buy_order(self, symbol: str) -> bool:
+        target = self._symbol_key(symbol)
+        pending_statuses = {
+            "new",
+            "accepted",
+            "pending_new",
+            "partially_filled",
+            "accepted_for_bidding",
+            "pending_replace",
+            "stopped",
+            "calculated",
+        }
+        try:
+            orders = self.broker.list_orders(status="open", limit=200)
+        except Exception:
+            return False
+
+        for order in orders:
+            side = str(order.get("side", "")).lower().strip()
+            status = str(order.get("status", "")).lower().strip()
+            if side != "buy" or status not in pending_statuses:
+                continue
+            if self._symbol_key(str(order.get("symbol", ""))) != target:
+                continue
+            return True
+        return False
 
     def manual_sell(self, symbol: str) -> dict[str, Any]:
         if not self.settings.allow_manual_sell:
@@ -562,6 +616,24 @@ class PositionManager:
             return {"symbol": snapshot.symbol, "action": "HOLD", "reason": "never_sell_at_loss"}
 
         trigger_price = float(snapshot.current_price)
+
+        try:
+            open_orders = self.broker.list_orders(status="open", limit=200)
+        except Exception:
+            open_orders = []
+
+        target_symbol = self._symbol_key(snapshot.symbol)
+        for order in open_orders:
+            if self._symbol_key(str(order.get("symbol", ""))) != target_symbol:
+                continue
+            order_id = str(order.get("id", "")).strip()
+            if not order_id:
+                continue
+            try:
+                self.order_manager.cancel_order(order_id)
+            except Exception:
+                self.logger.warning("No se pudo cancelar orden previa para cerrar %s: %s", snapshot.symbol, order_id)
+
         close_result = self.broker.close_position(snapshot.symbol)
         close_order_id = str(close_result.get("id", "") or "")
         exit_price = self._resolve_exit_price(close_result=close_result, close_order_id=close_order_id, fallback_price=trigger_price)
