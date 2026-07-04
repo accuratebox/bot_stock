@@ -116,6 +116,7 @@ class AITradingBrainService:
                 max_daily_loss=float(self.settings.ai_default_max_daily_loss),
                 enabled=True,
             )
+            existing_runtime = self.database.get_runtime_settings(account_id)
             self.database.upsert_runtime_settings(
                 account_id=account_id,
                 signal_only_mode=bool(self.settings.ai_signal_only_mode),
@@ -123,8 +124,8 @@ class AITradingBrainService:
                 live_trading_enabled=bool(self.settings.live_trading_enabled),
                 manual_approval_required=bool(self.settings.manual_approval_required),
                 kill_switch=False,
-                auto_trade_stocks_enabled=True,
-                auto_trade_cryptos_enabled=True,
+                auto_trade_stocks_enabled=bool(existing_runtime.get("auto_trade_stocks_enabled", 1)) if existing_runtime else True,
+                auto_trade_cryptos_enabled=bool(existing_runtime.get("auto_trade_cryptos_enabled", 1)) if existing_runtime else True,
             )
         self.database.cleanup_old_data(
             snapshot_minutes_days=int(self.settings.ai_snapshots_1m_days),
@@ -1261,7 +1262,7 @@ class AITradingBrainService:
                     source="worker_signal",
                     context={"account_name": account_name, "reason": reason},
                 )
-            self.database.insert_signal(
+            new_signal_id = self.database.insert_signal(
                 {
                     "timestamp": self._now_iso(),
                     "symbol": symbol,
@@ -1279,6 +1280,22 @@ class AITradingBrainService:
                     "openai_analysis_json": openai_analysis,
                 }
             )
+
+            # Auto-execute: if BUY/BUY_SMALL place the order automatically
+            if action in {"BUY", "BUY_SMALL"} and new_signal_id > 0:
+                try:
+                    buy_result = self.place_limit_buy(
+                        signal_id=new_signal_id,
+                        account_name=account_name,
+                        manual_approved=True,
+                        initiated_by="bot_auto",
+                    )
+                    self.logger.info(
+                        "Auto-ejecucion IA | %s | %s | score=%.2f | result=%s",
+                        symbol, action, final_score, buy_result.get("status", "unknown"),
+                    )
+                except Exception as ex:
+                    self.logger.info("Auto-ejecucion bloqueada para %s: %s", symbol, ex)
 
             self.database.insert_decision_log(
                 {

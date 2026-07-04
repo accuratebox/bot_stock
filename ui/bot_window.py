@@ -105,6 +105,7 @@ class BotControlWindow:
         self.ai_badge_stocks_var = tk.StringVar(value="Ejecucion Stocks: --")
         self.ai_badge_cryptos_var = tk.StringVar(value="Ejecucion Cryptos: --")
         self.ai_badge_learning_var = tk.StringVar(value="Aprendizaje IA: --")
+        self._ai_news_autofill_text = ""
 
         # Config panel variables
         self.config_capital_var = tk.StringVar(value=str(settings.default_trade_capital))
@@ -2951,6 +2952,8 @@ class BotControlWindow:
         toolbar = ttk.Frame(parent)
         toolbar.pack(fill="x", pady=(0, 6))
         ttk.Label(toolbar, text="Las señales y el análisis de texto se generan automáticamente en segundo plano.").pack(side="left")
+        ttk.Button(toolbar, text="Generar señal IA", command=lambda: self._run_async(self._generate_ai_signal)).pack(side="left", padx=(8, 0))
+        ttk.Button(toolbar, text="Analizar texto", command=lambda: self._run_async(self._analyze_ai_text)).pack(side="left", padx=(8, 0))
         ttk.Button(toolbar, text="Comprar limit", command=lambda: self._run_async(self._execute_ai_limit_buy)).pack(side="left", padx=(8, 0))
         ttk.Button(toolbar, text="Evaluar venta", command=lambda: self._run_async(self._execute_ai_sell_check)).pack(side="left", padx=(8, 0))
         ttk.Button(toolbar, text="Historial", command=lambda: self._run_async(self._show_ai_signal_history)).pack(side="left", padx=(8, 0))
@@ -2960,6 +2963,7 @@ class BotControlWindow:
         ttk.Label(parent, text="Texto/noticia para OpenAI Analyzer").pack(anchor="w", pady=(6, 0))
         self.ai_news_input = tk.Text(parent, height=4, wrap="word")
         self.ai_news_input.pack(fill="x", expand=False)
+        self._ai_news_autofill_text = ""
 
     def _refresh_ai_views(self) -> None:
         self._ensure_ai_automation_running()
@@ -3188,6 +3192,7 @@ class BotControlWindow:
         signals = self.ai_trading_brain.list_signals(limit=60)
         if not signals:
             self._set_text_widget(self.ai_signal_text, "Sin señales generadas.")
+            self._auto_fill_ai_news_input()
             return
 
         # Keep one best signal per symbol and rank by confidence score descending.
@@ -3281,6 +3286,46 @@ class BotControlWindow:
                 if summary:
                     lines.append(f"  resumen: {summary[:180]}")
         self._set_text_widget(self.ai_signal_text, "\n".join(lines))
+        self._auto_fill_ai_news_input()
+
+    def _auto_fill_ai_news_input(self) -> None:
+        if not hasattr(self, "ai_news_input"):
+            return
+
+        symbol = self._selected_symbol_for_market()
+        since_iso = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+
+        recent = self.ai_trading_brain.database.list_news_events_since(
+            since_iso=since_iso,
+            symbol=symbol,
+            limit=1,
+        )
+        if not recent:
+            recent = self.ai_trading_brain.database.list_news_events_since(
+                since_iso=since_iso,
+                limit=1,
+            )
+        if not recent:
+            return
+
+        latest = recent[0]
+        source = str(latest.get("source", "news") or "news")
+        event_symbol = str(latest.get("symbol", symbol) or symbol)
+        body = str(latest.get("title_or_text", "") or "").strip()
+        if not body:
+            body = str(latest.get("ai_summary", "") or "").strip()
+        if not body:
+            return
+
+        autofill_text = f"[{event_symbol} | {source}] {body}"
+        current_text = self.ai_news_input.get("1.0", tk.END).strip()
+        should_replace = (not current_text) or (self._ai_news_autofill_text and current_text == self._ai_news_autofill_text)
+        if not should_replace:
+            return
+
+        self.ai_news_input.delete("1.0", tk.END)
+        self.ai_news_input.insert("1.0", autofill_text)
+        self._ai_news_autofill_text = autofill_text
 
     def _show_ai_signal_history(self) -> None:
         def _fmt_ts(value: Any) -> str:
