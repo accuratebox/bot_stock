@@ -4,7 +4,7 @@ import tkinter as tk
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from tkinter import ttk
+from tkinter import messagebox, ttk
 from typing import Any
 
 import requests
@@ -70,6 +70,7 @@ class BotControlWindow:
         self.stock_var = tk.StringVar(value=settings.default_symbol)
         self.capital_var = tk.StringVar(value=str(settings.default_trade_capital))
         self.target_profit_var = tk.StringVar(value=str(settings.target_profit_per_share))
+        self._target_profit_cached = float(settings.target_profit_per_share)
         self.interval_var = tk.StringVar(value=settings.default_interval)
         self.daily_pnl_var = tk.StringVar(value="0")
         self.cancel_order_var = tk.StringVar()
@@ -105,6 +106,7 @@ class BotControlWindow:
         self.ai_badge_stocks_var = tk.StringVar(value="Ejecucion Stocks: --")
         self.ai_badge_cryptos_var = tk.StringVar(value="Ejecucion Cryptos: --")
         self.ai_badge_learning_var = tk.StringVar(value="Aprendizaje IA: --")
+        self.ai_model_reco_var = tk.StringVar(value="Semaforo modelo: N/A")
         self._ai_news_autofill_text = ""
 
         # Config panel variables
@@ -124,6 +126,16 @@ class BotControlWindow:
         self.config_meme_tp1_var = tk.StringVar(value=str(settings.crypto_meme_tp1_pct))
         self.config_meme_tp2_var = tk.StringVar(value=str(settings.crypto_meme_tp2_pct))
         self.config_meme_max_tp_var = tk.StringVar(value=str(settings.crypto_meme_max_tp_pct))
+        self.config_cp_monthly_limit_var = tk.StringVar(value=str(getattr(settings, "cryptopanic_monthly_limit", 600)))
+        self.config_cp_used_baseline_var = tk.StringVar(value=str(getattr(settings, "cryptopanic_used_this_month", 0)))
+        self.config_cp_used_var = tk.StringVar(value="0")
+        self.config_cp_remaining_var = tk.StringVar(value="0")
+        self.config_cp_today_budget_var = tk.StringVar(value="0")
+        self.config_cp_today_used_var = tk.StringVar(value="0")
+        self.config_cp_days_visible_var = tk.StringVar(value="mon,tue,wed,thu,fri")
+        self.config_cp_today_active_var = tk.StringVar(value="No")
+        self.config_cp_active_days_remaining_var = tk.StringVar(value="0")
+        self.config_cp_request_days_vars: dict[int, tk.IntVar] = {idx: tk.IntVar(value=0) for idx in range(7)}
 
         self._build_ui()
         self._build_ai_window()
@@ -448,6 +460,52 @@ class BotControlWindow:
             command=lambda: self._run_async(self._save_ai_runtime_controls),
         ).grid(row=7, column=1, sticky="w", padx=4, pady=(0, 4))
 
+        quota_lf = ttk.LabelFrame(scrollable_frame, text="Cuota mensual CryptoPanic", padding=10)
+        quota_lf.pack(fill="x", padx=8, pady=6)
+
+        ttk.Label(quota_lf, text="Límite mensual").grid(row=0, column=0, sticky="w", padx=4, pady=4)
+        ttk.Entry(quota_lf, textvariable=self.config_cp_monthly_limit_var, width=12).grid(row=0, column=1, sticky="w", padx=4, pady=4)
+
+        ttk.Label(quota_lf, text="Usado inicial del mes").grid(row=0, column=2, sticky="w", padx=4, pady=4)
+        ttk.Entry(quota_lf, textvariable=self.config_cp_used_baseline_var, width=12).grid(row=0, column=3, sticky="w", padx=4, pady=4)
+
+        ttk.Label(quota_lf, text="Días permitidos").grid(row=1, column=0, sticky="w", padx=4, pady=4)
+        day_labels = ["Lun", "Mar", "Mie", "Jue", "Vie", "Sab", "Dom"]
+        for idx, day_label in enumerate(day_labels):
+            ttk.Checkbutton(quota_lf, text=day_label, variable=self.config_cp_request_days_vars[idx]).grid(
+                row=1,
+                column=1 + idx,
+                sticky="w",
+                padx=2,
+                pady=2,
+            )
+
+        ttk.Label(quota_lf, text="Usado total mes").grid(row=2, column=0, sticky="w", padx=4, pady=4)
+        ttk.Label(quota_lf, textvariable=self.config_cp_used_var, foreground="#8a1c1c").grid(row=2, column=1, sticky="w", padx=4, pady=4)
+        ttk.Label(quota_lf, text="Restante mes").grid(row=2, column=2, sticky="w", padx=4, pady=4)
+        ttk.Label(quota_lf, textvariable=self.config_cp_remaining_var, foreground="#1f5f2a").grid(row=2, column=3, sticky="w", padx=4, pady=4)
+        ttk.Label(quota_lf, text="Presupuesto hoy").grid(row=3, column=0, sticky="w", padx=4, pady=4)
+        ttk.Label(quota_lf, textvariable=self.config_cp_today_budget_var).grid(row=3, column=1, sticky="w", padx=4, pady=4)
+        ttk.Label(quota_lf, text="Usado hoy").grid(row=3, column=2, sticky="w", padx=4, pady=4)
+        ttk.Label(quota_lf, textvariable=self.config_cp_today_used_var).grid(row=3, column=3, sticky="w", padx=4, pady=4)
+        ttk.Button(
+            quota_lf,
+            text="Actualizar cuota",
+            command=self._refresh_cryptopanic_quota_display,
+        ).grid(row=3, column=4, sticky="w", padx=6, pady=4)
+
+        ttk.Label(quota_lf, text="Días habilitados API").grid(row=4, column=0, sticky="w", padx=4, pady=4)
+        ttk.Label(quota_lf, textvariable=self.config_cp_days_visible_var).grid(row=4, column=1, columnspan=3, sticky="w", padx=4, pady=4)
+        ttk.Label(quota_lf, text="Hoy habilitado").grid(row=5, column=0, sticky="w", padx=4, pady=4)
+        ttk.Label(quota_lf, textvariable=self.config_cp_today_active_var).grid(row=5, column=1, sticky="w", padx=4, pady=4)
+        ttk.Label(quota_lf, text="Días activos restantes").grid(row=5, column=2, sticky="w", padx=4, pady=4)
+        ttk.Label(quota_lf, textvariable=self.config_cp_active_days_remaining_var).grid(row=5, column=3, sticky="w", padx=4, pady=4)
+        ttk.Button(
+            quota_lf,
+            text="Reset usado del mes",
+            command=self._reset_cryptopanic_month_usage,
+        ).grid(row=5, column=4, sticky="w", padx=6, pady=4)
+
         # TIER 1: BTC/ETH
         tier1_lf = ttk.LabelFrame(scrollable_frame, text="🟡 Tier 1 (BTC/ETH) - Principales", padding=10)
         tier1_lf.pack(fill="x", padx=8, pady=6)
@@ -512,6 +570,9 @@ class BotControlWindow:
             command=lambda: self._refresh_config_values()
         ).pack(side="left", padx=4)
 
+        self._apply_request_days_from_text(str(getattr(settings, "cryptopanic_request_days", "mon,tue,wed,thu,fri") or "mon,tue,wed,thu,fri"))
+        self._refresh_cryptopanic_quota_display()
+
         # Pack canvas and scrollbar
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
@@ -534,7 +595,90 @@ class BotControlWindow:
         self.config_meme_tp1_var.set(str(settings.crypto_meme_tp1_pct))
         self.config_meme_tp2_var.set(str(settings.crypto_meme_tp2_pct))
         self.config_meme_max_tp_var.set(str(settings.crypto_meme_max_tp_pct))
+        self.config_cp_monthly_limit_var.set(str(getattr(settings, "cryptopanic_monthly_limit", 600)))
+        self.config_cp_used_baseline_var.set(str(getattr(settings, "cryptopanic_used_this_month", 0)))
+        self._apply_request_days_from_text(str(getattr(settings, "cryptopanic_request_days", "mon,tue,wed,thu,fri") or "mon,tue,wed,thu,fri"))
+        self._refresh_cryptopanic_quota_display()
         self._set_output("✅ Valores recargados desde configuración actual")
+
+    def _apply_request_days_from_text(self, request_days_text: str) -> None:
+        aliases = {
+            "mon": 0,
+            "monday": 0,
+            "lun": 0,
+            "tue": 1,
+            "tuesday": 1,
+            "mar": 1,
+            "wed": 2,
+            "wednesday": 2,
+            "mie": 2,
+            "mié": 2,
+            "thu": 3,
+            "thursday": 3,
+            "jue": 3,
+            "fri": 4,
+            "friday": 4,
+            "vie": 4,
+            "sat": 5,
+            "saturday": 5,
+            "sab": 5,
+            "sáb": 5,
+            "sun": 6,
+            "sunday": 6,
+            "dom": 6,
+        }
+        selected: set[int] = set()
+        for raw in str(request_days_text or "").replace(";", ",").split(","):
+            token = raw.strip().lower()
+            if not token:
+                continue
+            if token.isdigit():
+                idx = int(token)
+                if 0 <= idx <= 6:
+                    selected.add(idx)
+                continue
+            if token in aliases:
+                selected.add(aliases[token])
+        if not selected:
+            selected = {0, 1, 2, 3, 4}
+        for idx, var in self.config_cp_request_days_vars.items():
+            var.set(1 if idx in selected else 0)
+
+    def _request_days_to_text(self) -> str:
+        names = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+        selected = [names[idx] for idx, var in self.config_cp_request_days_vars.items() if bool(var.get())]
+        if not selected:
+            selected = ["mon", "tue", "wed", "thu", "fri"]
+        return ",".join(selected)
+
+    def _refresh_cryptopanic_quota_display(self) -> None:
+        try:
+            status = self.ai_trading_brain.get_cryptopanic_quota_status()
+        except Exception as ex:
+            self.logger.warning("No se pudo refrescar cuota CryptoPanic: %s", ex)
+            return
+        self.config_cp_used_var.set(str(status.get("used_total", 0)))
+        self.config_cp_remaining_var.set(str(status.get("remaining_total", 0)))
+        self.config_cp_today_budget_var.set(str(status.get("today_budget", 0)))
+        self.config_cp_today_used_var.set(str(status.get("today_used", 0)))
+        self.config_cp_days_visible_var.set(str(status.get("request_days", "mon,tue,wed,thu,fri")))
+        self.config_cp_today_active_var.set("Si" if bool(status.get("today_active", False)) else "No")
+        self.config_cp_active_days_remaining_var.set(str(status.get("active_days_remaining", 0)))
+
+    def _reset_cryptopanic_month_usage(self) -> None:
+        if not messagebox.askyesno(
+            "Reset CryptoPanic",
+            "Esto reiniciara el usado del mes para comenzar desde cero. Deseas continuar?",
+        ):
+            return
+        try:
+            self.config_cp_used_baseline_var.set("0")
+            self.ai_trading_brain.reset_cryptopanic_month_usage(used_baseline=0)
+            self._save_config()
+            self._refresh_cryptopanic_quota_display()
+            self._set_output("✅ Uso mensual CryptoPanic reiniciado a 0 y guardado en .env", focus_general=False)
+        except Exception as ex:
+            self._show_error(f"No se pudo resetear cuota CryptoPanic: {ex}", False)
 
     def _apply_config_account_for_ai(self) -> None:
         """Aplica la cuenta seleccionada como cuenta activa para trading/fondos IA."""
@@ -583,10 +727,35 @@ class BotControlWindow:
                 "CRYPTO_MEME_TP1_PCT": self.config_meme_tp1_var.get(),
                 "CRYPTO_MEME_TP2_PCT": self.config_meme_tp2_var.get(),
                 "CRYPTO_MEME_MAX_TP_PCT": self.config_meme_max_tp_var.get(),
+                "CRYPTOPANIC_MONTHLY_LIMIT": self.config_cp_monthly_limit_var.get(),
+                "CRYPTOPANIC_USED_THIS_MONTH": self.config_cp_used_baseline_var.get(),
+                "CRYPTOPANIC_REQUEST_DAYS": self._request_days_to_text(),
             }
 
             # Validar que sean números
+            numeric_keys = {
+                "DEFAULT_TRADE_CAPITAL",
+                "BOT_RISK_PER_TRADE_PCT",
+                "BOT_MAX_DAILY_LOSS",
+                "MAX_OPEN_POSITIONS",
+                "CRYPTO_BTC_ETH_STOP_LOSS_PCT",
+                "CRYPTO_BTC_ETH_TP1_PCT",
+                "CRYPTO_BTC_ETH_TP2_PCT",
+                "CRYPTO_BTC_ETH_MAX_TP_PCT",
+                "CRYPTO_ALT_STOP_LOSS_PCT",
+                "CRYPTO_ALT_TP1_PCT",
+                "CRYPTO_ALT_TP2_PCT",
+                "CRYPTO_ALT_MAX_TP_PCT",
+                "CRYPTO_MEME_STOP_LOSS_PCT",
+                "CRYPTO_MEME_TP1_PCT",
+                "CRYPTO_MEME_TP2_PCT",
+                "CRYPTO_MEME_MAX_TP_PCT",
+                "CRYPTOPANIC_MONTHLY_LIMIT",
+                "CRYPTOPANIC_USED_THIS_MONTH",
+            }
             for key, value in values.items():
+                if key not in numeric_keys:
+                    continue
                 try:
                     float(value)
                 except ValueError:
@@ -611,6 +780,13 @@ class BotControlWindow:
             # Guardar
             with open(env_path, "w") as f:
                 f.write(env_content)
+
+            self.ai_trading_brain.update_cryptopanic_quota_settings(
+                monthly_limit=int(float(values.get("CRYPTOPANIC_MONTHLY_LIMIT", "600") or 600)),
+                used_baseline=int(float(values.get("CRYPTOPANIC_USED_THIS_MONTH", "0") or 0)),
+                request_days=str(values.get("CRYPTOPANIC_REQUEST_DAYS", "mon,tue,wed,thu,fri")),
+            )
+            self._refresh_cryptopanic_quota_display()
 
             self.root.after(0, self._show_success, "✅ Configuración guardada correctamente en .env\n⚠️ Reinicia el bot para aplicar cambios")
             self._set_output("✅ Configuración guardada en .env. Reinicia bot para aplicar.", focus_general=False)
@@ -719,6 +895,17 @@ class BotControlWindow:
         ttk.Label(model_toolbar, text="El entrenamiento del modelo es automático y continuo.").pack(side="left")
         ttk.Button(model_toolbar, text="Aprobar modelo nuevo", command=lambda: self._run_async(self._approve_ai_model)).pack(side="left", padx=(8, 0))
         ttk.Button(model_toolbar, text="Volver al anterior", command=lambda: self._run_async(self._rollback_ai_model)).pack(side="left", padx=(8, 0))
+        self.ai_model_semaphore_label = tk.Label(
+            model_toolbar,
+            textvariable=self.ai_model_reco_var,
+            fg="white",
+            bg="#6e7781",
+            padx=10,
+            pady=3,
+            relief="raised",
+            bd=1,
+        )
+        self.ai_model_semaphore_label.pack(side="right", padx=(8, 0))
 
         window.protocol("WM_DELETE_WINDOW", self._on_close_ai_window)
         self.ai_window = window
@@ -3496,11 +3683,46 @@ class BotControlWindow:
                 "Modelo no entrenado todavía.\nNo hay suficientes datos para mostrar métricas.",
             )
             return
+        status = self.ai_trading_brain.get_automation_status(self.account_var.get().strip())
+        training_cycle_seconds = float(status.get("training_cycle_seconds", 0.0) or 0.0)
+        training_elapsed_seconds = float(status.get("training_elapsed_seconds", 0.0) or 0.0)
+        training_remaining_seconds = float(status.get("training_remaining_seconds", 0.0) or 0.0)
+        training_progress_pct = float(status.get("training_progress_pct", 0.0) or 0.0)
+
         approved = self.ai_trading_brain.registry.approved_version() or ""
         latest = self.ai_trading_brain.registry.latest_version() or ""
+        pending_candidate = bool(latest and approved and latest != approved)
+        approved_run = self._training_run_by_version(approved) if approved else None
+        recommendation = self._build_model_approval_recommendation(
+            latest_run=training,
+            approved_run=approved_run,
+            has_pending=pending_candidate,
+        )
+        governance_event = self._latest_model_governance_event()
+
+        recommended_action = str(recommendation.get("action", "esperar")).lower()
+        if recommended_action == "aprobar":
+            recommendation_line = "RECOMENDACION: APROBAR modelo candidato"
+            self._apply_model_recommendation_semaphore("VERDE", "#1f7a1f")
+        elif recommended_action == "evaluar":
+            recommendation_line = "RECOMENDACION: REVISAR manualmente antes de aprobar"
+            self._apply_model_recommendation_semaphore("AMARILLO", "#9a6700")
+        else:
+            recommendation_line = "RECOMENDACION: ESPERAR siguiente ciclo"
+            self._apply_model_recommendation_semaphore("ROJO", "#8a1c1c")
+
+        current_version = approved or latest or "heuristic"
+        cycle_text = self._format_duration_hhmmss(training_cycle_seconds)
+        elapsed_text = self._format_duration_hhmmss(training_elapsed_seconds)
+        remaining_text = self._format_duration_hhmmss(training_remaining_seconds)
         lines = [
-            f"Version actual: {approved or latest or 'heuristic'}",
-            f"Ultima fecha de entrenamiento: {training.get('timestamp', 'N/A')}",
+            f"Version actual: {current_version}",
+            f"Ultima fecha de entrenamiento: {self._format_iso_local_text(training.get('timestamp', 'N/A'))}",
+            f"Modelo candidato pendiente: {'SI' if pending_candidate else 'NO'}",
+            f"Version candidato: {latest if pending_candidate else 'N/A'}",
+            f"Ciclo de entrenamiento (config): {cycle_text}",
+            f"Tiempo transcurrido del ciclo: {elapsed_text} ({training_progress_pct:.1f}%)",
+            f"Tiempo restante estimado: {remaining_text}",
             f"Cantidad de senales usadas: {training.get('number_of_samples', 0)}",
             f"Win rate: {float(training.get('win_rate', 0.0) or 0.0):.4f}",
             f"Accuracy: {float(training.get('accuracy', 0.0) or 0.0):.4f}",
@@ -3509,12 +3731,157 @@ class BotControlWindow:
             f"Profit factor: {float(training.get('profit_factor', 0.0) or 0.0):.4f}",
             f"Max drawdown: {float(training.get('max_drawdown', 0.0) or 0.0):.4f}",
             "",
+            recommendation_line,
+            f"Motivo: {recommendation.get('reason', 'sin recomendacion')}",
+            f"Comparativa vs aprobado: {recommendation.get('comparison', 'N/A')}",
+            f"Ultimo evento de aprobacion/rollback: {governance_event}",
+            "",
             "Modo:",
             "- Entrenamiento automático continuo",
             "- Aprobación manual opcional",
-            "- Rollback manual opcional",
+            "- Rollback manual opcional con fecha/hora visible",
         ]
         self._set_text_widget(self.ai_model_text, "\n".join(lines))
+
+    def _apply_model_recommendation_semaphore(self, status_name: str, color: str) -> None:
+        self.ai_model_reco_var.set(f"Semaforo modelo: {status_name}")
+        if hasattr(self, "ai_model_semaphore_label"):
+            self.ai_model_semaphore_label.configure(bg=color, activebackground=color)
+
+    def _format_iso_local_text(self, value: Any) -> str:
+        raw = str(value or "")
+        if not raw:
+            return "N/A"
+        try:
+            parsed = datetime.fromisoformat(raw)
+        except ValueError:
+            return raw
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        local_dt = parsed.astimezone()
+        return local_dt.strftime("%Y-%m-%d %H:%M:%S %Z")
+
+    def _format_duration_hhmmss(self, seconds_value: float) -> str:
+        seconds = max(int(seconds_value or 0), 0)
+        hours = seconds // 3600
+        minutes = (seconds % 3600) // 60
+        secs = seconds % 60
+        return f"{hours:02d}:{minutes:02d}:{secs:02d}"
+
+    def _training_run_by_version(self, model_version: str) -> dict[str, Any] | None:
+        if not model_version:
+            return None
+        for row in self.ai_trading_brain.database.list_training_runs(limit=300):
+            if str(row.get("model_version", "")) == str(model_version):
+                return row
+        return None
+
+    def _build_model_approval_recommendation(
+        self,
+        latest_run: dict[str, Any],
+        approved_run: dict[str, Any] | None,
+        has_pending: bool,
+    ) -> dict[str, str]:
+        if not has_pending:
+            return {
+                "action": "esperar",
+                "reason": "No hay modelo nuevo pendiente de aprobacion.",
+                "comparison": "N/A",
+            }
+
+        candidate_accuracy = float(latest_run.get("accuracy", 0.0) or 0.0)
+        candidate_precision = float(latest_run.get("precision", 0.0) or 0.0)
+        candidate_recall = float(latest_run.get("recall", 0.0) or 0.0)
+        candidate_win_rate = float(latest_run.get("win_rate", 0.0) or 0.0)
+        candidate_profit_factor = float(latest_run.get("profit_factor", 0.0) or 0.0)
+        candidate_drawdown = float(latest_run.get("max_drawdown", 0.0) or 0.0)
+
+        if approved_run is None:
+            if (
+                candidate_accuracy >= 0.55
+                and candidate_precision >= 0.50
+                and candidate_recall >= 0.45
+                and candidate_profit_factor >= 1.00
+            ):
+                return {
+                    "action": "aprobar",
+                    "reason": "No hay modelo aprobado y el candidato cumple umbrales minimos.",
+                    "comparison": "Sin baseline previo",
+                }
+            return {
+                "action": "esperar",
+                "reason": "No hay baseline aprobado y el candidato no cumple umbrales minimos.",
+                "comparison": "Sin baseline previo",
+            }
+
+        approved_accuracy = float(approved_run.get("accuracy", 0.0) or 0.0)
+        approved_precision = float(approved_run.get("precision", 0.0) or 0.0)
+        approved_recall = float(approved_run.get("recall", 0.0) or 0.0)
+        approved_win_rate = float(approved_run.get("win_rate", 0.0) or 0.0)
+        approved_profit_factor = float(approved_run.get("profit_factor", 0.0) or 0.0)
+        approved_drawdown = float(approved_run.get("max_drawdown", 0.0) or 0.0)
+
+        d_acc = candidate_accuracy - approved_accuracy
+        d_pre = candidate_precision - approved_precision
+        d_rec = candidate_recall - approved_recall
+        d_win = candidate_win_rate - approved_win_rate
+        d_pf = candidate_profit_factor - approved_profit_factor
+        d_dd = candidate_drawdown - approved_drawdown
+
+        improvements = 0
+        if d_acc >= 0.005:
+            improvements += 1
+        if d_pre >= 0.01:
+            improvements += 1
+        if d_rec >= 0.01:
+            improvements += 1
+        if d_win >= 0.01:
+            improvements += 1
+        if d_pf >= 0.05:
+            improvements += 1
+        if d_dd <= -0.02:
+            improvements += 1
+
+        high_risk = candidate_profit_factor < 0.95 or candidate_drawdown > (approved_drawdown * 1.2 + 0.02)
+        comparison = (
+            f"acc {d_acc:+.4f}, prec {d_pre:+.4f}, recall {d_rec:+.4f}, "
+            f"win {d_win:+.4f}, pf {d_pf:+.4f}, dd {d_dd:+.4f}"
+        )
+
+        if high_risk:
+            return {
+                "action": "esperar",
+                "reason": "El candidato aumenta riesgo (profit factor bajo o drawdown mayor).",
+                "comparison": comparison,
+            }
+        if improvements >= 3:
+            return {
+                "action": "aprobar",
+                "reason": f"Mejora suficiente frente al aprobado ({improvements}/6 metricas).",
+                "comparison": comparison,
+            }
+        if improvements == 2:
+            return {
+                "action": "evaluar",
+                "reason": "Mejora parcial; conviene validar un ciclo mas o revisar manualmente.",
+                "comparison": comparison,
+            }
+        return {
+            "action": "esperar",
+            "reason": "No mejora de forma consistente frente al modelo aprobado.",
+            "comparison": comparison,
+        }
+
+    def _latest_model_governance_event(self) -> str:
+        rows = self.ai_trading_brain.database.latest_decision_logs(limit=80)
+        for row in rows:
+            decision = str(row.get("decision", "") or "").upper().strip()
+            if decision not in {"MODEL_APPROVED", "MODEL_ROLLBACK"}:
+                continue
+            ts = self._format_iso_local_text(row.get("timestamp", "N/A"))
+            reason = str(row.get("reason", "") or "").strip()
+            return f"{ts} | {decision} | {reason or 'sin detalle'}"
+        return "N/A"
 
     def _refresh_ai_security_view(self) -> None:
         security = self.ai_trading_brain.get_security_state(self.account_var.get().strip())
@@ -3676,11 +4043,17 @@ class BotControlWindow:
         return runtime
 
     def _sync_runtime_target(self, position_manager: PositionManager) -> None:
-        try:
-            target_profit = float(self.target_profit_var.get().strip() or str(settings.target_profit_per_share))
-        except ValueError:
-            target_profit = float(settings.target_profit_per_share)
+        target_profit = self._safe_target_profit_value()
         position_manager.set_target_profit_per_share(target_profit)
+
+    def _safe_target_profit_value(self) -> float:
+        fallback = float(getattr(self, "_target_profit_cached", settings.target_profit_per_share))
+        try:
+            value = float(self.target_profit_var.get().strip() or str(settings.target_profit_per_share))
+            self._target_profit_cached = value
+            return value
+        except (ValueError, RuntimeError, tk.TclError):
+            return fallback
 
     def _show_success(self, message: str, focus_general: bool = True) -> None:
         self.status_var.set("Operacion completada")
@@ -3784,10 +4157,7 @@ class BotControlWindow:
         self.balance_var.set(f"Saldos | Cash: {cash} {currency} | Buying Power: {buying_power} {currency}")
 
     def _apply_runtime_settings(self) -> None:
-        try:
-            target_profit = float(self.target_profit_var.get().strip() or str(settings.target_profit_per_share))
-        except ValueError:
-            target_profit = float(settings.target_profit_per_share)
+        target_profit = self._safe_target_profit_value()
         self.position_manager.set_target_profit_per_share(target_profit)
 
     def _monitor_positions_loop(self) -> None:
