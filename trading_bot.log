@@ -3315,3 +3315,7 @@ ValueError: No hay posicion activa para vender
 2026-07-04 02:06:22 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
 2026-07-04 02:06:43 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
 2026-07-04 02:06:50 | INFO | trading_bot | Recuperacion de posiciones abierta(s): 1
+2026-07-04 02:07:03 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:07:23 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:07:34 | INFO | trading_bot | Orden limite creada: ef05e729-3ef2-4b77-a25a-17b76b2fb32a
+2026-07-04 02:07:44 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
