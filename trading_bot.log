@@ -3319,3 +3319,153 @@ ValueError: No hay posicion activa para vender
 2026-07-04 02:07:23 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
 2026-07-04 02:07:34 | INFO | trading_bot | Orden limite creada: ef05e729-3ef2-4b77-a25a-17b76b2fb32a
 2026-07-04 02:07:44 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:08:04 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:08:24 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:08:45 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:09:05 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:09:25 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:09:46 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:10:04 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-04 02:10:04 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:10:04 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-04 02:10:06 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:10:26 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:10:47 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:11:07 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:11:07 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=XRP&public=true&kind=news&filter=hot
+2026-07-04 02:11:27 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:11:48 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:12:08 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-04 02:12:08 | INFO | trading_bot | Recuperacion inicial | abiertas=0 sincronizadas=0 ya_linkeadas=0
+2026-07-04 02:12:09 | INFO | trading_bot | Inhibidor de suspension activado
+2026-07-04 02:12:09 | INFO | trading_bot | Workers automaticos iniciados para Paper
+2026-07-04 02:12:09 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-04 02:12:09 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:12:09 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:12:09 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=AVAX&public=true&kind=news&filter=hot
+2026-07-04 02:12:09 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-04 02:12:09 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=BTC&public=true&kind=news&filter=hot
+2026-07-04 02:12:09 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=DOGE&public=true&kind=news&filter=hot
+2026-07-04 02:12:09 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=ETH&public=true&kind=news&filter=hot
+2026-07-04 02:12:10 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=LINK&public=true&kind=news&filter=hot
+2026-07-04 02:12:10 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=SOL&public=true&kind=news&filter=hot
+2026-07-04 02:12:10 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=XRP&public=true&kind=news&filter=hot
+2026-07-04 02:12:11 | INFO | trading_bot | Salida limit registrada SOLUSD pnl=2.552436436054151
+2026-07-04 02:12:30 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:12:50 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:13:10 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:13:31 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:13:51 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:14:11 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:14:31 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:14:52 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:15:12 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:15:32 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:15:53 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:16:12 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-04 02:16:12 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:16:12 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-04 02:16:13 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:16:33 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:16:54 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:16:57 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-04 02:16:57 | INFO | trading_bot | Recuperacion inicial | abiertas=0 sincronizadas=0 ya_linkeadas=0
+2026-07-04 02:16:58 | INFO | trading_bot | Inhibidor de suspension activado
+2026-07-04 02:16:58 | INFO | trading_bot | Workers automaticos iniciados para Paper
+2026-07-04 02:16:58 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:16:58 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-04 02:16:58 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:16:58 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-04 02:16:58 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=AVAX&public=true&kind=news&filter=hot
+2026-07-04 02:16:58 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=BTC&public=true&kind=news&filter=hot
+2026-07-04 02:16:58 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=DOGE&public=true&kind=news&filter=hot
+2026-07-04 02:16:59 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=ETH&public=true&kind=news&filter=hot
+2026-07-04 02:16:59 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=LINK&public=true&kind=news&filter=hot
+2026-07-04 02:16:59 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=SOL&public=true&kind=news&filter=hot
+2026-07-04 02:16:59 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=XRP&public=true&kind=news&filter=hot
+2026-07-04 02:17:19 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:17:39 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:17:59 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:18:20 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:18:40 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:19:00 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:19:21 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:19:41 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:20:01 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:20:22 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:20:42 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:21:01 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-04 02:21:01 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:21:01 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-04 02:21:02 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:21:23 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:21:43 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:22:03 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:22:03 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=XRP&public=true&kind=news&filter=hot
+2026-07-04 02:22:24 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:22:44 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:23:04 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:23:25 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:23:31 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-04 02:23:31 | INFO | trading_bot | Recuperacion inicial | abiertas=0 sincronizadas=0 ya_linkeadas=0
+2026-07-04 02:23:32 | INFO | trading_bot | Inhibidor de suspension activado
+2026-07-04 02:23:32 | INFO | trading_bot | Workers automaticos iniciados para Paper
+2026-07-04 02:23:32 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:23:32 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-04 02:23:32 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:23:32 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-04 02:23:32 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=AVAX&public=true&kind=news&filter=hot
+2026-07-04 02:23:32 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=BTC&public=true&kind=news&filter=hot
+2026-07-04 02:23:32 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=DOGE&public=true&kind=news&filter=hot
+2026-07-04 02:23:32 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=ETH&public=true&kind=news&filter=hot
+2026-07-04 02:23:33 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=LINK&public=true&kind=news&filter=hot
+2026-07-04 02:23:33 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=SOL&public=true&kind=news&filter=hot
+2026-07-04 02:23:33 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=XRP&public=true&kind=news&filter=hot
+2026-07-04 02:23:33 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-04 02:23:33 | INFO | trading_bot | Recuperacion inicial | abiertas=0 sincronizadas=0 ya_linkeadas=0
+2026-07-04 02:23:33 | INFO | trading_bot | Inhibidor de suspension activado
+2026-07-04 02:23:34 | INFO | trading_bot | Workers automaticos iniciados para Paper
+2026-07-04 02:23:34 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:23:34 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-04 02:23:34 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:23:34 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-04 02:23:34 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=AVAX&public=true&kind=news&filter=hot
+2026-07-04 02:23:34 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=BTC&public=true&kind=news&filter=hot
+2026-07-04 02:23:34 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=DOGE&public=true&kind=news&filter=hot
+2026-07-04 02:23:34 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=ETH&public=true&kind=news&filter=hot
+2026-07-04 02:23:35 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=LINK&public=true&kind=news&filter=hot
+2026-07-04 02:23:35 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=SOL&public=true&kind=news&filter=hot
+2026-07-04 02:23:35 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=XRP&public=true&kind=news&filter=hot
+2026-07-04 02:23:53 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:23:55 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:24:03 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-04 02:24:03 | INFO | trading_bot | Recuperacion inicial | abiertas=0 sincronizadas=0 ya_linkeadas=0
+2026-07-04 02:24:03 | INFO | trading_bot | Inhibidor de suspension activado
+2026-07-04 02:24:03 | INFO | trading_bot | Workers automaticos iniciados para Paper
+2026-07-04 02:24:03 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-04 02:24:03 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:24:03 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-04 02:24:03 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=AVAX&public=true&kind=news&filter=hot
+2026-07-04 02:24:04 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:24:04 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=BTC&public=true&kind=news&filter=hot
+2026-07-04 02:24:04 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=DOGE&public=true&kind=news&filter=hot
+2026-07-04 02:24:04 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=ETH&public=true&kind=news&filter=hot
+2026-07-04 02:24:04 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=LINK&public=true&kind=news&filter=hot
+2026-07-04 02:24:04 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=SOL&public=true&kind=news&filter=hot
+2026-07-04 02:24:05 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=XRP&public=true&kind=news&filter=hot
+2026-07-04 02:24:10 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-04 02:24:10 | INFO | trading_bot | Recuperacion inicial | abiertas=0 sincronizadas=0 ya_linkeadas=0
+2026-07-04 02:24:10 | INFO | trading_bot | Inhibidor de suspension activado
+2026-07-04 02:24:10 | INFO | trading_bot | Workers automaticos iniciados para Paper
+2026-07-04 02:24:11 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-04 02:24:11 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:24:11 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-04 02:24:11 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=AVAX&public=true&kind=news&filter=hot
+2026-07-04 02:24:11 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-04 02:24:11 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=BTC&public=true&kind=news&filter=hot
+2026-07-04 02:24:11 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=DOGE&public=true&kind=news&filter=hot
+2026-07-04 02:24:11 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=ETH&public=true&kind=news&filter=hot
+2026-07-04 02:24:11 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=LINK&public=true&kind=news&filter=hot
+2026-07-04 02:24:12 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=SOL&public=true&kind=news&filter=hot
+2026-07-04 02:24:12 | INFO | trading_bot | API recuperada. Limpiando ultimo error: 403 Client Error: Forbidden for url: https://cryptopanic.com/api/v1/posts/?auth_token=87571dd9c7561d922cdf52793f9a67100cf53913&currencies=XRP&public=true&kind=news&filter=hot
+2026-07-04 02:24:31 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
