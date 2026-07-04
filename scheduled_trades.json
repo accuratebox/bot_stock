@@ -76,5 +76,18 @@
     "last_error": "cancelled_by_user",
     "executed_at": "",
     "trade_id": ""
+  },
+  {
+    "id": "5c1ec35c-94d1-43cd-abc3-aaab8c8999c1",
+    "symbol": "AAVE/USD",
+    "capital": 500.0,
+    "target_profit_per_share": 0.5,
+    "status": "pending",
+    "created_at": "2026-07-03T09:46:56.210495+00:00",
+    "trigger_on_market_open": true,
+    "note": "programado_para_apertura",
+    "last_error": "",
+    "executed_at": "",
+    "trade_id": ""
   }
 ]
