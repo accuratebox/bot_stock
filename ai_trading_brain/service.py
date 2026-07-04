@@ -1497,11 +1497,98 @@ class AITradingBrainService:
         return self._market_open_cached
 
     def _fetch_news_social_events(self, symbol: str, asset_type: str) -> list[dict[str, str]]:
+        def _merge_events(*groups: list[dict[str, str]]) -> list[dict[str, str]]:
+            merged: list[dict[str, str]] = []
+            seen: set[str] = set()
+            for events in groups:
+                for row in events:
+                    source = str(row.get("source", "") or "").strip().lower()
+                    title = str(row.get("title_or_text", "") or "").strip().lower()
+                    url = str(row.get("url", "") or "").strip().lower()
+                    key = f"{source}|{title}|{url}"
+                    if not title or key in seen:
+                        continue
+                    seen.add(key)
+                    merged.append(row)
+            return merged[:10]
+
         if asset_type == "crypto":
             events = self._fetch_cryptopanic_events(symbol)
             if events:
                 return events
-        return self._fetch_yahoo_finance_events(symbol)
+
+        stock_news = self._fetch_alpaca_news_events(symbol)
+        yahoo_news = self._fetch_yahoo_finance_events(symbol)
+        return _merge_events(stock_news, yahoo_news)
+
+    def _fetch_alpaca_news_events(self, symbol: str) -> list[dict[str, str]]:
+        key = self._symbol_key(symbol)
+        cache_key = f"alpaca_news:{key}"
+        cooldown_key = f"alpaca_news:{key}"
+        now_monotonic = time.monotonic()
+
+        cached = self._news_fetch_cache_by_symbol.get(cache_key)
+        if cached is not None:
+            cached_at, cached_events = cached
+            if (now_monotonic - cached_at) <= 900.0:
+                return cached_events
+
+        cooldown_until = self._news_fetch_cooldown_until_by_symbol.get(cooldown_key, 0.0)
+        if now_monotonic < cooldown_until:
+            return cached[1] if cached is not None else []
+
+        api_key = str(getattr(self.settings, "alpaca_api_key", "") or "").strip()
+        api_secret = str(getattr(self.settings, "alpaca_api_secret", "") or "").strip()
+        if not api_key or not api_secret:
+            return []
+
+        try:
+            response = requests.get(
+                "https://data.alpaca.markets/v1beta1/news",
+                params={"symbols": symbol.upper().replace(" ", ""), "limit": "8"},
+                timeout=20,
+                headers={
+                    "APCA-API-KEY-ID": api_key,
+                    "APCA-API-SECRET-KEY": api_secret,
+                    "Accept": "application/json",
+                },
+            )
+            if response.status_code == 429:
+                self._news_fetch_cooldown_until_by_symbol[cooldown_key] = now_monotonic + 900.0
+                self.logger.warning("Alpaca News rate limited for %s. Cooling down for 15m.", symbol)
+                return cached[1] if cached is not None else []
+
+            response.raise_for_status()
+            self._api_calls_today += 1
+            payload = response.json()
+            self._mark_api_recovered()
+
+            result: list[dict[str, str]] = []
+            for item in payload.get("news", [])[:8]:
+                title = str(item.get("headline", "") or item.get("summary", "") or "").strip()
+                if not title:
+                    continue
+                source = item.get("source") or {}
+                author = str(item.get("author", "") or source.get("name", "") or source.get("domain", "") or "").strip()
+                url = str(item.get("url", "") or "").strip()
+                result.append(
+                    {
+                        "source": "alpaca_news",
+                        "title_or_text": title,
+                        "url": url,
+                        "author": author,
+                    }
+                )
+
+            self._news_fetch_cache_by_symbol[cache_key] = (now_monotonic, result)
+            return result
+        except Exception as ex:
+            if self._is_rate_limit_error(ex):
+                self._news_fetch_cooldown_until_by_symbol[cooldown_key] = now_monotonic + 900.0
+                self.logger.warning("Alpaca News rate limited for %s. Using cached news if available.", symbol)
+                return cached[1] if cached is not None else []
+            self._last_api_error = str(ex)
+            return []
 
     def _fetch_cryptopanic_events(self, symbol: str) -> list[dict[str, str]]:
         token = str(getattr(self.settings, "cryptopanic_api_key", "") or "").strip()
@@ -1512,13 +1599,14 @@ class AITradingBrainService:
             return []
         try:
             response = requests.get(
-                "https://cryptopanic.com/api/v1/posts/",
+                "https://cryptopanic.com/api/growth_weekly/v2/posts/",
                 params={
                     "auth_token": token,
                     "currencies": query_currency,
                     "public": "true",
                     "kind": "news",
                     "filter": "hot",
+                    "regions": "en",
                 },
                 timeout=20,
             )
@@ -1528,12 +1616,18 @@ class AITradingBrainService:
             self._mark_api_recovered()
             result: list[dict[str, str]] = []
             for row in payload.get("results", [])[:4]:
+                source = row.get("source") or {}
+                title = str(row.get("title", "") or "").strip()
+                url = str(row.get("original_url", "") or row.get("url", "") or "").strip()
+                author = str(source.get("domain", "") or source.get("title", "") or row.get("author", "") or "").strip()
+                if not title:
+                    continue
                 result.append(
                     {
                         "source": "cryptopanic",
-                        "title_or_text": str(row.get("title", "") or "").strip(),
-                        "url": str(row.get("url", "") or "").strip(),
-                        "author": str(row.get("domain", "") or "").strip(),
+                        "title_or_text": title,
+                        "url": url,
+                        "author": author,
                     }
                 )
             return result

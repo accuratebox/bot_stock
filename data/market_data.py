@@ -249,7 +249,10 @@ class MarketDataService:
     @staticmethod
     def _to_crypto_data_symbol(symbol: str) -> str:
         normalized = symbol.upper().replace(" ", "")
+        normalized = normalized.replace("/USDC", "/USD")
         normalized = normalized.replace("/USDT", "/USD")
+        if normalized.endswith("USDC") and "/" not in normalized:
+            normalized = normalized[:-4] + "USD"
         if normalized.endswith("USDT") and "/" not in normalized:
             normalized = normalized[:-4] + "USD"
         if "/" in normalized:

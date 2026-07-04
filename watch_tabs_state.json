@@ -1,16 +1,9 @@
 [
   {
-    "symbol": "SOLUSD",
-    "asset_type": "crypto",
-    "account": "Paper",
-    "mode": "waiting",
-    "auto_rebuy": false
-  },
-  {
     "symbol": "SOL/USD",
     "asset_type": "crypto",
     "account": "Paper 2",
-    "mode": "tracking",
+    "mode": "waiting",
     "auto_rebuy": false
   }
 ]
