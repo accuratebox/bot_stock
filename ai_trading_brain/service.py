@@ -416,6 +416,106 @@ class AITradingBrainService:
         account = self.refresh_account_context(account_name)
         return self.database.list_trades(int(account["id"]), limit=limit)
 
+    def get_scalping_board(self, limit_stocks: int = 6, limit_cryptos: int = 3) -> dict[str, list[dict[str, Any]]]:
+        actionable = {"WATCH", "BUY_SMALL", "BUY", "SELL_ALLOWED"}
+        signals = self.list_signals(limit=200)
+        by_symbol: dict[str, dict[str, Any]] = {}
+        for item in signals:
+            symbol = str(item.get("symbol", "")).upper().strip()
+            if not symbol:
+                continue
+            current = by_symbol.get(symbol)
+            candidate_score = float(item.get("confidence_score", 0.0) or 0.0)
+            current_score = float(current.get("confidence_score", 0.0) or 0.0) if current else -1.0
+            if current is None or candidate_score > current_score:
+                by_symbol[symbol] = item
+
+        ranked = sorted(
+            by_symbol.values(),
+            key=lambda row: (float(row.get("confidence_score", 0.0) or 0.0), str(row.get("timestamp", ""))),
+            reverse=True,
+        )
+        stock_rows = [row for row in ranked if str(row.get("asset_type", "")).lower() == "stock" and str(row.get("signal_type", "")).upper() in actionable]
+        crypto_rows = [row for row in ranked if str(row.get("asset_type", "")).lower() == "crypto" and str(row.get("signal_type", "")).upper() in actionable]
+
+        if not stock_rows:
+            stock_rows = [row for row in ranked if str(row.get("asset_type", "")).lower() == "stock"]
+        if not crypto_rows:
+            crypto_rows = [row for row in ranked if str(row.get("asset_type", "")).lower() == "crypto"]
+
+        return {
+            "stocks": stock_rows[: max(int(limit_stocks), 1)],
+            "cryptos": crypto_rows[: max(int(limit_cryptos), 1)],
+        }
+
+    def list_signal_recommendation_history(self, limit: int = 40) -> list[dict[str, Any]]:
+        signals = self.list_signals(limit=max(limit * 4, 80))
+        rows: list[dict[str, Any]] = []
+        for signal in signals:
+            signal_id = int(signal.get("id", 0) or 0)
+            if signal_id <= 0:
+                continue
+            outcome = self.database.get_signal_outcome(signal_id)
+            if not outcome:
+                continue
+            generated_at_raw = str(signal.get("timestamp", "") or "")
+            if not generated_at_raw:
+                continue
+            try:
+                generated_at = datetime.fromisoformat(generated_at_raw)
+            except ValueError:
+                continue
+
+            candidates: list[dict[str, Any]] = []
+            for window in (5, 15, 30, 60):
+                profit_key = f"max_profit_{window}m"
+                drawdown_key = f"max_drawdown_{window}m"
+                result_key = f"result_{window}m"
+                if outcome.get(result_key) is None:
+                    continue
+                candidates.append(
+                    {
+                        "window": window,
+                        "result": str(outcome.get(result_key, "neutral")),
+                        "max_profit": float(outcome.get(profit_key, 0.0) or 0.0),
+                        "max_drawdown": float(outcome.get(drawdown_key, 0.0) or 0.0),
+                    }
+                )
+            if not candidates:
+                continue
+
+            best = max(candidates, key=lambda row: float(row.get("max_profit", 0.0) or 0.0))
+            best_window = int(best["window"])
+            exit_at = generated_at + timedelta(minutes=best_window)
+            best_profit = float(best.get("max_profit", 0.0) or 0.0)
+            worst_drawdown = min(float(item.get("max_drawdown", 0.0) or 0.0) for item in candidates)
+            action = str(signal.get("signal_type", ""))
+            hypothetical_pct = best_profit if action in {"BUY", "BUY_SMALL", "WATCH", "SELL_ALLOWED"} else worst_drawdown
+            entry_price = float(signal.get("entry_price", 0.0) or 0.0)
+            suggested_limit_price = float(signal.get("suggested_limit_price", 0.0) or 0.0)
+            exit_limit_price = float(signal.get("take_profit_price", 0.0) or 0.0)
+            rows.append(
+                {
+                    "symbol": str(signal.get("symbol", "N/A")),
+                    "asset_type": str(signal.get("asset_type", "N/A")),
+                    "action": action,
+                    "generated_at": generated_at.isoformat(),
+                    "entry_at": generated_at.isoformat(),
+                    "entry_price": entry_price,
+                    "entry_limit_price": suggested_limit_price,
+                    "exit_limit_price": exit_limit_price,
+                    "recommended_exit_at": exit_at.isoformat(),
+                    "recommended_window_m": best_window,
+                    "best_profit_pct": best_profit,
+                    "worst_drawdown_pct": worst_drawdown,
+                    "hypothetical_pnl_pct": hypothetical_pct,
+                    "result": str(best.get("result", "neutral")),
+                }
+            )
+
+        rows.sort(key=lambda row: str(row.get("generated_at", "")), reverse=True)
+        return rows[: max(int(limit), 1)]
+
     def train_model(self) -> dict[str, Any]:
         evaluated = self.database.count_evaluated_outcomes()
         if evaluated < 200:
@@ -527,6 +627,17 @@ class AITradingBrainService:
         signal = next((item for item in self.database.latest_signals(limit=100) if int(item["id"]) == int(signal_id)), None)
         if signal is None:
             raise ValueError("Senal no encontrada")
+
+        signal_type = str(signal.get("signal_type", "")).upper().strip()
+        allowed_buy_actions = {"BUY", "BUY_SMALL"}
+        if signal_type not in allowed_buy_actions:
+            raise ValueError(f"IA no ejecuta compras para senales tipo {signal_type or 'N/A'}")
+
+        confidence = float(signal.get("confidence_score", 0.0) or 0.0)
+        min_confidence = float(getattr(self.settings, "ai_min_execution_confidence", 60.0) or 60.0)
+        if confidence < min_confidence:
+            raise ValueError(f"Confianza insuficiente para ejecutar compra ({confidence:.2f} < {min_confidence:.2f})")
+
         blocked = self._blocked_buy_reason(symbol=str(signal["symbol"]), account_id=account_id, features=signal["features_json"], account_name=account_name)
         if blocked:
             raise ValueError(blocked)
@@ -542,6 +653,14 @@ class AITradingBrainService:
         limit_price = float(signal["suggested_limit_price"] or signal["entry_price"] or 0.0)
         if limit_price <= 0:
             raise ValueError("Precio limit invalido")
+
+        take_profit = float(signal.get("take_profit_price", 0.0) or 0.0)
+        expected_net_edge = take_profit - limit_price - float(self.settings.ai_fees_buffer) - float(self.settings.ai_slippage_buffer)
+        if expected_net_edge <= 0:
+            raise ValueError(
+                "Compra bloqueada: expectativa de ganancia neta no positiva (riesgo de loss esperado)"
+            )
+
         qty = round(capital / limit_price, 6)
         if qty <= 0:
             raise ValueError("Cantidad calculada invalida")

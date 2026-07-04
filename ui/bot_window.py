@@ -98,6 +98,8 @@ class BotControlWindow:
         self.ai_live_enabled_var = tk.IntVar(value=1 if settings.live_trading_enabled else 0)
         self.ai_manual_approval_var = tk.IntVar(value=1 if settings.manual_approval_required else 0)
         self.ai_kill_switch_var = tk.IntVar(value=0)
+        self.ai_header_stocks_var = tk.StringVar(value="Stocks: --")
+        self.ai_header_cryptos_var = tk.StringVar(value="Cryptos: --")
 
         self._build_ui()
         self._build_ai_window()
@@ -359,6 +361,11 @@ class BotControlWindow:
         header.pack(fill="x")
         ttk.Label(header, text="IA - Estrategia y Entrenamiento", font=("TkDefaultFont", 12, "bold")).pack(side="left")
         ttk.Button(header, text="Refrescar IA", command=lambda: self._run_async(self._refresh_ai_views)).pack(side="right")
+
+        header_board = ttk.Frame(window, padding=(12, 0, 12, 8))
+        header_board.pack(fill="x")
+        ttk.Label(header_board, textvariable=self.ai_header_stocks_var, foreground="#113a6b").pack(anchor="w")
+        ttk.Label(header_board, textvariable=self.ai_header_cryptos_var, foreground="#2f5d1f").pack(anchor="w")
 
         body = ttk.Frame(window, padding=(12, 0, 12, 12))
         body.pack(fill="both", expand=True)
@@ -2623,6 +2630,7 @@ class BotControlWindow:
         ttk.Label(toolbar, text="Las señales y el análisis de texto se generan automáticamente en segundo plano.").pack(side="left")
         ttk.Button(toolbar, text="Comprar limit", command=lambda: self._run_async(self._execute_ai_limit_buy)).pack(side="left", padx=(8, 0))
         ttk.Button(toolbar, text="Evaluar venta", command=lambda: self._run_async(self._execute_ai_sell_check)).pack(side="left", padx=(8, 0))
+        ttk.Button(toolbar, text="Historial", command=lambda: self._run_async(self._show_ai_signal_history)).pack(side="left", padx=(8, 0))
         self.ai_signal_text = tk.Text(parent, height=10, wrap="word")
         self.ai_signal_text.pack(fill="both", expand=True)
         self.ai_signal_text.configure(state="disabled")
@@ -2790,6 +2798,15 @@ class BotControlWindow:
         actionable = {"WATCH", "BUY_SMALL", "BUY", "SELL_ALLOWED"}
         best_timestamp = str(best.get("timestamp", "N/A") or "N/A")
         best_openai = best.get("openai_analysis_json") or {}
+        board = self.ai_trading_brain.get_scalping_board(limit_stocks=6, limit_cryptos=3)
+        stocks_board = board.get("stocks", [])
+        cryptos_board = board.get("cryptos", [])
+
+        stock_names = " | ".join(str(item.get("symbol", "N/A")) for item in stocks_board)
+        crypto_names = " | ".join(str(item.get("symbol", "N/A")) for item in cryptos_board)
+        self.ai_header_stocks_var.set(f"Stocks: {stock_names or '--'}")
+        self.ai_header_cryptos_var.set(f"Cryptos: {crypto_names or '--'}")
+
         if best_action in actionable:
             self._latest_ai_signal_id = int(best.get("id"))
             lines = [
@@ -2848,6 +2865,101 @@ class BotControlWindow:
                 if summary:
                     lines.append(f"  resumen: {summary[:180]}")
         self._set_text_widget(self.ai_signal_text, "\n".join(lines))
+
+    def _show_ai_signal_history(self) -> None:
+        rows = self.ai_trading_brain.list_signal_recommendation_history(limit=60)
+        if not rows:
+            self._set_text_widget(self.ai_signal_text, "Historial IA sin señales evaluadas todavía.")
+            return
+
+        def _fmt_price(value: Any) -> str:
+            number = float(value or 0.0)
+            return f"{number:.6f}" if number > 0 else "N/A"
+
+        def _fmt_ts(value: Any) -> str:
+            raw = str(value or "")
+            if not raw:
+                return "N/A"
+            try:
+                parsed = datetime.fromisoformat(raw)
+            except ValueError:
+                return raw
+            return parsed.strftime("%Y-%m-%d %H:%M:%S")
+
+        now_utc = datetime.now(timezone.utc)
+        prepared: list[dict[str, Any]] = []
+        for row in rows:
+            pnl = float(row.get("hypothetical_pnl_pct", 0.0) or 0.0)
+            generated_raw = str(row.get("generated_at", "") or "")
+            generated_dt: datetime | None = None
+            try:
+                generated_dt = datetime.fromisoformat(generated_raw)
+            except ValueError:
+                generated_dt = None
+
+            days_retained = 0
+            if generated_dt is not None:
+                days_retained = max((now_utc - generated_dt).days, 0)
+
+            if pnl > 0:
+                status_label = "VENTA"
+                color_tag = "ai_hist_green"
+                priority = 2
+            else:
+                if days_retained >= 5:
+                    status_label = "RETENIDO 5D"
+                    color_tag = "ai_hist_red"
+                    priority = 0
+                else:
+                    status_label = "RETENIDO"
+                    color_tag = "ai_hist_yellow"
+                    priority = 1
+
+            prepared.append(
+                {
+                    "row": row,
+                    "status_label": status_label,
+                    "color_tag": color_tag,
+                    "priority": priority,
+                    "days_retained": days_retained,
+                }
+            )
+
+        prepared.sort(key=lambda item: (int(item["priority"]), str(item["row"].get("generated_at", ""))), reverse=False)
+
+        self.ai_signal_text.configure(state="normal")
+        self.ai_signal_text.delete("1.0", tk.END)
+        self.ai_signal_text.tag_configure("ai_hist_red", foreground="#b00020")
+        self.ai_signal_text.tag_configure("ai_hist_yellow", foreground="#a07000")
+        self.ai_signal_text.tag_configure("ai_hist_green", foreground="#1b7a1b")
+        self.ai_signal_text.insert(tk.END, "Historial de recomendaciones IA (entrada/salida y PnL hipotético):\n\n")
+
+        for item in prepared:
+            row = item["row"]
+            color_tag = str(item["color_tag"])
+            status_label = str(item["status_label"])
+            days_retained = int(item["days_retained"])
+            self.ai_signal_text.insert(
+                tk.END,
+                f"{_fmt_ts(row.get('generated_at'))} | {row.get('symbol', 'N/A')} ({row.get('asset_type', 'N/A')}) | accion={row.get('action', 'N/A')}\n",
+            )
+            self.ai_signal_text.insert(
+                tk.END,
+                f"  entrada: {_fmt_ts(row.get('entry_at'))} | precio entrada: {_fmt_price(row.get('entry_price'))} | limite compra: {_fmt_price(row.get('entry_limit_price'))}\n",
+            )
+            self.ai_signal_text.insert(
+                tk.END,
+                f"  salida sugerida: {_fmt_ts(row.get('recommended_exit_at'))} ({row.get('recommended_window_m', 0)}m) | limite salida: {_fmt_price(row.get('exit_limit_price'))}\n",
+            )
+            self.ai_signal_text.insert(
+                tk.END,
+                f"  mejor +{float(row.get('best_profit_pct', 0.0) or 0.0):.3f}% | peor {float(row.get('worst_drawdown_pct', 0.0) or 0.0):.3f}% | hipotético {float(row.get('hypothetical_pnl_pct', 0.0) or 0.0):.3f}% | resultado={row.get('result', 'N/A')}\n",
+            )
+            retained_note = f" ({days_retained}d)" if status_label.startswith("RETENIDO") else ""
+            self.ai_signal_text.insert(tk.END, f"  estado: {status_label}{retained_note}\n", color_tag)
+            self.ai_signal_text.insert(tk.END, "\n")
+
+        self.ai_signal_text.configure(state="disabled")
 
     def _refresh_ai_history_view(self) -> None:
         history = self.ai_trading_brain.list_history(self.account_var.get().strip(), limit=40)
