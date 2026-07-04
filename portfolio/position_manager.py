@@ -303,6 +303,19 @@ class PositionManager:
 
     def open_position(self, symbol: str, qty: float, reason: str, spread_pct: float = 0.0) -> dict[str, Any]:
         symbol = symbol.upper()
+        
+        # Validation for CRYPTO: require stop loss to be configured
+        if self._is_crypto_symbol(symbol) and self.settings.crypto_allow_stop_loss:
+            if self.settings.crypto_max_hold_minutes <= 0:
+                raise ValueError(
+                    f"CRYPTO {symbol}: max_hold_minutes must be > 0 (configured: {self.settings.crypto_max_hold_minutes})"
+                )
+            self.logger.warning(
+                "CRYPTO %s: Opening position with max_hold_time=%d minutes. Stop loss enabled.",
+                symbol,
+                self.settings.crypto_max_hold_minutes,
+            )
+        
         can_open, reason_text = self.can_open_new_trade(symbol)
         if not can_open:
             raise ValueError(reason_text)
@@ -707,23 +720,46 @@ class PositionManager:
         return float(fallback_price)
 
     def _should_auto_sell(self, snapshot: PositionSnapshot, minutes_to_close: int) -> str | None:
+        """
+        Determine if a position should be automatically closed.
+        
+        Respects asset-type specific rules:
+        - STOCKS: Hold allowed, no stop loss, no sell below average cost
+        - CRYPTO: No overnight hold, allow stop loss, close quickly
+        """
+        is_crypto = self._is_crypto_symbol(snapshot.symbol)
+        
+        # Minimum hold time before auto-sell
         min_hold_seconds = int(getattr(self.settings, "min_hold_seconds_before_auto_sell", 0) or 0)
         if min_hold_seconds > 0 and snapshot.duration_seconds < min_hold_seconds:
             return None
 
-        if snapshot.unrealized_pl <= 0 and self.settings.never_sell_at_loss:
-            return None
+        # ===== CRYPTO: Max hold time enforcement =====
+        if is_crypto and self.settings.crypto_max_hold_minutes > 0:
+            max_hold_seconds = self.settings.crypto_max_hold_minutes * 60
+            if snapshot.duration_seconds >= max_hold_seconds:
+                return f"crypto_max_hold_{self.settings.crypto_max_hold_minutes}m_exceeded"
 
+        # ===== STOCKS: Never sell at loss (if configured) =====
+        if not is_crypto and self.settings.stock_no_auto_sell_below_avg_cost:
+            if snapshot.unrealized_pl <= 0:
+                return None
+        
+        # ===== CRYPTO: Can sell at loss (if configured) =====
+        if is_crypto and not self.settings.crypto_allow_stop_loss:
+            if snapshot.unrealized_pl <= 0:
+                return None
+
+        # ===== TARGET PROFIT (both stocks and crypto) =====
         if snapshot.pnl_per_share >= self.target_profit_per_share:
             return "target_profit_per_share"
 
-        if (
-            (not self._is_crypto_symbol(snapshot.symbol))
-            and minutes_to_close <= self.settings.stop_new_trades_minutes_before_close
-            and snapshot.unrealized_pl > 0
-        ):
-            return "near_close_positive"
+        # ===== STOCKS: Market close logic (stocks only) =====
+        if not is_crypto and minutes_to_close <= self.settings.stop_new_trades_minutes_before_close:
+            if snapshot.unrealized_pl > 0:
+                return "near_close_positive"
 
+        # ===== TECHNICAL ANALYSIS (candle-based) =====
         candles = self.market_data.get_stock_bars(snapshot.symbol, interval="1m", limit=20)
         closes = [float(c.get("close", 0.0) or 0.0) for c in candles]
         volumes = [float(c.get("volume", 0.0) or 0.0) for c in candles]
@@ -736,12 +772,22 @@ class PositionManager:
         short_ma = sum(closes[-5:]) / 5.0
         current_price = snapshot.current_price
 
-        if current_price >= recent_high * 0.998 and snapshot.unrealized_pl > 0:
-            return "near_resistance"
-        if last_volume < (average_volume * 0.7) and snapshot.unrealized_pl > 0:
-            return "volume_weakening"
-        if current_price < short_ma and snapshot.unrealized_pl > 0:
-            return "momentum_weakening"
+        # Sell at resistance or momentum weakening (only if profitable for stocks)
+        if not is_crypto:
+            if current_price >= recent_high * 0.998 and snapshot.unrealized_pl > 0:
+                return "near_resistance"
+            if last_volume < (average_volume * 0.7) and snapshot.unrealized_pl > 0:
+                return "volume_weakening"
+            if current_price < short_ma and snapshot.unrealized_pl > 0:
+                return "momentum_weakening"
+        else:
+            # CRYPTO: More aggressive exit conditions
+            if current_price >= recent_high * 0.998:
+                return "crypto_near_resistance"
+            if last_volume < (average_volume * 0.5):  # More sensitive to volume
+                return "crypto_volume_dried_up"
+            if current_price < short_ma:
+                return "crypto_momentum_broken"
 
         return None
 

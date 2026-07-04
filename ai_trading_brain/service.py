@@ -41,7 +41,7 @@ class AITradingBrainService:
         models_dir = Path(settings.ai_models_dir)
         self.registry = ModelRegistry(str(models_dir))
         self.predictor = SignalPredictor(registry=self.registry, logger=logger)
-        self.trainer = ModelTrainer(database=self.database, registry=self.registry, logger=logger)
+        self.trainer = ModelTrainer(database=self.database, registry=self.registry, logger=logger, settings=settings)
         self.openai_analyzer = OpenAIAnalyzer(api_key=settings.openai_api_key, logger=logger, model=settings.openai_model)
         self._worker_lock = threading.Lock()
         self._active_account_for_workers = ""
@@ -123,6 +123,8 @@ class AITradingBrainService:
                 live_trading_enabled=bool(self.settings.live_trading_enabled),
                 manual_approval_required=bool(self.settings.manual_approval_required),
                 kill_switch=False,
+                auto_trade_stocks_enabled=True,
+                auto_trade_cryptos_enabled=True,
             )
         self.database.cleanup_old_data(
             snapshot_minutes_days=int(self.settings.ai_snapshots_1m_days),
@@ -152,6 +154,8 @@ class AITradingBrainService:
         live_trading_enabled: bool,
         manual_approval_required: bool,
         kill_switch: bool,
+        auto_trade_stocks_enabled: bool,
+        auto_trade_cryptos_enabled: bool,
     ) -> None:
         account = self.refresh_account_context(account_name)
         funds = self.database.get_bot_funds(int(account["id"]))
@@ -173,6 +177,8 @@ class AITradingBrainService:
             live_trading_enabled=live_trading_enabled,
             manual_approval_required=manual_approval_required,
             kill_switch=kill_switch,
+            auto_trade_stocks_enabled=auto_trade_stocks_enabled,
+            auto_trade_cryptos_enabled=auto_trade_cryptos_enabled,
         )
         self.auto_controller.signal_only_mode = bool(signal_only_mode)
         self.auto_controller.paper_trading = bool(paper_trading)
@@ -202,6 +208,8 @@ class AITradingBrainService:
 
     def get_automation_status(self, account_name: str) -> dict[str, Any]:
         self._reset_daily_counters_if_needed()
+        approved_model = self.registry.approved_version() or ""
+        latest_model = self.registry.latest_version() or ""
         latest_signal = self.database.latest_signals(limit=1)
         snapshots_today = self.database.count_snapshots_today()
         signals_today = self.database.count_signals_today()
@@ -235,9 +243,12 @@ class AITradingBrainService:
             "mode": self.auto_controller.mode_label(),
             "openai_calls_today": self._openai_calls_today,
             "api_calls_today": self._api_calls_today,
-            "model_current": self.registry.latest_version() or "heuristic",
-            "model_approved_paper": self.registry.approved_version() or "manual_pending",
+            "model_current": approved_model or "heuristic",
+            "model_latest_trained": latest_model or "none",
+            "model_approved_paper": approved_model or "manual_pending",
             "model_approved_live": "manual_required",
+            "auto_trade_stocks_enabled": bool(runtime.get("auto_trade_stocks_enabled", 1)) if runtime else True,
+            "auto_trade_cryptos_enabled": bool(runtime.get("auto_trade_cryptos_enabled", 1)) if runtime else True,
         }
 
     def get_dashboard(self, account_name: str) -> dict[str, Any]:
@@ -280,12 +291,25 @@ class AITradingBrainService:
             "live_trading_enabled": bool(runtime.get("live_trading_enabled", 0)),
             "manual_approval_required": bool(runtime.get("manual_approval_required", 1)),
             "signal_only_mode": bool(runtime.get("signal_only_mode", 1)),
+            "auto_trade_stocks_enabled": bool(runtime.get("auto_trade_stocks_enabled", 1)),
+            "auto_trade_cryptos_enabled": bool(runtime.get("auto_trade_cryptos_enabled", 1)),
             "max_daily_loss": float(funds.get("max_daily_loss", 0.0) or 0.0),
             "max_position_size": float(funds.get("max_position_size", 0.0) or 0.0),
             "api_keys_ok": bool(self.settings.alpaca_api_key and self.settings.alpaca_api_secret),
             "openai_key_ok": bool(self.settings.openai_api_key),
             "recent_logs": self.database.latest_decision_logs(limit=15),
         }
+
+    @staticmethod
+    def _is_auto_execution_paused_for_asset(runtime: dict[str, Any], asset_type: str, initiated_by: str) -> bool:
+        if str(initiated_by or "").lower() not in {"bot_auto", "ai_auto", "automation"}:
+            return False
+        asset = str(asset_type or "").lower().strip()
+        if asset == "stock":
+            return not bool(runtime.get("auto_trade_stocks_enabled", 1))
+        if asset == "crypto":
+            return not bool(runtime.get("auto_trade_cryptos_enabled", 1))
+        return False
 
     def analyze_text(
         self,
@@ -412,9 +436,10 @@ class AITradingBrainService:
     def list_signals(self, limit: int = 25) -> list[dict[str, Any]]:
         return self.database.latest_signals(limit=limit)
 
-    def list_history(self, account_name: str, limit: int = 100) -> list[dict[str, Any]]:
+    def list_history(self, account_name: str, limit: int | None = None) -> list[dict[str, Any]]:
         account = self.refresh_account_context(account_name)
-        return self.database.list_trades(int(account["id"]), limit=limit)
+        trade_limit = int(limit) if limit is not None else 1000000
+        return self.database.list_trades(int(account["id"]), limit=trade_limit)
 
     def get_scalping_board(self, limit_stocks: int = 6, limit_cryptos: int = 3) -> dict[str, list[dict[str, Any]]]:
         actionable = {"WATCH", "BUY_SMALL", "BUY", "SELL_ALLOWED"}
@@ -448,8 +473,9 @@ class AITradingBrainService:
             "cryptos": crypto_rows[: max(int(limit_cryptos), 1)],
         }
 
-    def list_signal_recommendation_history(self, limit: int = 40) -> list[dict[str, Any]]:
-        signals = self.list_signals(limit=max(limit * 4, 80))
+    def list_signal_recommendation_history(self, limit: int | None = None) -> list[dict[str, Any]]:
+        signal_limit = max(int(limit) * 4, 80) if limit is not None else 1000000
+        signals = self.list_signals(limit=signal_limit)
         rows: list[dict[str, Any]] = []
         for signal in signals:
             signal_id = int(signal.get("id", 0) or 0)
@@ -514,14 +540,14 @@ class AITradingBrainService:
             )
 
         rows.sort(key=lambda row: str(row.get("generated_at", "")), reverse=True)
-        return rows[: max(int(limit), 1)]
+        return rows if limit is None else rows[: max(int(limit), 1)]
 
     def train_model(self) -> dict[str, Any]:
         evaluated = self.database.count_evaluated_outcomes()
         if evaluated < 200:
             return {
                 "trained": False,
-                "reason": "No hay suficientes datos para entrenar. Se necesitan mínimo 200 señales evaluadas.",
+                "reason": "No hay suficientes outcomes reales para entrenar.",
                 "number_of_samples": evaluated,
             }
         return self.trainer.train_general_model()
@@ -619,7 +645,13 @@ class AITradingBrainService:
             "realized_pnl": realized_pnl,
         }
 
-    def place_limit_buy(self, signal_id: int, account_name: str, manual_approved: bool) -> dict[str, Any]:
+    def place_limit_buy(
+        self,
+        signal_id: int,
+        account_name: str,
+        manual_approved: bool,
+        initiated_by: str = "bot_auto",
+    ) -> dict[str, Any]:
         account = self.refresh_account_context(account_name)
         account_id = int(account["id"])
         runtime = self.database.get_runtime_settings(account_id) or {}
@@ -629,9 +661,17 @@ class AITradingBrainService:
             raise ValueError("Senal no encontrada")
 
         signal_type = str(signal.get("signal_type", "")).upper().strip()
+        asset_type = str(signal.get("asset_type", "")).lower().strip()
         allowed_buy_actions = {"BUY", "BUY_SMALL"}
         if signal_type not in allowed_buy_actions:
             raise ValueError(f"IA no ejecuta compras para senales tipo {signal_type or 'N/A'}")
+
+        if self._is_auto_execution_paused_for_asset(runtime=runtime, asset_type=asset_type, initiated_by=initiated_by):
+            return {
+                "status": "paused_asset_type",
+                "asset_type": asset_type,
+                "reason": f"Auto trading pausado para {asset_type}",
+            }
 
         confidence = float(signal.get("confidence_score", 0.0) or 0.0)
         min_confidence = float(getattr(self.settings, "ai_min_execution_confidence", 60.0) or 60.0)
@@ -681,6 +721,7 @@ class AITradingBrainService:
                 "filled_price": float(order.get("filled_avg_price", 0.0) or 0.0),
                 "fees": 0.0,
                 "status": str(order.get("status", "submitted")),
+                "initiated_by": initiated_by,
                 "broker_order_id": str(order.get("id", "")),
                 "signal_id": int(signal_id),
                 "created_at": self._now_iso(),
@@ -699,7 +740,13 @@ class AITradingBrainService:
         )
         return {"status": "submitted", "order": order, "qty": qty, "limit_price": limit_price}
 
-    def place_limit_sell_if_allowed(self, symbol: str, account_name: str, manual_approved: bool = True) -> dict[str, Any]:
+    def place_limit_sell_if_allowed(
+        self,
+        symbol: str,
+        account_name: str,
+        manual_approved: bool = True,
+        initiated_by: str = "bot_auto",
+    ) -> dict[str, Any]:
         account = self.refresh_account_context(account_name)
         account_id = int(account["id"])
         runtime = self.database.get_runtime_settings(account_id) or {}
@@ -712,6 +759,14 @@ class AITradingBrainService:
         position = next((row for row in self.database.list_positions(account_id) if self._symbol_key(str(row["symbol"])) == self._symbol_key(symbol)), None)
         if position is None or float(position.get("qty", 0.0) or 0.0) <= 0:
             raise ValueError("No hay posicion activa para vender")
+
+        asset_type = str(position.get("asset_type", "")).lower().strip()
+        if self._is_auto_execution_paused_for_asset(runtime=runtime, asset_type=asset_type, initiated_by=initiated_by):
+            return {
+                "status": "paused_asset_type",
+                "asset_type": asset_type,
+                "reason": f"Auto trading pausado para {asset_type}",
+            }
 
         current_price = float(position["current_price"])
         average_cost = float(position["average_cost"])
@@ -753,6 +808,7 @@ class AITradingBrainService:
                 "filled_price": float(order.get("filled_avg_price", 0.0) or 0.0),
                 "fees": 0.0,
                 "status": str(order.get("status", "submitted")),
+                "initiated_by": initiated_by,
                 "broker_order_id": str(order.get("id", "")),
                 "signal_id": None,
                 "created_at": self._now_iso(),
@@ -1240,11 +1296,14 @@ class AITradingBrainService:
         since = (now - timedelta(hours=2)).isoformat()
         signals = self.database.list_signals_since(since_iso=since)
         windows = [5, 15, 30, 60]
+        profit_threshold_pct = float(getattr(self.settings, "ai_outcome_win_profit_pct", 0.25) or 0.25)
+        loss_threshold_pct = abs(float(getattr(self.settings, "ai_outcome_loss_drawdown_pct", 0.25) or 0.25))
         for signal in signals:
             signal_id = int(signal.get("id", 0) or 0)
             if signal_id <= 0:
                 continue
             symbol = str(signal.get("symbol", "")).upper()
+            asset_type = str(signal.get("asset_type", ""))
             timestamp = str(signal.get("timestamp", ""))
             if not symbol or not timestamp:
                 continue
@@ -1258,7 +1317,13 @@ class AITradingBrainService:
                 continue
 
             outcome = self.database.get_signal_outcome(signal_id) or {}
-            updates: dict[str, Any] = {}
+            updates: dict[str, Any] = {
+                "asset_type": asset_type,
+                "entry_price": entry_price,
+                "timestamp_signal": signal_time.isoformat(),
+            }
+            take_profit_price = float(signal.get("take_profit_price", 0.0) or 0.0)
+            target_profit_pct = ((take_profit_price - entry_price) / entry_price) * 100.0 if take_profit_price > 0 else 0.0
             for window in windows:
                 result_key = f"result_{window}m"
                 if outcome.get(result_key):
@@ -1274,17 +1339,28 @@ class AITradingBrainService:
                     continue
                 profits = [((float(row.get("high", entry_price) or entry_price) - entry_price) / entry_price) * 100.0 for row in rows]
                 drawdowns = [((float(row.get("low", entry_price) or entry_price) - entry_price) / entry_price) * 100.0 for row in rows]
+                price_after = float(rows[-1].get("close", entry_price) or entry_price)
                 max_profit = max(profits)
                 max_drawdown = min(drawdowns)
-                if max_profit >= 0.25:
+
+                is_win = (max_profit >= target_profit_pct and target_profit_pct > 0.0) or (max_profit >= profit_threshold_pct)
+                is_loss = max_drawdown <= (-loss_threshold_pct)
+                if is_win:
                     result = "win"
-                elif max_drawdown <= -0.25:
+                elif is_loss:
                     result = "loss"
                 else:
                     result = "neutral"
+                updates[f"price_after_{window}m"] = round(price_after, 6)
                 updates[f"max_profit_{window}m"] = round(max_profit, 6)
                 updates[f"max_drawdown_{window}m"] = round(max_drawdown, 6)
                 updates[result_key] = result
+
+            merged = dict(outcome)
+            merged.update(updates)
+            final_label = str(merged.get("result_15m") or merged.get("result_30m") or "").strip().lower()
+            if final_label in {"win", "loss", "neutral"}:
+                updates["final_label"] = final_label
             if updates:
                 self.database.upsert_signal_outcome(signal_id=signal_id, symbol=symbol, updates=updates)
 

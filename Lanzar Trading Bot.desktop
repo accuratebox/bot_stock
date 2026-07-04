@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Lanzar Trading Bot
+Comment=Abre la app de trading con doble clic
+Exec=/home/fbautista/Documents/Alpaca/trading_bot/lanzar_trading_bot.sh
+TryExec=/home/fbautista/Documents/Alpaca/trading_bot/lanzar_trading_bot.sh
+Path=/home/fbautista/Documents/Alpaca/trading_bot
+Terminal=false
+Icon=python
+Categories=Office;Finance;
+StartupNotify=true

@@ -98,8 +98,31 @@ class BotControlWindow:
         self.ai_live_enabled_var = tk.IntVar(value=1 if settings.live_trading_enabled else 0)
         self.ai_manual_approval_var = tk.IntVar(value=1 if settings.manual_approval_required else 0)
         self.ai_kill_switch_var = tk.IntVar(value=0)
+        self.ai_auto_trade_stocks_var = tk.IntVar(value=1)
+        self.ai_auto_trade_cryptos_var = tk.IntVar(value=1)
         self.ai_header_stocks_var = tk.StringVar(value="Stocks: --")
         self.ai_header_cryptos_var = tk.StringVar(value="Cryptos: --")
+        self.ai_badge_stocks_var = tk.StringVar(value="Ejecucion Stocks: --")
+        self.ai_badge_cryptos_var = tk.StringVar(value="Ejecucion Cryptos: --")
+        self.ai_badge_learning_var = tk.StringVar(value="Aprendizaje IA: --")
+
+        # Config panel variables
+        self.config_capital_var = tk.StringVar(value=str(settings.default_trade_capital))
+        self.config_risk_pct_var = tk.StringVar(value=str(settings.risk_per_trade_pct))
+        self.config_max_daily_loss_var = tk.StringVar(value=str(settings.max_daily_loss))
+        self.config_max_open_pos_var = tk.StringVar(value=str(settings.max_open_positions))
+        self.config_btc_sl_var = tk.StringVar(value=str(settings.crypto_btc_eth_stop_loss_pct))
+        self.config_btc_tp1_var = tk.StringVar(value=str(settings.crypto_btc_eth_tp1_pct))
+        self.config_btc_tp2_var = tk.StringVar(value=str(settings.crypto_btc_eth_tp2_pct))
+        self.config_btc_max_tp_var = tk.StringVar(value=str(settings.crypto_btc_eth_max_tp_pct))
+        self.config_alt_sl_var = tk.StringVar(value=str(settings.crypto_alt_stop_loss_pct))
+        self.config_alt_tp1_var = tk.StringVar(value=str(settings.crypto_alt_tp1_pct))
+        self.config_alt_tp2_var = tk.StringVar(value=str(settings.crypto_alt_tp2_pct))
+        self.config_alt_max_tp_var = tk.StringVar(value=str(settings.crypto_alt_max_tp_pct))
+        self.config_meme_sl_var = tk.StringVar(value=str(settings.crypto_meme_stop_loss_pct))
+        self.config_meme_tp1_var = tk.StringVar(value=str(settings.crypto_meme_tp1_pct))
+        self.config_meme_tp2_var = tk.StringVar(value=str(settings.crypto_meme_tp2_pct))
+        self.config_meme_max_tp_var = tk.StringVar(value=str(settings.crypto_meme_max_tp_pct))
 
         self._build_ui()
         self._build_ai_window()
@@ -351,6 +374,250 @@ class BotControlWindow:
         self.output.pack(fill="both", expand=True)
         self.output.configure(state="disabled")
 
+        # Config Tab
+        self._build_config_tab()
+
+    def _build_config_tab(self) -> None:
+        """Construye tab de configuración de riesgo y parámetros de trading"""
+        config_frame = ttk.Frame(self.log_notebook)
+        self.log_notebook.add(config_frame, text="⚙️ Configuración")
+
+        # Canvas + scrollbar para scroll vertical
+        canvas = tk.Canvas(config_frame)
+        scrollbar = ttk.Scrollbar(config_frame, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
+
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        # GENERAL SETTINGS
+        general_lf = ttk.LabelFrame(scrollable_frame, text="Parámetros Generales", padding=10)
+        general_lf.pack(fill="x", padx=8, pady=6)
+
+        ttk.Label(general_lf, text="Capital por trade ($)").grid(row=0, column=0, sticky="w", padx=4, pady=4)
+        ttk.Entry(general_lf, textvariable=self.config_capital_var, width=15).grid(row=0, column=1, padx=4, pady=4)
+
+        ttk.Label(general_lf, text="Riesgo por trade (%)").grid(row=1, column=0, sticky="w", padx=4, pady=4)
+        ttk.Entry(general_lf, textvariable=self.config_risk_pct_var, width=15).grid(row=1, column=1, padx=4, pady=4)
+
+        ttk.Label(general_lf, text="Pérdida máxima diaria ($)").grid(row=2, column=0, sticky="w", padx=4, pady=4)
+        ttk.Entry(general_lf, textvariable=self.config_max_daily_loss_var, width=15).grid(row=2, column=1, padx=4, pady=4)
+
+        ttk.Label(general_lf, text="Máx posiciones abiertas").grid(row=3, column=0, sticky="w", padx=4, pady=4)
+        ttk.Entry(general_lf, textvariable=self.config_max_open_pos_var, width=15).grid(row=3, column=1, padx=4, pady=4)
+
+        ttk.Label(general_lf, text="Cuenta IA (fondos automáticos)").grid(row=4, column=0, sticky="w", padx=4, pady=4)
+        self.config_ai_account_combo = ttk.Combobox(
+            general_lf,
+            textvariable=self.account_var,
+            values=list(self.account_profiles.keys()),
+            width=15,
+            state="readonly",
+        )
+        self.config_ai_account_combo.grid(row=4, column=1, padx=4, pady=4, sticky="w")
+        ttk.Button(
+            general_lf,
+            text="Aplicar cuenta IA",
+            command=lambda: self._run_async(self._apply_config_account_for_ai),
+        ).grid(row=4, column=2, padx=6, pady=4, sticky="w")
+
+        ttk.Label(
+            general_lf,
+            text="La IA usará esta cuenta para fondos y operaciones automáticas (paper/live según configuración).",
+            foreground="#555",
+        ).grid(row=5, column=0, columnspan=3, sticky="w", padx=4, pady=(0, 4))
+
+        ttk.Label(general_lf, text="Pausas por mercado (sin parar aprendizaje)").grid(
+            row=6, column=0, sticky="w", padx=4, pady=(6, 4)
+        )
+        ttk.Checkbutton(general_lf, text="Operar Stocks", variable=self.ai_auto_trade_stocks_var).grid(
+            row=6, column=1, sticky="w", padx=4, pady=(6, 4)
+        )
+        ttk.Checkbutton(general_lf, text="Operar Cryptos", variable=self.ai_auto_trade_cryptos_var).grid(
+            row=6, column=2, sticky="w", padx=4, pady=(6, 4)
+        )
+        ttk.Button(
+            general_lf,
+            text="Guardar pausas IA",
+            command=lambda: self._run_async(self._save_ai_runtime_controls),
+        ).grid(row=7, column=1, sticky="w", padx=4, pady=(0, 4))
+
+        # TIER 1: BTC/ETH
+        tier1_lf = ttk.LabelFrame(scrollable_frame, text="🟡 Tier 1 (BTC/ETH) - Principales", padding=10)
+        tier1_lf.pack(fill="x", padx=8, pady=6)
+
+        ttk.Label(tier1_lf, text="Stop Loss (%)").grid(row=0, column=0, sticky="w", padx=4, pady=4)
+        ttk.Entry(tier1_lf, textvariable=self.config_btc_sl_var, width=12).grid(row=0, column=1, padx=4, pady=4)
+
+        ttk.Label(tier1_lf, text="Target 1 (%)").grid(row=1, column=0, sticky="w", padx=4, pady=4)
+        ttk.Entry(tier1_lf, textvariable=self.config_btc_tp1_var, width=12).grid(row=1, column=1, padx=4, pady=4)
+
+        ttk.Label(tier1_lf, text="Target 2 (%)").grid(row=2, column=0, sticky="w", padx=4, pady=4)
+        ttk.Entry(tier1_lf, textvariable=self.config_btc_tp2_var, width=12).grid(row=2, column=1, padx=4, pady=4)
+
+        ttk.Label(tier1_lf, text="Target Máximo (%)").grid(row=3, column=0, sticky="w", padx=4, pady=4)
+        ttk.Entry(tier1_lf, textvariable=self.config_btc_max_tp_var, width=12).grid(row=3, column=1, padx=4, pady=4)
+
+        # TIER 2: ALT-COINS
+        tier2_lf = ttk.LabelFrame(scrollable_frame, text="🟠 Tier 2 (ALT-coins) - SOL, XRP, LINK, etc", padding=10)
+        tier2_lf.pack(fill="x", padx=8, pady=6)
+
+        ttk.Label(tier2_lf, text="Stop Loss (%)").grid(row=0, column=0, sticky="w", padx=4, pady=4)
+        ttk.Entry(tier2_lf, textvariable=self.config_alt_sl_var, width=12).grid(row=0, column=1, padx=4, pady=4)
+
+        ttk.Label(tier2_lf, text="Target 1 (%)").grid(row=1, column=0, sticky="w", padx=4, pady=4)
+        ttk.Entry(tier2_lf, textvariable=self.config_alt_tp1_var, width=12).grid(row=1, column=1, padx=4, pady=4)
+
+        ttk.Label(tier2_lf, text="Target 2 (%)").grid(row=2, column=0, sticky="w", padx=4, pady=4)
+        ttk.Entry(tier2_lf, textvariable=self.config_alt_tp2_var, width=12).grid(row=2, column=1, padx=4, pady=4)
+
+        ttk.Label(tier2_lf, text="Target Máximo (%)").grid(row=3, column=0, sticky="w", padx=4, pady=4)
+        ttk.Entry(tier2_lf, textvariable=self.config_alt_max_tp_var, width=12).grid(row=3, column=1, padx=4, pady=4)
+
+        # TIER 3: MEME COINS
+        tier3_lf = ttk.LabelFrame(scrollable_frame, text="🔴 Tier 3 (MEME) - PEPE, BONK, SHIB, etc", padding=10)
+        tier3_lf.pack(fill="x", padx=8, pady=6)
+
+        ttk.Label(tier3_lf, text="Stop Loss (%)").grid(row=0, column=0, sticky="w", padx=4, pady=4)
+        ttk.Entry(tier3_lf, textvariable=self.config_meme_sl_var, width=12).grid(row=0, column=1, padx=4, pady=4)
+
+        ttk.Label(tier3_lf, text="Target 1 (%)").grid(row=1, column=0, sticky="w", padx=4, pady=4)
+        ttk.Entry(tier3_lf, textvariable=self.config_meme_tp1_var, width=12).grid(row=1, column=1, padx=4, pady=4)
+
+        ttk.Label(tier3_lf, text="Target 2 (%)").grid(row=2, column=0, sticky="w", padx=4, pady=4)
+        ttk.Entry(tier3_lf, textvariable=self.config_meme_tp2_var, width=12).grid(row=2, column=1, padx=4, pady=4)
+
+        ttk.Label(tier3_lf, text="Target Máximo (%)").grid(row=3, column=0, sticky="w", padx=4, pady=4)
+        ttk.Entry(tier3_lf, textvariable=self.config_meme_max_tp_var, width=12).grid(row=3, column=1, padx=4, pady=4)
+
+        # Buttons
+        buttons_frame = ttk.Frame(scrollable_frame)
+        buttons_frame.pack(fill="x", padx=8, pady=12)
+
+        ttk.Button(
+            buttons_frame,
+            text="💾 Guardar configuración",
+            command=lambda: self._run_async(self._save_config)
+        ).pack(side="left", padx=4)
+
+        ttk.Button(
+            buttons_frame,
+            text="🔄 Recargar valores",
+            command=lambda: self._refresh_config_values()
+        ).pack(side="left", padx=4)
+
+        # Pack canvas and scrollbar
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+    def _refresh_config_values(self) -> None:
+        """Recarga los valores actuales desde settings"""
+        self.config_capital_var.set(str(settings.default_trade_capital))
+        self.config_risk_pct_var.set(str(settings.risk_per_trade_pct))
+        self.config_max_daily_loss_var.set(str(settings.max_daily_loss))
+        self.config_max_open_pos_var.set(str(settings.max_open_positions))
+        self.config_btc_sl_var.set(str(settings.crypto_btc_eth_stop_loss_pct))
+        self.config_btc_tp1_var.set(str(settings.crypto_btc_eth_tp1_pct))
+        self.config_btc_tp2_var.set(str(settings.crypto_btc_eth_tp2_pct))
+        self.config_btc_max_tp_var.set(str(settings.crypto_btc_eth_max_tp_pct))
+        self.config_alt_sl_var.set(str(settings.crypto_alt_stop_loss_pct))
+        self.config_alt_tp1_var.set(str(settings.crypto_alt_tp1_pct))
+        self.config_alt_tp2_var.set(str(settings.crypto_alt_tp2_pct))
+        self.config_alt_max_tp_var.set(str(settings.crypto_alt_max_tp_pct))
+        self.config_meme_sl_var.set(str(settings.crypto_meme_stop_loss_pct))
+        self.config_meme_tp1_var.set(str(settings.crypto_meme_tp1_pct))
+        self.config_meme_tp2_var.set(str(settings.crypto_meme_tp2_pct))
+        self.config_meme_max_tp_var.set(str(settings.crypto_meme_max_tp_pct))
+        self._set_output("✅ Valores recargados desde configuración actual")
+
+    def _apply_config_account_for_ai(self) -> None:
+        """Aplica la cuenta seleccionada como cuenta activa para trading/fondos IA."""
+        selected = self.account_var.get().strip()
+        if not selected:
+            self.root.after(0, self._show_error, "Selecciona una cuenta para IA.")
+            return
+
+        self._apply_selected_account(update_status=True, require_credentials=True)
+
+        # Load runtime controls for the selected account so IA funds view matches the active account.
+        try:
+            self._load_ai_runtime_controls()
+        except Exception as ex:
+            self.logger.warning("No se pudo refrescar controles IA para %s: %s", selected, ex)
+
+        self.root.after(
+            0,
+            self._show_success,
+            f"Cuenta IA aplicada: {selected}. Los fondos automáticos ahora salen de esta cuenta.",
+            False,
+        )
+
+    def _save_config(self) -> None:
+        """Guarda los cambios en la configuración al archivo .env"""
+        from pathlib import Path
+        import os
+        import re
+
+        try:
+            # Recolectar valores
+            values = {
+                "DEFAULT_TRADE_CAPITAL": self.config_capital_var.get(),
+                "BOT_RISK_PER_TRADE_PCT": self.config_risk_pct_var.get(),
+                "BOT_MAX_DAILY_LOSS": self.config_max_daily_loss_var.get(),
+                "MAX_OPEN_POSITIONS": self.config_max_open_pos_var.get(),
+                "CRYPTO_BTC_ETH_STOP_LOSS_PCT": self.config_btc_sl_var.get(),
+                "CRYPTO_BTC_ETH_TP1_PCT": self.config_btc_tp1_var.get(),
+                "CRYPTO_BTC_ETH_TP2_PCT": self.config_btc_tp2_var.get(),
+                "CRYPTO_BTC_ETH_MAX_TP_PCT": self.config_btc_max_tp_var.get(),
+                "CRYPTO_ALT_STOP_LOSS_PCT": self.config_alt_sl_var.get(),
+                "CRYPTO_ALT_TP1_PCT": self.config_alt_tp1_var.get(),
+                "CRYPTO_ALT_TP2_PCT": self.config_alt_tp2_var.get(),
+                "CRYPTO_ALT_MAX_TP_PCT": self.config_alt_max_tp_var.get(),
+                "CRYPTO_MEME_STOP_LOSS_PCT": self.config_meme_sl_var.get(),
+                "CRYPTO_MEME_TP1_PCT": self.config_meme_tp1_var.get(),
+                "CRYPTO_MEME_TP2_PCT": self.config_meme_tp2_var.get(),
+                "CRYPTO_MEME_MAX_TP_PCT": self.config_meme_max_tp_var.get(),
+            }
+
+            # Validar que sean números
+            for key, value in values.items():
+                try:
+                    float(value)
+                except ValueError:
+                    self.root.after(0, self._show_error, f"❌ {key} debe ser un número válido, recibido: {value}")
+                    return
+
+            # Leer .env actual
+            env_path = Path(__file__).resolve().parents[1] / ".env"
+            env_content = ""
+            if env_path.exists():
+                with open(env_path, "r") as f:
+                    env_content = f.read()
+
+            # Actualizar valores en el contenido
+            for key, value in values.items():
+                pattern = f"^{key}=.*$"
+                if re.search(pattern, env_content, re.MULTILINE):
+                    env_content = re.sub(pattern, f"{key}={value}", env_content, flags=re.MULTILINE)
+                else:
+                    env_content += f"\n{key}={value}"
+
+            # Guardar
+            with open(env_path, "w") as f:
+                f.write(env_content)
+
+            self.root.after(0, self._show_success, "✅ Configuración guardada correctamente en .env\n⚠️ Reinicia el bot para aplicar cambios")
+            self._set_output("✅ Configuración guardada en .env. Reinicia bot para aplicar.", focus_general=False)
+
+        except Exception as ex:
+            self.logger.exception("Error guardando configuración: %s", ex)
+            self.root.after(0, self._show_error, f"❌ Error guardando configuración: {ex}")
+
     def _build_ai_window(self) -> None:
         window = tk.Toplevel(self.root)
         window.title("IA")
@@ -367,6 +634,60 @@ class BotControlWindow:
         ttk.Label(header_board, textvariable=self.ai_header_stocks_var, foreground="#113a6b").pack(anchor="w")
         ttk.Label(header_board, textvariable=self.ai_header_cryptos_var, foreground="#2f5d1f").pack(anchor="w")
 
+        badges_row = ttk.Frame(window, padding=(12, 0, 12, 8))
+        badges_row.pack(fill="x")
+
+        self.ai_badge_stocks_button = tk.Button(
+            badges_row,
+            textvariable=self.ai_badge_stocks_var,
+            font=("TkDefaultFont", 11, "bold"),
+            bg="#1f5f2a",
+            fg="#ffffff",
+            padx=10,
+            pady=6,
+            activebackground="#1f5f2a",
+            activeforeground="#ffffff",
+            relief="raised",
+            bd=1,
+            cursor="hand2",
+            command=lambda: self._run_async(self._toggle_ai_stocks_execution),
+        )
+        self.ai_badge_stocks_button.pack(side="left", padx=(0, 8))
+
+        self.ai_badge_cryptos_button = tk.Button(
+            badges_row,
+            textvariable=self.ai_badge_cryptos_var,
+            font=("TkDefaultFont", 11, "bold"),
+            bg="#1f5f2a",
+            fg="#ffffff",
+            padx=10,
+            pady=6,
+            activebackground="#1f5f2a",
+            activeforeground="#ffffff",
+            relief="raised",
+            bd=1,
+            cursor="hand2",
+            command=lambda: self._run_async(self._toggle_ai_cryptos_execution),
+        )
+        self.ai_badge_cryptos_button.pack(side="left", padx=(0, 8))
+
+        self.ai_badge_learning_button = tk.Button(
+            badges_row,
+            textvariable=self.ai_badge_learning_var,
+            font=("TkDefaultFont", 11, "bold"),
+            bg="#9a6700",
+            fg="#ffffff",
+            padx=10,
+            pady=6,
+            activebackground="#9a6700",
+            activeforeground="#ffffff",
+            relief="raised",
+            bd=1,
+            cursor="hand2",
+            command=lambda: self._run_async(self._toggle_ai_learning_automation),
+        )
+        self.ai_badge_learning_button.pack(side="left")
+
         body = ttk.Frame(window, padding=(12, 0, 12, 12))
         body.pack(fill="both", expand=True)
 
@@ -381,6 +702,8 @@ class BotControlWindow:
         ttk.Checkbutton(mode_row, text="Solo señales", variable=self.ai_signal_only_var).pack(side="left", padx=(0, 8))
         ttk.Checkbutton(mode_row, text="Paper trading", variable=self.ai_paper_trading_var).pack(side="left", padx=(0, 8))
         ttk.Checkbutton(mode_row, text="Live trading (bloqueado)", variable=self.ai_live_enabled_var, state="disabled").pack(side="left", padx=(0, 8))
+        ttk.Checkbutton(mode_row, text="Auto Stocks", variable=self.ai_auto_trade_stocks_var).pack(side="left", padx=(0, 8))
+        ttk.Checkbutton(mode_row, text="Auto Cryptos", variable=self.ai_auto_trade_cryptos_var).pack(side="left", padx=(0, 8))
         ttk.Button(mode_row, text="Guardar modo", command=lambda: self._run_async(self._save_ai_runtime_controls)).pack(side="right", padx=(8, 8))
 
         signals_body = ttk.LabelFrame(body, text="Top activos y señales IA")
@@ -2667,6 +2990,8 @@ class BotControlWindow:
             live_trading_enabled=False,
             manual_approval_required=bool(self.ai_manual_approval_var.get()),
             kill_switch=bool(self.ai_kill_switch_var.get()),
+            auto_trade_stocks_enabled=bool(self.ai_auto_trade_stocks_var.get()),
+            auto_trade_cryptos_enabled=bool(self.ai_auto_trade_cryptos_var.get()),
         )
         status = self.ai_trading_brain.start_automation(account_name=account_name)
         self._refresh_ai_runtime_view(status=status)
@@ -2677,11 +3002,90 @@ class BotControlWindow:
         self._refresh_ai_runtime_view(status=status)
         self.root.after(0, self._show_success, "Bot automático IA en pausa.", False)
 
+    def _persist_ai_runtime_controls(self, show_message: bool = True) -> None:
+        account_name = self.account_var.get().strip()
+        self.ai_trading_brain.update_runtime_controls(
+            account_name=account_name,
+            max_capital_assigned=float(self.ai_max_capital_var.get().strip() or 0.0),
+            max_position_size=float(self.ai_max_position_var.get().strip() or 0.0),
+            max_daily_loss=float(self.ai_max_daily_loss_var.get().strip() or 0.0),
+            enabled=bool(self.ai_bot_enabled_var.get()),
+            signal_only_mode=bool(self.ai_signal_only_var.get()),
+            paper_trading=bool(self.ai_paper_trading_var.get()),
+            live_trading_enabled=False,
+            manual_approval_required=bool(self.ai_manual_approval_var.get()),
+            kill_switch=bool(self.ai_kill_switch_var.get()),
+            auto_trade_stocks_enabled=bool(self.ai_auto_trade_stocks_var.get()),
+            auto_trade_cryptos_enabled=bool(self.ai_auto_trade_cryptos_var.get()),
+        )
+        self._refresh_ai_views()
+        if show_message:
+            self.root.after(0, self._show_success, "AI Trading Brain actualizado.", False)
+
+    def _toggle_ai_stocks_execution(self) -> None:
+        current = bool(self.ai_auto_trade_stocks_var.get())
+        self.ai_auto_trade_stocks_var.set(0 if current else 1)
+        self._persist_ai_runtime_controls(show_message=False)
+        state = "ON" if not current else "PAUSADA"
+        self.root.after(0, self._show_success, f"Ejecución Stocks: {state}", False)
+
+    def _toggle_ai_cryptos_execution(self) -> None:
+        current = bool(self.ai_auto_trade_cryptos_var.get())
+        self.ai_auto_trade_cryptos_var.set(0 if current else 1)
+        self._persist_ai_runtime_controls(show_message=False)
+        state = "ON" if not current else "PAUSADA"
+        self.root.after(0, self._show_success, f"Ejecución Cryptos: {state}", False)
+
+    def _toggle_ai_learning_automation(self) -> None:
+        account_name = self.account_var.get().strip()
+        status = self.ai_trading_brain.get_automation_status(account_name)
+        learning_running = all(
+            status.get(key, "Stopped") == "Running"
+            for key in ("collector", "scanner", "labeler", "news_social", "trainer")
+        )
+
+        if learning_running:
+            status = self.ai_trading_brain.pause_automation()
+            message = "Aprendizaje IA: PAUSED"
+        else:
+            self._persist_ai_runtime_controls(show_message=False)
+            status = self.ai_trading_brain.start_automation(account_name=account_name)
+            message = "Aprendizaje IA: RUNNING"
+
+        self._refresh_ai_runtime_view(status=status)
+        self.root.after(0, self._show_success, message, False)
+
     def _refresh_ai_runtime_view(self, status: dict[str, Any] | None = None) -> None:
         if not hasattr(self, "ai_runtime_text"):
             return
         if status is None:
             status = self.ai_trading_brain.get_automation_status(self.account_var.get().strip())
+
+        def _fmt_runtime_time(value: Any) -> str:
+            raw = str(value or "").strip()
+            if not raw:
+                return "N/A"
+
+            suffix = ""
+            timestamp_part = raw
+            if " | " in raw:
+                timestamp_part, suffix = raw.split(" | ", 1)
+
+            try:
+                parsed = datetime.fromisoformat(timestamp_part)
+            except ValueError:
+                return raw
+
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=timezone.utc)
+
+            local_dt = parsed.astimezone()
+            utc_dt = parsed.astimezone(timezone.utc)
+            base = f"{local_dt.strftime('%Y-%m-%d %H:%M:%S %Z')} | {utc_dt.strftime('%H:%M:%S UTC')}"
+            if suffix:
+                return f"{base} | {suffix}"
+            return base
+
         last_signal = status.get("last_signal") or {}
         last_signal_text = (
             f"{last_signal.get('symbol', 'N/A')} | {last_signal.get('signal_type', 'N/A')} | "
@@ -2689,15 +3093,37 @@ class BotControlWindow:
             if last_signal
             else "N/A"
         )
+
+        stocks_on = bool(status.get("auto_trade_stocks_enabled", True))
+        cryptos_on = bool(status.get("auto_trade_cryptos_enabled", True))
+        learning_running = all(
+            status.get(key, "Stopped") == "Running"
+            for key in ("collector", "scanner", "labeler", "news_social", "trainer")
+        )
+
+        self.ai_badge_stocks_var.set(f"Ejecucion Stocks: {'ON' if stocks_on else 'PAUSADA'}")
+        self.ai_badge_cryptos_var.set(f"Ejecucion Cryptos: {'ON' if cryptos_on else 'PAUSADA'}")
+        self.ai_badge_learning_var.set(f"Aprendizaje IA: {'RUNNING' if learning_running else 'PAUSED'}")
+
+        if hasattr(self, "ai_badge_stocks_button"):
+            color = "#1f5f2a" if stocks_on else "#8a1c1c"
+            self.ai_badge_stocks_button.configure(bg=color, activebackground=color)
+        if hasattr(self, "ai_badge_cryptos_button"):
+            color = "#1f5f2a" if cryptos_on else "#8a1c1c"
+            self.ai_badge_cryptos_button.configure(bg=color, activebackground=color)
+        if hasattr(self, "ai_badge_learning_button"):
+            color = "#1f5f2a" if learning_running else "#9a6700"
+            self.ai_badge_learning_button.configure(bg=color, activebackground=color)
+
         lines = [
             f"Estado del DataCollector: {status.get('collector', 'Stopped')}",
             f"Estado del SignalScanner: {status.get('scanner', 'Stopped')}",
             f"Estado del OutcomeLabeler: {status.get('labeler', 'Stopped')}",
             f"Estado del News/Social Collector: {status.get('news_social', 'Stopped')}",
             f"Estado del ModelTrainer: {status.get('trainer', 'Stopped')}",
-            f"Última actualización de datos: {status.get('last_data_update', 'N/A') or 'N/A'}",
-            f"Última actualización de news/social: {status.get('last_news_update', 'N/A') or 'N/A'}",
-            f"Última actualización de entrenamiento: {status.get('last_training_update', 'N/A') or 'N/A'}",
+            f"Última actualización de datos: {_fmt_runtime_time(status.get('last_data_update', 'N/A'))}",
+            f"Última actualización de news/social: {_fmt_runtime_time(status.get('last_news_update', 'N/A'))}",
+            f"Última actualización de entrenamiento: {_fmt_runtime_time(status.get('last_training_update', 'N/A'))}",
             f"Snapshots guardados hoy: {status.get('snapshots_today', 0)}",
             f"Señales generadas hoy: {status.get('signals_today', 0)}",
             f"Señales evaluadas hoy: {status.get('evaluated_outcomes_today', 0)}",
@@ -2710,6 +3136,8 @@ class BotControlWindow:
             f"Última llamada OpenAI: {status.get('last_openai_call', 'N/A') or 'N/A'}",
             f"Último error de API: {status.get('last_api_error', '') or 'Ninguno'}",
             f"Modo actual: {status.get('mode', 'Solo señales')}",
+            f"Auto trading stocks: {'ON' if bool(status.get('auto_trade_stocks_enabled', True)) else 'PAUSADO'}",
+            f"Auto trading cryptos: {'ON' if bool(status.get('auto_trade_cryptos_enabled', True)) else 'PAUSADO'}",
             f"OpenAI calls usadas hoy: {status.get('openai_calls_today', 0)}",
             f"API calls usadas hoy: {status.get('api_calls_today', 0)}",
         ]
@@ -2729,23 +3157,11 @@ class BotControlWindow:
         self.ai_live_enabled_var.set(1 if bool(runtime.get("live_trading_enabled", settings.live_trading_enabled)) else 0)
         self.ai_manual_approval_var.set(1 if bool(runtime.get("manual_approval_required", settings.manual_approval_required)) else 0)
         self.ai_kill_switch_var.set(1 if bool(runtime.get("kill_switch", 0)) else 0)
+        self.ai_auto_trade_stocks_var.set(1 if bool(runtime.get("auto_trade_stocks_enabled", 1)) else 0)
+        self.ai_auto_trade_cryptos_var.set(1 if bool(runtime.get("auto_trade_cryptos_enabled", 1)) else 0)
 
     def _save_ai_runtime_controls(self) -> None:
-        account_name = self.account_var.get().strip()
-        self.ai_trading_brain.update_runtime_controls(
-            account_name=account_name,
-            max_capital_assigned=float(self.ai_max_capital_var.get().strip() or 0.0),
-            max_position_size=float(self.ai_max_position_var.get().strip() or 0.0),
-            max_daily_loss=float(self.ai_max_daily_loss_var.get().strip() or 0.0),
-            enabled=bool(self.ai_bot_enabled_var.get()),
-            signal_only_mode=bool(self.ai_signal_only_var.get()),
-            paper_trading=bool(self.ai_paper_trading_var.get()),
-            live_trading_enabled=False,
-            manual_approval_required=bool(self.ai_manual_approval_var.get()),
-            kill_switch=bool(self.ai_kill_switch_var.get()),
-        )
-        self._refresh_ai_views()
-        self.root.after(0, self._show_success, "AI Trading Brain actualizado.", False)
+        self._persist_ai_runtime_controls(show_message=True)
 
     def _refresh_ai_dashboard_view(self) -> None:
         account_name = self.account_var.get().strip()
@@ -2867,15 +3283,6 @@ class BotControlWindow:
         self._set_text_widget(self.ai_signal_text, "\n".join(lines))
 
     def _show_ai_signal_history(self) -> None:
-        rows = self.ai_trading_brain.list_signal_recommendation_history(limit=60)
-        if not rows:
-            self._set_text_widget(self.ai_signal_text, "Historial IA sin señales evaluadas todavía.")
-            return
-
-        def _fmt_price(value: Any) -> str:
-            number = float(value or 0.0)
-            return f"{number:.6f}" if number > 0 else "N/A"
-
         def _fmt_ts(value: Any) -> str:
             raw = str(value or "")
             if not raw:
@@ -2886,80 +3293,71 @@ class BotControlWindow:
                 return raw
             return parsed.strftime("%Y-%m-%d %H:%M:%S")
 
-        now_utc = datetime.now(timezone.utc)
-        prepared: list[dict[str, Any]] = []
-        for row in rows:
-            pnl = float(row.get("hypothetical_pnl_pct", 0.0) or 0.0)
-            generated_raw = str(row.get("generated_at", "") or "")
-            generated_dt: datetime | None = None
+        operations: list[dict[str, Any]] = []
+        account_profiles = self.account_profiles or {}
+        for account_name in account_profiles.keys():
             try:
-                generated_dt = datetime.fromisoformat(generated_raw)
-            except ValueError:
-                generated_dt = None
+                rows = self.ai_trading_brain.list_history(account_name, limit=80)
+            except Exception:
+                continue
 
-            days_retained = 0
-            if generated_dt is not None:
-                days_retained = max((now_utc - generated_dt).days, 0)
+            profile = account_profiles.get(account_name, {})
+            mode = str(profile.get("mode", "N/A"))
+            for row in rows:
+                side = str(row.get("side", "")).lower().strip()
+                if side not in {"buy", "sell"}:
+                    continue
+                operations.append(
+                    {
+                        "account_name": account_name,
+                        "mode": mode,
+                        "timestamp": str(row.get("timestamp", "")),
+                        "symbol": str(row.get("symbol", "N/A")),
+                        "asset_type": str(row.get("asset_type", "N/A")),
+                        "side": side.upper(),
+                        "qty": float(row.get("qty", 0.0) or 0.0),
+                        "limit_price": float(row.get("limit_price", 0.0) or 0.0),
+                        "filled_price": float(row.get("filled_price", 0.0) or 0.0),
+                        "status": str(row.get("status", "N/A")),
+                        "initiated_by": str(row.get("initiated_by", "unknown") or "unknown"),
+                        "broker_order_id": str(row.get("broker_order_id", "") or "N/A"),
+                        "signal_id": row.get("signal_id", "N/A"),
+                    }
+                )
 
-            if pnl > 0:
-                status_label = "VENTA"
-                color_tag = "ai_hist_green"
-                priority = 2
-            else:
-                if days_retained >= 5:
-                    status_label = "RETENIDO 5D"
-                    color_tag = "ai_hist_red"
-                    priority = 0
-                else:
-                    status_label = "RETENIDO"
-                    color_tag = "ai_hist_yellow"
-                    priority = 1
+        operations.sort(key=lambda item: str(item.get("timestamp", "")), reverse=True)
+        operations = operations[:120]
 
-            prepared.append(
-                {
-                    "row": row,
-                    "status_label": status_label,
-                    "color_tag": color_tag,
-                    "priority": priority,
-                    "days_retained": days_retained,
-                }
+        if not operations:
+            self._set_text_widget(
+                self.ai_signal_text,
+                "Sin operaciones reales registradas todavia (paper/live).\n"
+                "Este panel ahora muestra solo ordenes enviadas al broker (BUY/SELL), no WATCH/RETENIDO hipotetico.",
             )
+            return
 
-        prepared.sort(key=lambda item: (int(item["priority"]), str(item["row"].get("generated_at", ""))), reverse=False)
+        lines: list[str] = []
+        lines.append("HISTORIAL DE OPERACIONES REALES (PAPER/LIVE)")
+        lines.append("=")
+        lines.append(f"Total mostrado: {len(operations)}")
+        lines.append("Solo incluye BUY/SELL enviados al broker; no incluye WATCH/RETENIDO hipotetico.")
+        lines.append("")
 
-        self.ai_signal_text.configure(state="normal")
-        self.ai_signal_text.delete("1.0", tk.END)
-        self.ai_signal_text.tag_configure("ai_hist_red", foreground="#b00020")
-        self.ai_signal_text.tag_configure("ai_hist_yellow", foreground="#a07000")
-        self.ai_signal_text.tag_configure("ai_hist_green", foreground="#1b7a1b")
-        self.ai_signal_text.insert(tk.END, "Historial de recomendaciones IA (entrada/salida y PnL hipotético):\n\n")
+        for item in operations:
+            lines.append(
+                f"{_fmt_ts(item.get('timestamp'))} | cuenta={item.get('account_name', 'N/A')} ({item.get('mode', 'N/A')}) | "
+                f"{item.get('symbol', 'N/A')} ({item.get('asset_type', 'N/A')}) | side={item.get('side', 'N/A')} | "
+                f"qty={float(item.get('qty', 0.0) or 0.0):.6f} | status={item.get('status', 'N/A')} | "
+                f"origen={item.get('initiated_by', 'unknown')}"
+            )
+            lines.append(
+                f"  limit={float(item.get('limit_price', 0.0) or 0.0):.6f} | "
+                f"filled={float(item.get('filled_price', 0.0) or 0.0):.6f} | "
+                f"signal={item.get('signal_id', 'N/A')} | order={item.get('broker_order_id', 'N/A')}"
+            )
+            lines.append("")
 
-        for item in prepared:
-            row = item["row"]
-            color_tag = str(item["color_tag"])
-            status_label = str(item["status_label"])
-            days_retained = int(item["days_retained"])
-            self.ai_signal_text.insert(
-                tk.END,
-                f"{_fmt_ts(row.get('generated_at'))} | {row.get('symbol', 'N/A')} ({row.get('asset_type', 'N/A')}) | accion={row.get('action', 'N/A')}\n",
-            )
-            self.ai_signal_text.insert(
-                tk.END,
-                f"  entrada: {_fmt_ts(row.get('entry_at'))} | precio entrada: {_fmt_price(row.get('entry_price'))} | limite compra: {_fmt_price(row.get('entry_limit_price'))}\n",
-            )
-            self.ai_signal_text.insert(
-                tk.END,
-                f"  salida sugerida: {_fmt_ts(row.get('recommended_exit_at'))} ({row.get('recommended_window_m', 0)}m) | limite salida: {_fmt_price(row.get('exit_limit_price'))}\n",
-            )
-            self.ai_signal_text.insert(
-                tk.END,
-                f"  mejor +{float(row.get('best_profit_pct', 0.0) or 0.0):.3f}% | peor {float(row.get('worst_drawdown_pct', 0.0) or 0.0):.3f}% | hipotético {float(row.get('hypothetical_pnl_pct', 0.0) or 0.0):.3f}% | resultado={row.get('result', 'N/A')}\n",
-            )
-            retained_note = f" ({days_retained}d)" if status_label.startswith("RETENIDO") else ""
-            self.ai_signal_text.insert(tk.END, f"  estado: {status_label}{retained_note}\n", color_tag)
-            self.ai_signal_text.insert(tk.END, "\n")
-
-        self.ai_signal_text.configure(state="disabled")
+        self._set_text_widget(self.ai_signal_text, "\n".join(lines))
 
     def _refresh_ai_history_view(self) -> None:
         history = self.ai_trading_brain.list_history(self.account_var.get().strip(), limit=40)
@@ -2969,7 +3367,7 @@ class BotControlWindow:
         lines = []
         for item in history:
             lines.append(
-                f"{item.get('timestamp', 'N/A')} | {item.get('symbol', 'N/A')} | {item.get('side', 'N/A')} | qty={float(item.get('qty', 0.0) or 0.0):.6f} | filled={float(item.get('filled_price', 0.0) or 0.0):.6f} | status={item.get('status', 'N/A')} | signal={item.get('signal_id', 'N/A')}"
+                f"{item.get('timestamp', 'N/A')} | {item.get('symbol', 'N/A')} | {item.get('side', 'N/A')} | qty={float(item.get('qty', 0.0) or 0.0):.6f} | filled={float(item.get('filled_price', 0.0) or 0.0):.6f} | status={item.get('status', 'N/A')} | signal={item.get('signal_id', 'N/A')} | origen={item.get('initiated_by', 'unknown')}"
             )
         self._set_text_widget(self.ai_history_text, "\n".join(lines))
 
@@ -3009,6 +3407,8 @@ class BotControlWindow:
             f"Kill switch: {'ON' if security.get('kill_switch') else 'OFF'}",
             f"Trading real activado: {'ON' if security.get('live_trading_enabled') else 'OFF'}",
             f"Paper trading activado: {'ON' if security.get('paper_trading') else 'OFF'}",
+            f"Auto trading stocks: {'ON' if security.get('auto_trade_stocks_enabled') else 'PAUSADO'}",
+            f"Auto trading cryptos: {'ON' if security.get('auto_trade_cryptos_enabled') else 'PAUSADO'}",
             f"Modo solo señales: {'ON' if security.get('signal_only_mode') else 'OFF'}",
             f"Aprobacion manual: {'ON' if security.get('manual_approval_required') else 'OFF'}",
             f"Perdida maxima diaria: {float(security.get('max_daily_loss', 0.0) or 0.0):.2f}",
@@ -3068,6 +3468,7 @@ class BotControlWindow:
             signal_id=self._latest_ai_signal_id,
             account_name=self.account_var.get().strip(),
             manual_approved=bool(self.ai_manual_approval_var.get()),
+            initiated_by="user_manual",
         )
         self._refresh_ai_views()
         self.root.after(0, self._show_success, f"Compra IA: {result}", False)
@@ -3078,6 +3479,7 @@ class BotControlWindow:
             symbol=symbol,
             account_name=self.account_var.get().strip(),
             manual_approved=bool(self.ai_manual_approval_var.get()),
+            initiated_by="user_manual",
         )
         self._refresh_ai_views()
         self.root.after(0, self._show_success, f"Venta IA: {result}", False)
