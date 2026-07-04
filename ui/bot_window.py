@@ -1139,6 +1139,20 @@ class BotControlWindow:
         self._view_history()
 
     def _render_history_trades_tab(self, closed_trades: list[dict[str, Any]]) -> None:
+        def _fmt_ts(value: Any) -> str:
+            raw = str(value or "").strip()
+            if not raw:
+                return "N/A"
+            text = raw.replace("Z", "+00:00")
+            try:
+                parsed = datetime.fromisoformat(text)
+            except ValueError:
+                return raw
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=timezone.utc)
+            local_dt = parsed.astimezone()
+            return local_dt.strftime("%Y-%m-%d %H:%M:%S %Z")
+
         selected_tab = self.log_notebook.select()
         if self._history_tab_frame is not None:
             try:
@@ -1217,6 +1231,10 @@ class BotControlWindow:
             qty = float(trade.get("qty", 0.0) or 0.0)
             entry = float(trade.get("entry_price", 0.0) or 0.0)
             exit_price = float(trade.get("exit_price", 0.0) or 0.0)
+            entry_time = _fmt_ts(trade.get("entry_time", ""))
+            exit_time = _fmt_ts(trade.get("exit_time", ""))
+            entry_origin = str(trade.get("entry_origin", "AUTOMATICA"))
+            exit_origin = str(trade.get("exit_origin", "AUTOMATICA"))
             pnl = float(trade.get("realized_pnl", 0.0) or 0.0)
             result = str(trade.get("result", "N/A"))
             trade_id = str(trade.get("trade_id", ""))
@@ -1231,7 +1249,9 @@ class BotControlWindow:
             )
 
             info_prefix = (
-                f"{symbol} | qty={qty:.4f} | entry={entry:.4f} | exit={exit_price:.4f} | "
+                f"{symbol} | entrada={entry_time} | salida={exit_time} | "
+                f"origen_entrada={entry_origin} | origen_salida={exit_origin} | "
+                f"qty={qty:.4f} | entry={entry:.4f} | exit={exit_price:.4f} | "
                 f"pnl={pnl:.4f} | RESULTADO="
             )
             info_suffix = f" | {result} | id={short_id}"
@@ -1298,6 +1318,8 @@ class BotControlWindow:
                     "qty": float(record.get("qty", entry.get("qty", 0.0)) or 0.0),
                     "reason_buy": entry.get("reason_buy", ""),
                     "reason_sell": record.get("reason_sell", ""),
+                    "entry_origin": self._classify_entry_origin(entry.get("reason_buy", "")),
+                    "exit_origin": self._classify_exit_origin(record.get("reason_sell", "")),
                     "realized_pnl": float(record.get("realized_pnl", 0.0) or 0.0),
                     "result": (
                         "GANANCIA"
@@ -1354,6 +1376,22 @@ class BotControlWindow:
                 lines.append(f"... y {len(cancelled_schedules) - 120} programacion(es) mas")
 
         self.root.after(0, self._show_success, "\n".join(lines), False)
+
+    @staticmethod
+    def _classify_entry_origin(reason_buy: Any) -> str:
+        text = str(reason_buy or "").lower()
+        manual_terms = ("manual", "manual_entry_now", "user", "boton")
+        if any(term in text for term in manual_terms):
+            return "MANUAL"
+        return "AUTOMATICA"
+
+    @staticmethod
+    def _classify_exit_origin(reason_sell: Any) -> str:
+        text = str(reason_sell or "").lower()
+        manual_terms = ("manual", "manual_sell", "user", "boton")
+        if any(term in text for term in manual_terms):
+            return "MANUAL"
+        return "AUTOMATICA"
 
     def _refresh_dashboard(self, show_output: bool = True) -> None:
         self._apply_runtime_settings()
@@ -2537,8 +2575,16 @@ class BotControlWindow:
                 if context is not None:
                     context["auto_rebuy"] = auto_rebuy
             self._apply_auto_rebuy_button_state(watch_id, auto_rebuy)
+
+            has_open_position = False
+            try:
+                runtime = self._runtime_for_watch(watch_id)
+                has_open_position = self._find_open_position_by_symbol(symbol, broker=runtime.get("broker")) is not None
+            except Exception as ex:
+                self.logger.warning("No se pudo verificar posicion abierta para pestana restaurada %s: %s", symbol, ex)
+
             restored += 1
-            if mode == "waiting":
+            if mode == "waiting" and not has_open_position:
                 with self._watch_lock:
                     context = self._watch_tabs.get(watch_id)
                     if context is not None:
@@ -2549,7 +2595,10 @@ class BotControlWindow:
                 self._watch_log(watch_id, "Pestaña restaurada en pausa para evitar compras automaticas.")
                 self._set_watch_status(watch_id, "Entrada restaurada en pausa")
             else:
-                self._watch_log(watch_id, "Pestaña restaurada tras reinicio. Reanudando monitoreo en vivo.")
+                if mode == "waiting" and has_open_position:
+                    self._watch_log(watch_id, "Pestaña restaurada: posición abierta detectada. Activando monitoreo en vivo.")
+                else:
+                    self._watch_log(watch_id, "Pestaña restaurada tras reinicio. Reanudando monitoreo en vivo.")
                 self._start_position_tracking(watch_id=watch_id, symbol=symbol, entry_price_hint=0.0)
 
         self._watch_state_path.write_text(
@@ -2571,11 +2620,20 @@ class BotControlWindow:
             return
 
         created = 0
+        resumed = 0
         for position in positions:
             symbol = str(position.get("symbol", "")).strip().upper()
             if not symbol:
                 continue
-            if self._watch_tab_exists_for_symbol(symbol=symbol, account=current_account):
+            existing_watch_id = self._find_watch_id_for_symbol(symbol=symbol, account=current_account)
+            if existing_watch_id:
+                with self._watch_lock:
+                    existing_context = self._watch_tabs.get(existing_watch_id)
+                    existing_mode = str(existing_context.get("mode", "waiting")).strip().lower() if existing_context else "waiting"
+                if existing_mode != "tracking":
+                    self._watch_log(existing_watch_id, "Posición abierta detectada tras reinicio. Reanudando monitoreo en vivo.")
+                    self._start_position_tracking(watch_id=existing_watch_id, symbol=symbol, entry_price_hint=0.0)
+                    resumed += 1
                 continue
 
             asset_type = self._asset_type_for_symbol(symbol)
@@ -2589,8 +2647,20 @@ class BotControlWindow:
             self._start_position_tracking(watch_id=watch_id, symbol=symbol, entry_price_hint=0.0)
             created += 1
 
-        if created > 0:
-            self.status_var.set(f"Se restauraron {created} pestaña(s) desde posiciones abiertas")
+        if created > 0 or resumed > 0:
+            self.status_var.set(
+                f"Pestañas desde posiciones abiertas: nuevas={created} | monitoreo_reanudado={resumed}"
+            )
+
+    def _find_watch_id_for_symbol(self, symbol: str, account: str) -> str | None:
+        target = self._symbol_key(symbol)
+        with self._watch_lock:
+            for watch_id, context in self._watch_tabs.items():
+                current_symbol = self._symbol_key(str(context.get("symbol", "")))
+                current_account = str(context.get("account", "")).strip()
+                if current_symbol == target and current_account == account:
+                    return str(watch_id)
+        return None
 
     def _watch_tab_exists_for_symbol(self, symbol: str, account: str) -> bool:
         target = self._symbol_key(symbol)

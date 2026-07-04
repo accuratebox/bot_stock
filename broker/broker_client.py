@@ -223,9 +223,14 @@ class AlpacaBrokerClient:
     @staticmethod
     def _normalize_order_symbol(symbol: str) -> str:
         normalized = str(symbol or "").upper().replace(" ", "")
+        normalized = normalized.replace("/USDC", "/USD")
         normalized = normalized.replace("/USDT", "/USD")
+        if normalized.endswith("USDC") and "/" not in normalized:
+            normalized = normalized[:-4] + "USD"
         if normalized.endswith("USDT") and "/" not in normalized:
             normalized = normalized[:-4] + "USD"
         if "/" in normalized:
-            return normalized.replace("/", "")
+            return normalized
+        if normalized.endswith("USD") and len(normalized) > 3:
+            return f"{normalized[:-3]}/USD"
         return normalized

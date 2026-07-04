@@ -335,13 +335,22 @@ class PositionManager:
         resolved_order = self._wait_order_fill(order, requested_qty=requested_qty, max_attempts=30, sleep_seconds=0.5)
         order_status = str(resolved_order.get("status", "")).lower()
         filled_qty = float(resolved_order.get("filled_qty", 0.0) or 0.0)
-        if order_status != "filled" or filled_qty < (requested_qty - 1e-8):
+        if filled_qty <= 1e-8:
             order_id = str(resolved_order.get("id", order.get("id", "")))
             raise ValueError(
                 (
-                    f"Orden market sin llenado completo (status={order_status}, "
+                    f"Orden market sin llenado (status={order_status}, "
                     f"filled_qty={filled_qty:.8f}, requested_qty={requested_qty:.8f}, order_id={order_id})."
                 )
+            )
+
+        if order_status != "filled" or filled_qty < (requested_qty - 1e-8):
+            self.logger.warning(
+                "Entrada parcial %s status=%s filled_qty=%.8f requested_qty=%.8f",
+                symbol,
+                order_status,
+                filled_qty,
+                requested_qty,
             )
 
         filled_price = float(
@@ -389,6 +398,8 @@ class PositionManager:
             "order": resolved_order,
             "entry_price": filled_price,
             "filled_qty": filled_qty,
+            "requested_qty": requested_qty,
+            "partial_fill": filled_qty < (requested_qty - 1e-8),
             "entry_cost": entry_cost,
             "current_price": current_price,
             "spread_pct": quote.get("spread_pct", spread_pct),
