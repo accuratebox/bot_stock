@@ -3,7 +3,7 @@
     "symbol": "SOL/USD",
     "asset_type": "crypto",
     "account": "Paper 2",
-    "mode": "waiting",
-    "auto_rebuy": false
+    "mode": "tracking",
+    "auto_rebuy": true
   }
 ]

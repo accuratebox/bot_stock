@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import calendar
+import json
 import math
 import threading
 import time
@@ -60,6 +62,14 @@ class AITradingBrainService:
         self._last_auto_trained_outcomes = 0
         self._news_fetch_cache_by_symbol: dict[str, tuple[float, list[dict[str, str]]]] = {}
         self._news_fetch_cooldown_until_by_symbol: dict[str, float] = {}
+        self._cryptopanic_usage_lock = threading.Lock()
+        self._cryptopanic_monthly_limit = max(int(getattr(settings, "cryptopanic_monthly_limit", 600) or 600), 1)
+        self._cryptopanic_used_baseline = max(int(getattr(settings, "cryptopanic_used_this_month", 0) or 0), 0)
+        self._cryptopanic_request_weekdays = self._parse_cryptopanic_request_days(
+            str(getattr(settings, "cryptopanic_request_days", "mon,tue,wed,thu,fri") or "mon,tue,wed,thu,fri")
+        )
+        self._cryptopanic_usage_path = Path(settings.ai_brain_db_path).resolve().parent / "cryptopanic_usage.json"
+        self._cryptopanic_usage_data = self._load_cryptopanic_usage()
         self.auto_controller = AutoTradingController(
             signal_only_mode=bool(settings.ai_signal_only_mode),
             paper_trading=bool(settings.paper_trading),
@@ -211,6 +221,17 @@ class AITradingBrainService:
         self._reset_daily_counters_if_needed()
         approved_model = self.registry.approved_version() or ""
         latest_model = self.registry.latest_version() or ""
+        training_cycle_seconds = max(float(self._training_interval_seconds() or 0.0), 0.0)
+        now_ts = time.time()
+        last_training_ts = float(getattr(self.model_trainer_worker, "last_run_at", 0.0) or 0.0)
+        training_elapsed_seconds = max(now_ts - last_training_ts, 0.0) if last_training_ts > 0.0 else 0.0
+        if training_cycle_seconds <= 0.0:
+            training_progress_pct = 0.0
+            training_remaining_seconds = 0.0
+        else:
+            training_progress_pct = min((training_elapsed_seconds / training_cycle_seconds) * 100.0, 100.0)
+            training_remaining_seconds = max(training_cycle_seconds - training_elapsed_seconds, 0.0)
+
         latest_signal = self.database.latest_signals(limit=1)
         snapshots_today = self.database.count_snapshots_today()
         signals_today = self.database.count_signals_today()
@@ -244,6 +265,10 @@ class AITradingBrainService:
             "mode": self.auto_controller.mode_label(),
             "openai_calls_today": self._openai_calls_today,
             "api_calls_today": self._api_calls_today,
+            "training_cycle_seconds": training_cycle_seconds,
+            "training_elapsed_seconds": training_elapsed_seconds,
+            "training_remaining_seconds": training_remaining_seconds,
+            "training_progress_pct": training_progress_pct,
             "model_current": approved_model or "heuristic",
             "model_latest_trained": latest_model or "none",
             "model_approved_paper": approved_model or "manual_pending",
@@ -564,10 +589,31 @@ class AITradingBrainService:
         if not version:
             raise ValueError("No hay modelo para aprobar")
         self.registry.approve_model(version)
+        self.database.insert_decision_log(
+            {
+                "timestamp": self._now_iso(),
+                "symbol": "*",
+                "decision": "MODEL_APPROVED",
+                "reason": f"version={version}",
+                "blocked_reason": "",
+                "raw_context_json": {"version": version},
+            }
+        )
         return version
 
     def rollback_model(self) -> str | None:
-        return self.registry.rollback_to_previous()
+        version = self.registry.rollback_to_previous()
+        self.database.insert_decision_log(
+            {
+                "timestamp": self._now_iso(),
+                "symbol": "*",
+                "decision": "MODEL_ROLLBACK",
+                "reason": f"version={version or 'sin_cambios'}",
+                "blocked_reason": "" if version else "no_previous_version",
+                "raw_context_json": {"version": version},
+            }
+        )
+        return version
 
     def sync_positions(self, account_name: str) -> list[dict[str, Any]]:
         account = self.refresh_account_context(account_name)
@@ -1597,6 +1643,25 @@ class AITradingBrainService:
         query_currency = symbol.replace("/", "").replace("USD", "").upper().strip()
         if not query_currency:
             return []
+
+        quota = self.get_cryptopanic_quota_status()
+        if not bool(quota.get("allowed_today", False)):
+            return []
+
+        key = f"cryptopanic:{self._symbol_key(symbol)}"
+        now_monotonic = time.monotonic()
+        cached = self._news_fetch_cache_by_symbol.get(key)
+        cache_seconds = max(int(getattr(self.settings, "cryptopanic_cache_seconds", 1800) or 1800), 60)
+        if cached is not None:
+            cached_at, cached_events = cached
+            if (now_monotonic - cached_at) <= float(cache_seconds):
+                return cached_events
+
+        today_used = int(quota.get("today_used", 0) or 0)
+        today_budget = int(quota.get("today_budget", 0) or 0)
+        if today_used >= today_budget:
+            return []
+
         try:
             response = requests.get(
                 "https://cryptopanic.com/api/growth_weekly/v2/posts/",
@@ -1613,6 +1678,7 @@ class AITradingBrainService:
             response.raise_for_status()
             self._api_calls_today += 1
             payload = response.json()
+            self._record_cryptopanic_request()
             self._mark_api_recovered()
             result: list[dict[str, str]] = []
             for row in payload.get("results", [])[:4]:
@@ -1630,11 +1696,189 @@ class AITradingBrainService:
                         "author": author,
                     }
                 )
+            self._news_fetch_cache_by_symbol[key] = (now_monotonic, result)
             return result
         except Exception as ex:
             if not self._is_rate_limit_error(ex):
                 self._last_api_error = str(ex)
             return []
+
+    def update_cryptopanic_quota_settings(self, monthly_limit: int, used_baseline: int, request_days: str) -> None:
+        self._cryptopanic_monthly_limit = max(int(monthly_limit or 1), 1)
+        self._cryptopanic_used_baseline = max(int(used_baseline or 0), 0)
+        self._cryptopanic_request_weekdays = self._parse_cryptopanic_request_days(request_days)
+
+    def reset_cryptopanic_month_usage(self, used_baseline: int = 0) -> dict[str, Any]:
+        now_utc = datetime.now(timezone.utc)
+        month_key = now_utc.strftime("%Y-%m")
+        baseline = max(int(used_baseline or 0), 0)
+        with self._cryptopanic_usage_lock:
+            self._cryptopanic_used_baseline = baseline
+            months = self._cryptopanic_usage_data.setdefault("months", {})
+            months[month_key] = {"count": 0, "days": {}}
+            self._save_cryptopanic_usage()
+        return self.get_cryptopanic_quota_status()
+
+    def get_cryptopanic_quota_status(self) -> dict[str, Any]:
+        now_utc = datetime.now(timezone.utc)
+        month_key = now_utc.strftime("%Y-%m")
+        tracked_used = self._cryptopanic_tracked_used_month(month_key)
+        used_total = min(self._cryptopanic_monthly_limit, self._cryptopanic_used_baseline + tracked_used)
+        remaining_total = max(self._cryptopanic_monthly_limit - used_total, 0)
+
+        active_days_remaining = self._cryptopanic_active_days_remaining(now_utc)
+        is_today_active = now_utc.weekday() in self._cryptopanic_request_weekdays
+        today_budget = self._cryptopanic_day_budget(now_utc)
+        today_used = self._cryptopanic_tracked_used_day(month_key, now_utc.strftime("%Y-%m-%d"))
+
+        return {
+            "month_key": month_key,
+            "monthly_limit": self._cryptopanic_monthly_limit,
+            "used_total": used_total,
+            "remaining_total": remaining_total,
+            "used_baseline": self._cryptopanic_used_baseline,
+            "used_tracked": tracked_used,
+            "request_days": self._cryptopanic_request_days_text(),
+            "active_days_remaining": active_days_remaining,
+            "today_active": is_today_active,
+            "today_budget": today_budget,
+            "today_used": today_used,
+            "allowed_today": bool(is_today_active and remaining_total > 0 and today_budget > today_used),
+        }
+
+    def _parse_cryptopanic_request_days(self, request_days: str) -> set[int]:
+        aliases = {
+            "mon": 0,
+            "monday": 0,
+            "lun": 0,
+            "tue": 1,
+            "tuesday": 1,
+            "mar": 1,
+            "wed": 2,
+            "wednesday": 2,
+            "mie": 2,
+            "mié": 2,
+            "thu": 3,
+            "thursday": 3,
+            "jue": 3,
+            "fri": 4,
+            "friday": 4,
+            "vie": 4,
+            "sat": 5,
+            "saturday": 5,
+            "sab": 5,
+            "sáb": 5,
+            "sun": 6,
+            "sunday": 6,
+            "dom": 6,
+        }
+        result: set[int] = set()
+        for raw in str(request_days or "").replace(";", ",").split(","):
+            token = raw.strip().lower()
+            if not token:
+                continue
+            if token.isdigit():
+                idx = int(token)
+                if 0 <= idx <= 6:
+                    result.add(idx)
+                continue
+            if token in aliases:
+                result.add(aliases[token])
+        if not result:
+            return {0, 1, 2, 3, 4}
+        return result
+
+    def _cryptopanic_request_days_text(self) -> str:
+        names = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+        return ",".join(names[idx] for idx in sorted(self._cryptopanic_request_weekdays))
+
+    def _load_cryptopanic_usage(self) -> dict[str, Any]:
+        if not self._cryptopanic_usage_path.exists():
+            return {"months": {}}
+        try:
+            payload = json.loads(self._cryptopanic_usage_path.read_text(encoding="utf-8"))
+            if not isinstance(payload, dict):
+                return {"months": {}}
+            if "months" not in payload or not isinstance(payload.get("months"), dict):
+                payload["months"] = {}
+            return payload
+        except Exception:
+            return {"months": {}}
+
+    def _save_cryptopanic_usage(self) -> None:
+        try:
+            self._cryptopanic_usage_path.parent.mkdir(parents=True, exist_ok=True)
+            self._cryptopanic_usage_path.write_text(
+                json.dumps(self._cryptopanic_usage_data, indent=2, ensure_ascii=False),
+                encoding="utf-8",
+            )
+        except Exception as ex:
+            self.logger.warning("No se pudo guardar uso de CryptoPanic: %s", ex)
+
+    def _record_cryptopanic_request(self) -> None:
+        now_utc = datetime.now(timezone.utc)
+        month_key = now_utc.strftime("%Y-%m")
+        day_key = now_utc.strftime("%Y-%m-%d")
+        with self._cryptopanic_usage_lock:
+            months = self._cryptopanic_usage_data.setdefault("months", {})
+            month_data = months.setdefault(month_key, {"count": 0, "days": {}})
+            month_data["count"] = int(month_data.get("count", 0) or 0) + 1
+            day_map = month_data.setdefault("days", {})
+            day_map[day_key] = int(day_map.get(day_key, 0) or 0) + 1
+            self._save_cryptopanic_usage()
+
+    def _cryptopanic_tracked_used_month(self, month_key: str) -> int:
+        with self._cryptopanic_usage_lock:
+            months = self._cryptopanic_usage_data.get("months", {})
+            month_data = months.get(month_key, {})
+            return int(month_data.get("count", 0) or 0)
+
+    def _cryptopanic_tracked_used_day(self, month_key: str, day_key: str) -> int:
+        with self._cryptopanic_usage_lock:
+            months = self._cryptopanic_usage_data.get("months", {})
+            month_data = months.get(month_key, {})
+            day_map = month_data.get("days", {}) if isinstance(month_data.get("days", {}), dict) else {}
+            return int(day_map.get(day_key, 0) or 0)
+
+    def _cryptopanic_active_days_remaining(self, now_utc: datetime) -> int:
+        year = now_utc.year
+        month = now_utc.month
+        _, days_in_month = calendar.monthrange(year, month)
+        count = 0
+        for day in range(now_utc.day, days_in_month + 1):
+            dt = datetime(year, month, day, tzinfo=timezone.utc)
+            if dt.weekday() in self._cryptopanic_request_weekdays:
+                count += 1
+        return count
+
+    def _cryptopanic_day_budget(self, now_utc: datetime) -> int:
+        if now_utc.weekday() not in self._cryptopanic_request_weekdays:
+            return 0
+
+        month_key = now_utc.strftime("%Y-%m")
+        tracked_used = self._cryptopanic_tracked_used_month(month_key)
+        used_total = min(self._cryptopanic_monthly_limit, self._cryptopanic_used_baseline + tracked_used)
+        remaining_total = max(self._cryptopanic_monthly_limit - used_total, 0)
+        if remaining_total <= 0:
+            return 0
+
+        year = now_utc.year
+        month = now_utc.month
+        _, days_in_month = calendar.monthrange(year, month)
+        active_dates = [
+            datetime(year, month, day, tzinfo=timezone.utc)
+            for day in range(now_utc.day, days_in_month + 1)
+            if datetime(year, month, day, tzinfo=timezone.utc).weekday() in self._cryptopanic_request_weekdays
+        ]
+        if not active_dates:
+            return 0
+
+        total_active = len(active_dates)
+        idx = next((i for i, dt in enumerate(active_dates) if dt.date() == now_utc.date()), 0)
+        prev_target = math.floor((remaining_total * idx) / total_active)
+        current_target = math.floor((remaining_total * (idx + 1)) / total_active)
+        daily_budget = current_target - prev_target
+        return max(int(daily_budget), 0)
 
     def _fetch_yahoo_finance_events(self, symbol: str) -> list[dict[str, str]]:
         key = self._symbol_key(symbol)

@@ -176,6 +176,9 @@ class Settings:
     cryptopanic_general_news_interval_seconds: int = int(_env("CRYPTOPANIC_GENERAL_NEWS_INTERVAL_SECONDS", default="7200"))  # 2 hours
     cryptopanic_max_requests_per_day: int = int(_env("CRYPTOPANIC_MAX_REQUESTS_PER_DAY", default="20"))
     cryptopanic_request_tracking_enabled: bool = _env_bool("CRYPTOPANIC_REQUEST_TRACKING_ENABLED", default=True)
+    cryptopanic_monthly_limit: int = int(_env("CRYPTOPANIC_MONTHLY_LIMIT", default="600"))
+    cryptopanic_used_this_month: int = int(_env("CRYPTOPANIC_USED_THIS_MONTH", default="0"))
+    cryptopanic_request_days: str = _env("CRYPTOPANIC_REQUEST_DAYS", default="mon,tue,wed,thu,fri")
 
     # Crypto dynamic asset list (will be fetched from Alpaca)
     crypto_preferred_symbols: str = _env("CRYPTO_PREFERRED_SYMBOLS", default="BTC/USD,ETH/USD,SOL/USD,XRP/USD,DOGE/USD,LINK/USD,AVAX/USD,LTC/USD")
