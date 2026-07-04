@@ -128,6 +128,7 @@ class Settings:
     ai_openai_signal_trigger_score: float = float(_env("AI_OPENAI_SIGNAL_TRIGGER_SCORE", default="85"))
     ai_openai_news_trigger_importance: float = float(_env("AI_OPENAI_NEWS_TRIGGER_IMPORTANCE", default="65"))
     ai_min_volume_24h_usd: float = float(_env("AI_MIN_VOLUME_24H_USD", default="100000"))
+    ai_min_execution_confidence: float = float(_env("AI_MIN_EXECUTION_CONFIDENCE", default="60"))
     ai_auto_train_mode: str = _env("AI_AUTO_TRAIN_MODE", default="12h").lower()
     ai_dev_mode: bool = _env_bool("AI_DEV_MODE", default=False)
 

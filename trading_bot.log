@@ -483,3 +483,1459 @@ ValueError: No hay posicion abierta para AAPB
 2026-07-03 04:47:44 | INFO | trading_bot | Ordenes consultadas: 1
 2026-07-03 04:47:44 | INFO | trading_bot | Ordenes consultadas: 32
 2026-07-03 04:48:33 | INFO | trading_bot | Salida limit registrada SOLUSD pnl=-0.8671167180619997
+2026-07-03 05:40:45 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 05:40:45 | INFO | trading_bot | Recuperacion de posiciones abierta(s): 1
+2026-07-03 05:40:45 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=1 ya_linkeadas=0
+2026-07-03 05:42:45 | INFO | trading_bot | Ordenes consultadas: 4
+2026-07-03 05:42:45 | INFO | trading_bot | Ordenes consultadas: 18
+2026-07-03 05:43:20 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 05:43:20 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 05:45:18 | INFO | trading_bot | Salida registrada SOLUSD pnl=-0.3012144826578489
+2026-07-03 05:45:22 | INFO | trading_bot | Ordenes consultadas: 4
+2026-07-03 05:45:22 | INFO | trading_bot | Ordenes consultadas: 19
+2026-07-03 05:46:56 | INFO | trading_bot | Stock programado para apertura: AAVE/USD
+2026-07-03 05:47:26 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 05:47:26 | INFO | trading_bot | Recuperacion de posiciones abierta(s): 1
+2026-07-03 05:47:26 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=1 ya_linkeadas=0
+2026-07-03 05:47:36 | INFO | trading_bot | Ordenes consultadas: 1
+2026-07-03 05:47:36 | INFO | trading_bot | Ordenes consultadas: 33
+2026-07-03 05:47:45 | INFO | trading_bot | Ordenes consultadas: 1
+2026-07-03 05:47:45 | INFO | trading_bot | Ordenes consultadas: 33
+2026-07-03 05:47:45 | INFO | trading_bot | Orden cancelada: 928cd621-a0c0-4023-b284-b1b3d5fd7d31
+2026-07-03 05:47:47 | INFO | trading_bot | Salida registrada SOLUSD pnl=-0.31664724787502657
+2026-07-03 05:47:56 | INFO | trading_bot | Ordenes consultadas: 4
+2026-07-03 05:47:56 | INFO | trading_bot | Ordenes consultadas: 19
+2026-07-03 05:48:52 | INFO | trading_bot | Orden creada: b5e5c94e-a0b6-4017-bc49-43552c94f530
+2026-07-03 05:48:52 | INFO | trading_bot | Entrada registrada SOL/USD qty=24.6106 entry=81.08675027
+2026-07-03 05:49:25 | INFO | trading_bot | Ordenes consultadas: 4
+2026-07-03 05:49:25 | INFO | trading_bot | Ordenes consultadas: 20
+2026-07-03 05:49:28 | INFO | trading_bot | Orden limite creada: cc1f20ef-0376-4948-b850-523a119ba671
+2026-07-03 05:49:33 | INFO | trading_bot | Ordenes consultadas: 5
+2026-07-03 05:49:33 | INFO | trading_bot | Ordenes consultadas: 21
+2026-07-03 05:49:43 | INFO | trading_bot | Ordenes consultadas: 5
+2026-07-03 05:49:43 | INFO | trading_bot | Ordenes consultadas: 21
+2026-07-03 05:50:37 | INFO | trading_bot | Ordenes consultadas: 5
+2026-07-03 05:50:37 | INFO | trading_bot | Ordenes consultadas: 21
+2026-07-03 05:52:54 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 05:52:54 | INFO | trading_bot | Recuperacion inicial | abiertas=0 sincronizadas=0 ya_linkeadas=0
+2026-07-03 05:52:56 | INFO | trading_bot | Salida limit registrada SOL/USD pnl=-0.5628959424798616
+2026-07-03 05:53:07 | INFO | trading_bot | Recuperacion de posiciones abierta(s): 1
+2026-07-03 06:04:08 | INFO | trading_bot | Ordenes consultadas: 5
+2026-07-03 06:04:08 | INFO | trading_bot | Ordenes consultadas: 21
+2026-07-03 06:04:20 | INFO | trading_bot | Ordenes consultadas: 5
+2026-07-03 06:04:20 | INFO | trading_bot | Ordenes consultadas: 21
+2026-07-03 06:07:13 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 06:07:13 | INFO | trading_bot | Recuperacion inicial | abiertas=0 sincronizadas=0 ya_linkeadas=0
+2026-07-03 06:07:13 | INFO | trading_bot | Inhibidor de suspension activado
+2026-07-03 06:07:15 | INFO | trading_bot | Salida limit registrada SOLUSD pnl=-0.5628959424798616
+2026-07-03 06:07:20 | INFO | trading_bot | Recuperacion de posiciones abierta(s): 1
+2026-07-03 06:23:17 | INFO | trading_bot | Ordenes consultadas: 5
+2026-07-03 06:23:17 | INFO | trading_bot | Ordenes consultadas: 21
+2026-07-03 06:23:17 | INFO | trading_bot | Orden cancelada: cc1f20ef-0376-4948-b850-523a119ba671
+2026-07-03 06:23:39 | INFO | trading_bot | Ordenes consultadas: 4
+2026-07-03 06:23:39 | INFO | trading_bot | Ordenes consultadas: 21
+2026-07-03 06:24:15 | INFO | trading_bot | Ordenes consultadas: 4
+2026-07-03 06:24:15 | INFO | trading_bot | Ordenes consultadas: 21
+2026-07-03 06:27:15 | INFO | trading_bot | Salida limit registrada SOLUSD pnl=-2.7998566187121217
+2026-07-03 06:27:42 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 06:27:42 | INFO | trading_bot | Recuperacion inicial | abiertas=0 sincronizadas=0 ya_linkeadas=0
+2026-07-03 06:27:42 | INFO | trading_bot | Inhibidor de suspension activado
+2026-07-03 06:29:26 | INFO | trading_bot | Orden creada: 755f33ca-3e4a-4801-b42f-1ca768848af9
+2026-07-03 06:29:26 | INFO | trading_bot | Entrada registrada SOL/USD qty=184.4723 entry=81.16970343
+2026-07-03 06:29:44 | INFO | trading_bot | Salida limit registrada SOL/USD pnl=-1.0729326379465665
+2026-07-03 06:30:01 | INFO | trading_bot | Orden creada: ad366395-29aa-4022-a53b-e9cd7ccef31c
+2026-07-03 06:30:02 | INFO | trading_bot | Entrada registrada SOL/USD qty=43.0435 entry=81.120212437
+2026-07-03 06:30:44 | INFO | trading_bot | Orden limite creada: 76b449f5-b0c5-46e7-b430-3749012de4b3
+2026-07-03 13:58:55 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 13:58:55 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 13:58:55 | INFO | trading_bot | Inhibidor de suspension activado
+2026-07-03 13:58:57 | INFO | trading_bot | Orden limite creada: a4a93025-4653-4f2e-8e68-16b5f0e0b824
+2026-07-03 14:00:26 | INFO | trading_bot | Orden creada: 7be02333-3637-4670-a029-a265ab70ecb0
+2026-07-03 14:00:27 | INFO | trading_bot | Entrada registrada SOL/USD qty=6.1102 entry=81.724
+2026-07-03 14:00:57 | INFO | trading_bot | Orden limite creada: 2ff15de5-bc97-4a36-8445-2817356a5676
+2026-07-03 14:05:29 | INFO | trading_bot | Ordenes consultadas: 5
+2026-07-03 14:05:29 | INFO | trading_bot | Ordenes consultadas: 24
+2026-07-03 14:17:23 | INFO | trading_bot | Ordenes consultadas: 1
+2026-07-03 14:17:23 | INFO | trading_bot | Ordenes consultadas: 24
+2026-07-03 14:22:55 | INFO | trading_bot | Ordenes consultadas: 1
+2026-07-03 14:22:55 | INFO | trading_bot | Orden cancelada: 76b449f5-b0c5-46e7-b430-3749012de4b3
+2026-07-03 14:22:57 | INFO | trading_bot | Orden limite creada: bb386cde-034e-418e-a057-bd7178372fbe
+2026-07-03 14:23:27 | INFO | trading_bot | Salida limit registrada SOL/USD pnl=6.727501860523978
+2026-07-03 14:23:27 | INFO | trading_bot | Salida limit registrada SOL/USD pnl=3.04746225
+2026-07-03 14:23:30 | INFO | trading_bot | Ordenes consultadas: 0
+2026-07-03 14:23:30 | INFO | trading_bot | Ordenes consultadas: 38
+2026-07-03 14:23:53 | INFO | trading_bot | Ordenes consultadas: 0
+2026-07-03 14:23:53 | INFO | trading_bot | Ordenes consultadas: 38
+2026-07-03 14:23:53 | INFO | trading_bot | Ordenes consultadas: 38
+2026-07-03 14:24:51 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 14:24:51 | INFO | trading_bot | Recuperacion inicial | abiertas=0 sincronizadas=0 ya_linkeadas=0
+2026-07-03 14:24:51 | INFO | trading_bot | Inhibidor de suspension activado
+2026-07-03 14:26:40 | INFO | trading_bot | Orden creada: d7a899b2-2607-4dbd-9515-3444f4c57f5e
+2026-07-03 14:26:40 | INFO | trading_bot | Entrada registrada SOL/USD qty=56.24160000 entry=81.77907011 cost=4599.38574961
+2026-07-03 14:27:22 | INFO | trading_bot | Salida limit registrada SOL/USD pnl=-2.6498051501507875
+2026-07-03 14:28:02 | INFO | trading_bot | Orden creada: 6241ae6e-a9bb-405a-a057-4d14c4be0217
+2026-07-03 14:28:25 | INFO | trading_bot | Orden creada: abffcf8c-db87-4e3b-956d-6c7e773898c1
+2026-07-03 14:28:26 | INFO | trading_bot | Entrada registrada SOL/USD qty=158.94360000 entry=81.82286518 cost=13005.22075402
+2026-07-03 15:38:53 | INFO | trading_bot | Orden limite creada: 633f6143-f75b-4ae6-b8cc-6637f32def51
+2026-07-03 15:39:53 | INFO | trading_bot | Salida limit registrada SOL/USD pnl=-5.879377744406333
+2026-07-03 15:41:16 | INFO | trading_bot | Orden creada: c3f6b3ea-b21a-47f8-9288-e7aafb70c9f0
+2026-07-03 15:41:17 | INFO | trading_bot | Entrada registrada SOL/USD qty=156.21240000 entry=83.06125033 cost=12975.19726167
+2026-07-03 15:41:53 | INFO | trading_bot | Orden limite creada: daca67b8-ea48-4292-85e8-cb03a3972d0a
+2026-07-03 15:47:53 | INFO | trading_bot | Salida limit registrada SOL/USD pnl=8.90601437726765
+2026-07-03 15:54:58 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 15:57:34 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 15:58:05 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 16:00:52 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 16:01:35 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 16:03:22 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 16:03:22 | WARNING | trading_bot | No se pudo sincronizar posiciones al iniciar: HTTP 401 Unauthorized. La UI seguira iniciando para permitir cambiar o corregir la cuenta.
+2026-07-03 16:03:23 | INFO | trading_bot | Inhibidor de suspension activado
+2026-07-03 16:04:20 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 16:04:20 | WARNING | trading_bot | No se pudo sincronizar posiciones al iniciar: HTTP 401 Unauthorized. La UI seguira iniciando para permitir cambiar o corregir la cuenta.
+2026-07-03 16:04:20 | INFO | trading_bot | Inhibidor de suspension activado
+2026-07-03 16:04:20 | WARNING | trading_bot | Pestana guardada ignorada para cuenta no configurada: Paper 2 (SOL/USD)
+2026-07-03 16:04:20 | WARNING | trading_bot | Pestana guardada ignorada para cuenta sin credenciales: Paper (SOL/USD)
+2026-07-03 16:04:20 | WARNING | trading_bot | No se pudieron recuperar posiciones abiertas para restaurar pestañas: 401 Client Error: Unauthorized for url: https://paper-api.alpaca.markets/v2/positions
+2026-07-03 16:05:13 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 16:05:13 | WARNING | trading_bot | No se pudo sincronizar posiciones al iniciar: HTTP 401 Unauthorized. La UI seguira iniciando para permitir cambiar o corregir la cuenta.
+2026-07-03 16:05:14 | INFO | trading_bot | Inhibidor de suspension activado
+2026-07-03 16:05:14 | WARNING | trading_bot | No se pudieron recuperar posiciones abiertas para restaurar pestañas: 401 Client Error: Unauthorized for url: https://paper-api.alpaca.markets/v2/positions
+2026-07-03 16:05:14 | WARNING | trading_bot | AI dashboard sin sincronizacion en vivo para Paper: HTTP 401 Unauthorized. Usando datos persistidos.
+2026-07-03 16:05:14 | WARNING | trading_bot | AI dashboard sin sincronizacion en vivo para Paper: HTTP 401 Unauthorized. Usando datos persistidos.
+2026-07-03 16:05:15 | WARNING | trading_bot | Sin conexion durante monitoreo general (HTTPError). Reintentando automaticamente...
+2026-07-03 16:05:15 | WARNING | trading_bot | No se pudo actualizar la lista de activos: 401 Client Error: Unauthorized for url: https://paper-api.alpaca.markets/v2/assets?status=active&asset_class=us_equity
+2026-07-03 16:05:15 | INFO | trading_bot | Conexion restaurada. Reanudando flujos automaticamente.
+2026-07-03 16:05:45 | WARNING | trading_bot | Sin conexion durante monitoreo general (HTTPError). Reintentando automaticamente...
+2026-07-03 16:20:52 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 16:20:52 | INFO | trading_bot | Recuperacion inicial | abiertas=0 sincronizadas=0 ya_linkeadas=0
+2026-07-03 16:20:53 | INFO | trading_bot | Inhibidor de suspension activado
+2026-07-03 16:21:06 | ERROR | trading_bot | Error en accion de UI
+Traceback (most recent call last):
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 370, in _run_action
+    fn()
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 2697, in _generate_ai_signal
+    signal = self.ai_trading_brain.generate_signal(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ai_trading_brain/service.py", line 215, in generate_signal
+    features = self._build_features(symbol=symbol, asset_type=asset_type, account_id=account_id)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ai_trading_brain/service.py", line 507, in _build_features
+    candles_1m = self.market_data.get_candles(symbol=symbol, interval="1m", limit=60)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fbautista/Documents/Alpaca/trading_bot/data/market_data.py", line 239, in get_candles
+    return self.get_stock_bars(symbol=symbol, interval=interval, limit=limit)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fbautista/Documents/Alpaca/trading_bot/data/market_data.py", line 135, in get_stock_bars
+    for bar in source_bars:
+TypeError: 'NoneType' object is not iterable
+2026-07-03 16:27:54 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 16:27:54 | INFO | trading_bot | Recuperacion inicial | abiertas=0 sincronizadas=0 ya_linkeadas=0
+2026-07-03 16:27:54 | INFO | trading_bot | Inhibidor de suspension activado
+2026-07-03 16:28:23 | ERROR | trading_bot | Error en accion de UI
+Traceback (most recent call last):
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 370, in _run_action
+    fn()
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 2697, in _generate_ai_signal
+    signal = self.ai_trading_brain.generate_signal(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ai_trading_brain/service.py", line 215, in generate_signal
+    features = self._build_features(symbol=symbol, asset_type=asset_type, account_id=account_id)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ai_trading_brain/service.py", line 507, in _build_features
+    candles_1m = self.market_data.get_candles(symbol=symbol, interval="1m", limit=60)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fbautista/Documents/Alpaca/trading_bot/data/market_data.py", line 239, in get_candles
+    return self.get_stock_bars(symbol=symbol, interval=interval, limit=limit)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fbautista/Documents/Alpaca/trading_bot/data/market_data.py", line 135, in get_stock_bars
+    for bar in source_bars:
+TypeError: 'NoneType' object is not iterable
+2026-07-03 16:28:52 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 16:28:52 | INFO | trading_bot | Recuperacion inicial | abiertas=0 sincronizadas=0 ya_linkeadas=0
+2026-07-03 16:28:52 | INFO | trading_bot | Inhibidor de suspension activado
+2026-07-03 16:29:57 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 16:29:57 | INFO | trading_bot | Recuperacion inicial | abiertas=0 sincronizadas=0 ya_linkeadas=0
+2026-07-03 16:29:57 | INFO | trading_bot | Inhibidor de suspension activado
+2026-07-03 16:30:07 | ERROR | trading_bot | Error en accion de UI
+Traceback (most recent call last):
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 370, in _run_action
+    fn()
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 2697, in _generate_ai_signal
+    signal = self.ai_trading_brain.generate_signal(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ai_trading_brain/service.py", line 215, in generate_signal
+    features = self._build_features(symbol=symbol, asset_type=asset_type, account_id=account_id)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ai_trading_brain/service.py", line 507, in _build_features
+    candles_1m = self.market_data.get_candles(symbol=symbol, interval="1m", limit=60)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fbautista/Documents/Alpaca/trading_bot/data/market_data.py", line 239, in get_candles
+    return self.get_stock_bars(symbol=symbol, interval=interval, limit=limit)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fbautista/Documents/Alpaca/trading_bot/data/market_data.py", line 135, in get_stock_bars
+    for bar in source_bars:
+TypeError: 'NoneType' object is not iterable
+2026-07-03 16:34:05 | ERROR | trading_bot | Error en accion de UI
+Traceback (most recent call last):
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 370, in _run_action
+    fn()
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 2697, in _generate_ai_signal
+    signal = self.ai_trading_brain.generate_signal(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ai_trading_brain/service.py", line 215, in generate_signal
+    features = self._build_features(symbol=symbol, asset_type=asset_type, account_id=account_id)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ai_trading_brain/service.py", line 507, in _build_features
+    candles_1m = self.market_data.get_candles(symbol=symbol, interval="1m", limit=60)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fbautista/Documents/Alpaca/trading_bot/data/market_data.py", line 239, in get_candles
+    raise last_error
+       ^^^^^^^^^^^^^^
+  File "/home/fbautista/Documents/Alpaca/trading_bot/data/market_data.py", line 135, in get_stock_bars
+    if source_bars is None:
+TypeError: 'NoneType' object is not iterable
+2026-07-03 16:34:05 | ERROR | trading_bot | Error en accion de UI
+Traceback (most recent call last):
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 370, in _run_action
+    fn()
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 2697, in _generate_ai_signal
+    signal = self.ai_trading_brain.generate_signal(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ai_trading_brain/service.py", line 215, in generate_signal
+    features = self._build_features(symbol=symbol, asset_type=asset_type, account_id=account_id)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ai_trading_brain/service.py", line 507, in _build_features
+    candles_1m = self.market_data.get_candles(symbol=symbol, interval="1m", limit=60)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fbautista/Documents/Alpaca/trading_bot/data/market_data.py", line 239, in get_candles
+    raise last_error
+       ^^^^^^^^^^^^^^
+  File "/home/fbautista/Documents/Alpaca/trading_bot/data/market_data.py", line 135, in get_stock_bars
+    if source_bars is None:
+TypeError: 'NoneType' object is not iterable
+2026-07-03 16:40:38 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 16:40:38 | INFO | trading_bot | Recuperacion inicial | abiertas=0 sincronizadas=0 ya_linkeadas=0
+2026-07-03 16:40:38 | INFO | trading_bot | Inhibidor de suspension activado
+2026-07-03 16:45:12 | INFO | trading_bot | Orden creada: 97dbca8e-120f-41f2-9837-684c07af37bf
+2026-07-03 16:45:12 | INFO | trading_bot | Entrada registrada SOL/USD qty=42.27100000 entry=82.67900594 cost=3494.92426001
+2026-07-03 16:45:30 | INFO | trading_bot | Salida registrada SOLUSD pnl=-68.30130509907364
+2026-07-03 16:45:40 | INFO | trading_bot | Ordenes consultadas: 0
+2026-07-03 16:45:40 | INFO | trading_bot | Ordenes consultadas: 31
+2026-07-03 16:58:07 | INFO | trading_bot | Salida limit registrada SOLUSD pnl=-8.739268899579054
+2026-07-03 17:06:16 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 17:06:17 | INFO | trading_bot | Recuperacion de posiciones abierta(s): 1
+2026-07-03 17:06:17 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=1 ya_linkeadas=0
+2026-07-03 17:06:17 | INFO | trading_bot | Inhibidor de suspension activado
+2026-07-03 17:15:19 | INFO | trading_bot | Orden limite creada: 3ced2feb-c209-4b6c-8582-82158002b0d0
+2026-07-03 17:20:38 | ERROR | trading_bot | Error en accion de UI
+Traceback (most recent call last):
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 442, in _run_action
+    fn()
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 2900, in _approve_ai_model
+    version = self.ai_trading_brain.approve_latest_model()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ai_trading_brain/service.py", line 406, in approve_latest_model
+    raise ValueError("No hay modelo para aprobar")
+ValueError: No hay modelo para aprobar
+2026-07-03 17:20:38 | ERROR | trading_bot | Error en accion de UI
+Traceback (most recent call last):
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 442, in _run_action
+    fn()
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ui/bot_window.py", line 2900, in _approve_ai_model
+    version = self.ai_trading_brain.approve_latest_model()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/fbautista/Documents/Alpaca/trading_bot/ai_trading_brain/service.py", line 406, in approve_latest_model
+    raise ValueError("No hay modelo para aprobar")
+ValueError: No hay modelo para aprobar
+2026-07-03 17:20:44 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 17:20:44 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 17:20:44 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 17:50:11 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 17:50:11 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 17:50:11 | INFO | trading_bot | Inhibidor de suspension activado
+2026-07-03 17:50:11 | INFO | trading_bot | Workers automaticos iniciados para Paper
+2026-07-03 17:50:12 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 17:50:12 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 17:50:12 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 17:54:16 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 17:54:16 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 17:54:16 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 17:56:34 | INFO | trading_bot | Orden creada: 46a8c97c-9298-4ca2-bbe5-5178fd80e92e
+2026-07-03 17:56:34 | INFO | trading_bot | Entrada registrada SOLUSD qty=6.06130000 entry=82.69800000 cost=501.25738740
+2026-07-03 17:56:37 | INFO | trading_bot | Salida registrada SOLUSD pnl=-0.5925223814999938
+2026-07-03 17:57:05 | INFO | trading_bot | Orden creada: 40152f24-7d28-46e3-939a-e8b428eebab2
+2026-07-03 17:57:06 | INFO | trading_bot | Entrada registrada SOLUSD qty=6.06130000 entry=82.65920000 cost=501.02220896
+2026-07-03 17:57:15 | INFO | trading_bot | Salida registrada SOLUSD pnl=-0.35793188760002503
+2026-07-03 17:58:13 | INFO | trading_bot | Salida limit registrada SOLUSD pnl=-0.4776814952694545
+2026-07-03 17:58:20 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 17:58:20 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 17:58:20 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 17:58:45 | INFO | trading_bot | Orden creada: 9b3cbb50-d04e-4da8-9250-bd17d939cc8c
+2026-07-03 17:58:45 | INFO | trading_bot | Entrada registrada SOL/USD qty=472.78460000 entry=82.95818440 cost=39221.35202733
+2026-07-03 17:58:59 | INFO | trading_bot | Salida registrada SOLUSD pnl=-552.3278732481002
+2026-07-03 17:59:16 | INFO | trading_bot | Orden creada: e8fabd76-2854-4a2c-88bd-f1b10e6b12aa
+2026-07-03 17:59:16 | INFO | trading_bot | Entrada registrada SOL/USD qty=472.78460000 entry=82.92547834 cost=39205.88910773
+2026-07-03 18:02:24 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 18:02:24 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:02:24 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 18:06:28 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 18:06:28 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:06:28 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 18:07:33 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 18:07:33 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 18:07:33 | INFO | trading_bot | Inhibidor de suspension activado
+2026-07-03 18:07:33 | INFO | trading_bot | Workers automaticos iniciados para Paper
+2026-07-03 18:07:33 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 18:07:33 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:07:33 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 18:10:34 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 18:10:34 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 18:10:34 | INFO | trading_bot | Inhibidor de suspension activado
+2026-07-03 18:10:34 | INFO | trading_bot | Workers automaticos iniciados para Paper
+2026-07-03 18:10:35 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 18:10:35 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:10:35 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 18:14:39 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 18:14:39 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:14:39 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 18:18:43 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 18:18:43 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:18:43 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 18:22:47 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 18:22:47 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:22:47 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 18:23:15 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 18:23:15 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 18:23:16 | INFO | trading_bot | Inhibidor de suspension activado
+2026-07-03 18:23:16 | INFO | trading_bot | Workers automaticos iniciados para Paper
+2026-07-03 18:23:16 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:23:16 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 18:23:16 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:23:16 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 18:23:36 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:23:56 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:24:16 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:24:37 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:24:57 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:25:17 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:25:37 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:25:57 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:26:17 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:26:37 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:26:58 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:27:18 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:27:20 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 18:27:20 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:27:20 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 18:27:38 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:27:58 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:28:18 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:28:38 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:28:58 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:29:19 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:29:39 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:29:59 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:30:19 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:30:39 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:31:00 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:31:20 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:31:24 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 18:31:24 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:31:24 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 18:31:40 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:32:00 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:32:20 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:32:40 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:33:00 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:33:22 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 18:33:22 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 18:33:22 | INFO | trading_bot | Inhibidor de suspension activado
+2026-07-03 18:33:22 | INFO | trading_bot | Workers automaticos iniciados para Paper
+2026-07-03 18:33:22 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:33:23 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 18:33:23 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:33:23 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 18:33:42 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:34:03 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:34:23 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:34:43 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:35:03 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:35:23 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:35:43 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:36:04 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:36:24 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:36:44 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:37:04 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:37:24 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:37:27 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 18:37:27 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:37:27 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 18:37:44 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:38:05 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:38:25 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:38:45 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:39:05 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:39:25 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:39:45 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:40:06 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:40:26 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:40:46 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:41:06 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:41:26 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:41:31 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 18:41:31 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:41:31 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 18:41:46 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:42:07 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:42:27 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:42:42 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 18:42:42 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 18:42:42 | INFO | trading_bot | Inhibidor de suspension activado
+2026-07-03 18:42:42 | INFO | trading_bot | Workers automaticos iniciados para Paper
+2026-07-03 18:42:42 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:42:42 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 18:42:42 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:42:42 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 18:43:02 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:43:23 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:43:43 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:44:03 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:44:23 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:44:43 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:45:03 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:45:23 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:45:44 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:46:04 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:46:24 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:46:44 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:46:46 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 18:46:47 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:46:47 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 18:47:04 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:47:24 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:47:44 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:48:05 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:48:25 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:48:45 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:49:05 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:49:25 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:49:45 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:50:06 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:50:26 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:50:46 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:50:51 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 18:50:51 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:50:51 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 18:51:06 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:51:26 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:51:46 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:52:06 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:52:27 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:52:47 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:53:07 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:53:27 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:53:47 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:54:07 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:54:27 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:54:48 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:54:55 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 18:54:55 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:54:55 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 18:55:08 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:55:28 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:55:48 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:56:08 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:56:28 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:56:49 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:57:09 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:57:29 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:57:49 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:58:09 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:58:29 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:58:49 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:58:59 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 18:58:59 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:58:59 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 18:59:10 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:59:30 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 18:59:50 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:00:10 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:00:30 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:00:50 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:01:10 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:01:31 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:01:51 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:02:11 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:02:31 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:02:51 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:03:04 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 19:03:04 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:03:04 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 19:03:11 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:03:32 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:03:52 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:04:12 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:04:32 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:04:48 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 19:04:48 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 19:04:48 | INFO | trading_bot | Inhibidor de suspension activado
+2026-07-03 19:04:49 | INFO | trading_bot | Workers automaticos iniciados para Paper
+2026-07-03 19:04:49 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:04:49 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 19:04:49 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:04:49 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 19:05:09 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:05:29 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:05:49 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:06:10 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:06:23 | INFO | trading_bot | Workers automaticos iniciados para Paper
+2026-07-03 19:06:30 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:06:33 | INFO | trading_bot | Workers automaticos iniciados para Paper
+2026-07-03 19:06:50 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:07:10 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:07:30 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:07:50 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:08:10 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:08:31 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:08:51 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:08:53 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 19:08:53 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:08:53 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 19:09:11 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:09:31 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:09:51 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:10:11 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:10:31 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:10:52 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:11:12 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:11:32 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:11:52 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:12:12 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:12:32 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:12:53 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:12:57 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 19:12:57 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:12:57 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 19:13:13 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:13:33 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:13:53 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:14:13 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:14:33 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:14:54 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:15:14 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:15:34 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:15:54 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:16:14 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:16:34 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:16:54 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:17:01 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 19:17:01 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:17:01 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 19:17:15 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:17:35 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:17:55 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:18:15 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:18:35 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:18:56 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:19:16 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:19:36 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:19:56 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:20:16 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:20:36 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:20:56 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:21:05 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 19:21:05 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:21:05 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 19:21:17 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:21:37 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:21:57 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:22:17 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:22:37 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:22:57 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:23:18 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:23:38 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:23:58 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:24:18 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:24:38 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:24:58 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:25:09 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 19:25:09 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:25:10 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 19:25:19 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:25:39 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:25:59 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:26:19 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:26:39 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:26:59 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:27:19 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:27:40 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:28:00 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:28:20 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:28:40 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:28:55 | WARNING | trading_bot | Internet caido durante monitoreo de posicion (SOL/USD). Reintentando en 30s...
+2026-07-03 19:28:55 | INFO | trading_bot | Conexion restaurada. Reanudando flujos automaticamente.
+2026-07-03 19:29:05 | WARNING | trading_bot | Sin conexion durante monitoreo general (ConnectionError). Reintentando automaticamente...
+2026-07-03 19:29:05 | INFO | trading_bot | Conexion restaurada. Reanudando flujos automaticamente.
+2026-07-03 19:29:14 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-03 19:29:15 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-03 19:29:15 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-03 19:29:16 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-03 19:29:17 | WARNING | trading_bot | DataCollectorWorker error AAPL: HTTPSConnectionPool(host='data.alpaca.markets', port=443): Max retries exceeded with url: /v2/stocks/AAPL/bars?timeframe=1Min&limit=60&adjustment=raw&feed=iex (Caused by NameResolutionError("HTTPSConnection(host='data.alpaca.markets', port=443): Failed to resolve 'data.alpaca.markets' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-03 19:29:20 | WARNING | trading_bot | Sin conexion durante monitoreo general (ConnectionError). Reintentando automaticamente...
+2026-07-03 19:29:20 | INFO | trading_bot | Conexion restaurada. Reanudando flujos automaticamente.
+2026-07-03 19:29:25 | WARNING | trading_bot | Internet caido durante monitoreo de posicion (SOL/USD). Reintentando en 30s...
+2026-07-03 19:29:25 | INFO | trading_bot | Conexion restaurada. Reanudando flujos automaticamente.
+2026-07-03 19:29:27 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-03 19:29:28 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-03 19:29:30 | WARNING | trading_bot | DataCollectorWorker error AAPL: HTTPSConnectionPool(host='data.alpaca.markets', port=443): Max retries exceeded with url: /v2/stocks/AAPL/bars?timeframe=1Min&limit=60&adjustment=raw&feed=iex (Caused by NameResolutionError("HTTPSConnection(host='data.alpaca.markets', port=443): Failed to resolve 'data.alpaca.markets' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-03 19:29:38 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-03 19:29:39 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-03 19:29:40 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-03 19:29:41 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-03 19:29:43 | WARNING | trading_bot | DataCollectorWorker error AAPL: HTTPSConnectionPool(host='data.alpaca.markets', port=443): Max retries exceeded with url: /v2/stocks/AAPL/bars?timeframe=1Min&limit=60&adjustment=raw&feed=iex (Caused by NameResolutionError("HTTPSConnection(host='data.alpaca.markets', port=443): Failed to resolve 'data.alpaca.markets' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-03 19:29:50 | WARNING | trading_bot | Sin conexion durante monitoreo general (ConnectionError). Reintentando automaticamente...
+2026-07-03 19:29:50 | INFO | trading_bot | Conexion restaurada. Reanudando flujos automaticamente.
+2026-07-03 19:29:53 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-03 19:29:54 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-03 19:29:55 | WARNING | trading_bot | Internet caido durante monitoreo de posicion (SOL/USD). Reintentando en 30s...
+2026-07-03 19:29:55 | INFO | trading_bot | Conexion restaurada. Reanudando flujos automaticamente.
+2026-07-03 19:29:56 | WARNING | trading_bot | DataCollectorWorker error AAPL: HTTPSConnectionPool(host='data.alpaca.markets', port=443): Max retries exceeded with url: /v2/stocks/AAPL/bars?timeframe=1Min&limit=60&adjustment=raw&feed=iex (Caused by NameResolutionError("HTTPSConnection(host='data.alpaca.markets', port=443): Failed to resolve 'data.alpaca.markets' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-03 19:30:01 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-03 19:30:02 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-03 19:30:06 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-03 19:30:07 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-03 19:30:09 | WARNING | trading_bot | DataCollectorWorker error AAPL: HTTPSConnectionPool(host='data.alpaca.markets', port=443): Max retries exceeded with url: /v2/stocks/AAPL/bars?timeframe=1Min&limit=60&adjustment=raw&feed=iex (Caused by NameResolutionError("HTTPSConnection(host='data.alpaca.markets', port=443): Failed to resolve 'data.alpaca.markets' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-03 19:30:19 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-03 19:30:20 | WARNING | trading_bot | Sin conexion durante monitoreo general (ConnectionError). Reintentando automaticamente...
+2026-07-03 19:30:20 | INFO | trading_bot | Conexion restaurada. Reanudando flujos automaticamente.
+2026-07-03 19:30:20 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-03 19:30:22 | WARNING | trading_bot | DataCollectorWorker error AAPL: HTTPSConnectionPool(host='data.alpaca.markets', port=443): Max retries exceeded with url: /v2/stocks/AAPL/bars?timeframe=1Min&limit=60&adjustment=raw&feed=iex (Caused by NameResolutionError("HTTPSConnection(host='data.alpaca.markets', port=443): Failed to resolve 'data.alpaca.markets' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-03 19:30:24 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-03 19:30:25 | WARNING | trading_bot | Internet caido durante monitoreo de posicion (SOL/USD). Reintentando en 30s...
+2026-07-03 19:30:25 | INFO | trading_bot | Conexion restaurada. Reanudando flujos automaticamente.
+2026-07-03 19:30:35 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-03 19:30:43 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-03 19:30:54 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-03 19:31:06 | WARNING | trading_bot | DataCollectorWorker error SOLUSD: HTTPSConnectionPool(host='data.alpaca.markets', port=443): Max retries exceeded with url: /v1beta3/crypto/us/bars?timeframe=1Min&limit=60&symbols=SOL%2FUSD (Caused by NameResolutionError("HTTPSConnection(host='data.alpaca.markets', port=443): Failed to resolve 'data.alpaca.markets' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-03 19:31:16 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-03 19:31:20 | WARNING | trading_bot | Sin conexion durante monitoreo general (ConnectTimeout). Reintentando automaticamente...
+2026-07-03 19:31:20 | INFO | trading_bot | Conexion restaurada. Reanudando flujos automaticamente.
+2026-07-03 19:31:25 | WARNING | trading_bot | Internet caido durante monitoreo de posicion (SOL/USD). Reintentando en 30s...
+2026-07-03 19:31:25 | INFO | trading_bot | Conexion restaurada. Reanudando flujos automaticamente.
+2026-07-03 19:31:25 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 19:31:26 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:31:26 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:31:26 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 19:31:46 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:31:55 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-03 19:32:06 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:32:10 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-03 19:32:10 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-03 19:32:26 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:32:46 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:33:06 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:33:27 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:33:47 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:34:07 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:34:27 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:34:47 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:35:07 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:35:27 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:35:30 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 19:35:30 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:35:30 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 19:35:48 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:36:08 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:36:28 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:36:48 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:37:08 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:37:28 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:37:49 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:38:09 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:38:29 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:38:49 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:39:09 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:39:29 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:39:34 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 19:39:34 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:39:34 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 19:39:49 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:40:10 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:40:30 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:40:50 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:41:10 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:41:30 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:41:50 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:42:11 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:42:31 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:42:51 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:43:11 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:43:31 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:43:38 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 19:43:38 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:43:38 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 19:43:51 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:44:11 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:44:32 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:44:52 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:45:12 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:45:32 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:45:52 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:46:12 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:46:33 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:46:53 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:47:13 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:47:33 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:47:44 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 19:47:44 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:47:44 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 19:47:53 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:48:13 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:48:33 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:48:54 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:49:14 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:49:34 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:49:54 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:50:14 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:52:25 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 19:52:25 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 19:52:25 | INFO | trading_bot | Inhibidor de suspension activado
+2026-07-03 19:52:25 | INFO | trading_bot | Workers automaticos iniciados para Paper
+2026-07-03 19:52:25 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:52:26 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 19:52:26 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:52:26 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 19:52:46 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:53:06 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:53:26 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:53:46 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:54:06 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:54:26 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:54:46 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:55:07 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:55:27 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:55:47 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:56:07 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:56:27 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:56:30 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 19:56:30 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:56:30 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 19:56:47 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:57:07 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:57:28 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:57:48 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:58:08 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:58:28 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:58:48 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:59:08 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:59:29 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 19:59:49 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:00:09 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:00:29 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:00:34 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 20:00:34 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:00:34 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 20:00:49 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:01:09 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:01:30 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:01:50 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:02:10 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:02:30 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:02:50 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:03:10 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:03:30 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:03:51 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:04:11 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:04:31 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:04:38 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 20:04:38 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:04:38 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 20:04:51 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:05:12 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:05:32 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:05:52 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:06:12 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:06:32 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:06:52 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:07:12 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:07:33 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:07:53 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:08:13 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:08:33 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:08:42 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 20:08:42 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:08:42 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 20:08:53 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:09:13 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:09:25 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 20:09:25 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 20:09:25 | INFO | trading_bot | Inhibidor de suspension activado
+2026-07-03 20:09:25 | INFO | trading_bot | Workers automaticos iniciados para Paper
+2026-07-03 20:09:26 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:09:26 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 20:09:26 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:09:26 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 20:09:46 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:10:06 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:10:26 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:10:46 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:11:06 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:11:26 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:11:47 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:12:07 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:12:27 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:12:47 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:13:07 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:13:14 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 20:13:14 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 20:13:14 | INFO | trading_bot | Inhibidor de suspension activado
+2026-07-03 20:13:15 | INFO | trading_bot | Workers automaticos iniciados para Paper
+2026-07-03 20:13:15 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:13:15 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 20:13:15 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:13:15 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 20:13:35 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:13:55 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:14:15 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:14:35 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:14:56 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:15:16 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:15:16 | INFO | trading_bot | Salida limit registrada SOL/USD pnl=10.690075462239532
+2026-07-03 20:15:16 | INFO | trading_bot | Orden creada: 257ee166-f779-45f1-9276-0e3279f1e935
+2026-07-03 20:15:16 | INFO | trading_bot | Orden creada: fc175c5a-6224-4f15-a0c0-bc7f0f1c6dc1
+2026-07-03 20:15:17 | INFO | trading_bot | Entrada registrada SOLUSD qty=6.03530000 entry=82.56000000 cost=498.27436800
+2026-07-03 20:15:17 | INFO | trading_bot | Entrada registrada SOL/USD qty=6.03530000 entry=82.56000000 cost=498.27436800
+2026-07-03 20:15:36 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:15:46 | INFO | trading_bot | Orden limite creada: f537bfcd-c0bf-41c3-bd8b-2dc3590c56d8
+2026-07-03 20:15:56 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:16:16 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:16:36 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:16:56 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:17:17 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:17:19 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 20:17:19 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:17:19 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 20:17:37 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:17:57 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:18:17 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:18:37 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:18:57 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:19:18 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 20:19:18 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 20:19:18 | INFO | trading_bot | Inhibidor de suspension activado
+2026-07-03 20:19:18 | INFO | trading_bot | Workers automaticos iniciados para Paper
+2026-07-03 20:19:19 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:19:19 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 20:19:19 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:19:19 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 20:19:39 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:19:59 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:20:19 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:20:39 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:20:59 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:21:19 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:21:28 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 20:21:28 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 20:21:28 | INFO | trading_bot | Inhibidor de suspension activado
+2026-07-03 20:21:29 | INFO | trading_bot | Workers automaticos iniciados para Paper
+2026-07-03 20:21:29 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:21:29 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 20:21:29 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:21:29 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 20:21:49 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:22:09 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:22:29 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:22:49 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:23:10 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:23:30 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:23:50 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:24:13 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 20:24:13 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 20:24:13 | INFO | trading_bot | Inhibidor de suspension activado
+2026-07-03 20:24:14 | INFO | trading_bot | Workers automaticos iniciados para Paper
+2026-07-03 20:24:14 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:24:14 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 20:24:14 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:24:14 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 20:24:34 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:24:54 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:25:14 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:25:35 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:25:55 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:26:15 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:26:35 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:26:55 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:27:15 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:27:35 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:27:56 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:28:16 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:28:18 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 20:28:18 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:28:18 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 20:28:27 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 20:28:27 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 20:28:27 | INFO | trading_bot | Inhibidor de suspension activado
+2026-07-03 20:28:27 | INFO | trading_bot | Workers automaticos iniciados para Paper
+2026-07-03 20:28:28 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:28:28 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 20:28:28 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:28:28 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 20:28:48 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:29:08 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:29:28 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:29:48 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:30:08 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:30:29 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:30:49 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:31:09 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:31:29 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:31:49 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:32:10 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:32:30 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:32:32 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 20:32:32 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:32:32 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 20:32:50 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:33:10 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:33:30 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:33:50 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:34:10 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:34:31 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:34:51 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:35:11 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:35:31 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:35:51 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:36:11 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:36:31 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:36:36 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 20:36:36 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:36:36 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 20:36:52 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:37:12 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:37:32 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:37:52 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:38:12 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:38:32 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:38:53 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:39:13 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:39:33 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:39:53 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:40:13 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:40:33 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:40:40 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 20:40:40 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:40:40 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 20:40:53 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:41:14 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:41:34 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:41:54 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:42:14 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:42:34 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:42:54 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:43:14 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:43:35 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:43:55 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:44:15 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:44:35 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:44:44 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 20:44:44 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:44:44 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 20:44:55 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:45:15 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:45:35 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:45:56 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:46:16 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:46:36 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:46:56 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:47:16 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:47:36 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:47:57 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:48:17 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:48:37 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:48:48 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 20:48:48 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:48:48 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 20:48:57 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:49:17 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:49:37 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:49:57 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:50:18 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:50:38 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:50:58 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:51:18 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:51:38 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:51:58 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:52:18 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:52:39 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:52:52 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 20:52:52 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:52:52 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 20:52:59 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:53:19 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:53:39 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:53:59 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:54:19 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:54:39 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:55:00 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:55:20 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:55:40 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:56:00 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:56:20 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:56:40 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:56:56 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 20:56:56 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:56:56 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 20:57:00 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:57:21 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:57:41 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:58:01 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:58:21 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:58:41 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:59:01 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:59:22 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 20:59:42 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:00:02 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:00:22 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:00:42 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:01:00 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 21:01:00 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:01:00 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 21:01:03 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:01:23 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:01:43 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:02:03 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:02:23 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:02:43 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:03:03 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:03:24 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:03:44 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:04:04 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:04:24 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:04:44 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:05:04 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 21:05:04 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:05:04 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 21:05:04 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:05:25 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:05:45 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:06:05 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:06:25 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:06:45 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:07:05 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:07:26 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:07:46 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:08:06 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:08:26 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:08:46 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:09:06 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:09:08 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 21:09:08 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:09:08 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 21:09:26 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:09:47 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:10:07 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:10:27 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:10:47 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:11:07 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:11:27 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:11:48 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:12:08 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:12:28 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:12:48 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:13:08 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:13:12 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 21:13:12 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:13:12 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 21:13:28 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:13:48 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:14:09 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:14:29 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:14:49 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:15:09 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:15:29 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:15:49 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:16:10 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:16:30 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:16:50 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:17:10 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:17:16 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 21:17:16 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:17:16 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 21:17:30 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:17:50 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:18:10 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:18:31 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:18:51 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:19:11 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:19:31 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:19:51 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:20:11 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:20:32 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:20:52 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:21:12 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:21:20 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 21:21:20 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:21:20 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 21:21:32 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:21:52 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:22:12 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:22:32 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:22:53 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:23:13 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:23:33 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:23:53 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:24:13 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:24:33 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:24:54 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:25:14 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:25:24 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 21:25:24 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:25:24 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 21:25:34 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:25:54 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:26:14 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:26:34 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:26:54 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:27:15 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:27:35 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:27:55 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:28:15 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:28:35 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:28:55 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:29:15 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:29:28 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 21:29:28 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:29:28 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 21:29:36 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:29:56 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:30:16 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:30:36 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:30:56 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:31:16 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:31:37 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:31:57 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:32:17 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:32:37 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:32:57 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:33:17 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:33:33 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 21:33:33 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:33:33 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 21:33:38 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:33:58 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:34:18 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:34:38 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:34:58 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:35:18 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:35:39 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:35:59 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:36:19 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:36:39 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:36:59 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:37:19 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:37:37 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 21:37:37 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:37:37 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 21:37:39 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:38:00 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:38:20 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:38:40 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:39:00 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:39:20 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:39:40 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:40:01 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:40:21 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:40:41 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:41:01 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:41:21 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:41:41 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 21:41:41 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:41:41 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 21:41:41 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:42:01 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:42:22 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:42:42 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:43:02 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:43:22 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:43:42 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:44:02 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:44:23 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:44:43 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:45:03 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:45:23 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:45:43 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:45:45 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 21:45:45 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:45:45 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 21:46:03 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:46:23 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:46:44 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:47:04 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:47:24 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:47:44 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:48:04 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:48:24 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:48:45 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:49:05 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:49:25 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:49:45 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:49:49 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 21:49:49 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:49:49 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 21:50:05 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:50:25 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:50:46 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:51:06 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:51:26 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:51:46 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:52:06 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:52:26 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:52:47 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:53:07 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:53:27 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:53:47 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:53:53 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 21:53:53 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:53:53 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 21:54:07 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:54:27 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:54:47 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:55:08 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:55:28 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:55:48 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:56:08 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:56:28 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:56:48 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:57:09 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:57:29 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:57:49 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:57:57 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 21:57:57 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:57:57 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 21:58:09 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:58:29 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:58:49 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:59:09 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:59:30 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 21:59:50 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:00:10 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:00:30 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:00:50 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:01:10 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:01:31 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:01:51 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:02:01 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 22:02:01 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:02:01 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 22:02:11 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:02:31 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:02:51 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:03:11 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:03:31 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:03:52 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:04:12 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:04:32 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:04:52 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:05:12 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:05:32 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:05:52 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:06:05 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 22:06:05 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:06:05 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 22:06:13 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:06:33 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:06:53 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:07:13 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:07:33 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:07:53 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:08:14 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:08:34 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:08:54 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:09:14 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:09:34 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:09:54 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:10:09 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 22:10:09 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:10:09 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 22:10:14 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:10:35 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:10:55 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:11:15 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:11:35 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:11:55 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:12:15 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:12:36 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:12:56 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:13:16 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:13:36 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:13:56 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:14:13 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 22:14:13 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:14:13 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 22:14:17 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:14:37 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:14:57 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:15:17 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:15:37 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:15:57 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:16:17 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:16:38 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:16:58 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:17:18 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:17:38 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:17:58 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:18:17 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 22:18:17 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:18:17 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 22:18:18 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:18:39 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:18:59 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:19:19 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:19:39 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:19:59 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:20:19 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:20:39 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:21:00 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:21:20 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:21:40 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:22:00 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:22:20 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:22:21 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 22:22:21 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:22:21 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 22:22:40 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:23:01 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:23:21 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:23:41 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:24:01 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:24:21 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:24:41 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:25:02 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:25:22 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:25:42 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:26:02 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:26:22 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:26:25 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 22:26:25 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:26:25 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 22:26:42 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:27:02 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:27:23 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:27:43 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:28:03 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:28:23 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:28:43 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:29:03 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:29:24 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:29:44 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:30:04 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:30:24 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:30:29 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 22:30:30 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:30:30 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 22:30:44 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:31:04 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:31:25 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:31:45 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:32:05 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:32:25 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:32:45 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:33:05 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:33:26 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:33:46 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:34:06 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:34:26 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:34:34 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 22:34:34 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:34:34 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 22:34:46 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:35:06 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:35:27 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:35:47 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:36:07 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:36:27 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:36:47 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:37:07 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:37:28 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:37:48 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:38:08 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:38:28 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:38:38 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 22:38:38 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:38:38 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 22:38:48 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:39:08 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:39:28 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:39:49 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:40:09 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:40:29 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:40:49 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:41:09 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:41:29 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:41:50 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:42:10 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:42:30 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:42:42 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 22:42:42 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:42:42 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 22:42:50 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:43:10 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:43:30 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:43:51 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:44:11 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:44:31 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:44:51 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:45:11 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:45:32 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:45:52 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:46:12 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:46:32 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:46:46 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 22:46:46 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:46:46 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 22:46:52 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:47:12 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:47:33 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:47:53 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:48:13 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:48:33 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:48:53 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:49:13 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:49:33 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:49:54 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:50:14 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:50:34 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:50:50 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 22:50:50 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:50:50 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 22:50:54 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:51:14 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:51:34 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:51:55 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:52:15 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:52:35 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:52:55 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:53:15 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:53:35 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:53:55 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:54:16 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:54:36 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:54:54 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 22:54:54 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:54:54 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 22:54:56 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:55:16 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:55:36 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:55:56 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:56:19 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-03 22:56:19 | INFO | trading_bot | Recuperacion inicial | abiertas=1 sincronizadas=0 ya_linkeadas=1
+2026-07-03 22:56:19 | INFO | trading_bot | Inhibidor de suspension activado
+2026-07-03 22:56:19 | INFO | trading_bot | Workers automaticos iniciados para Paper
+2026-07-03 22:56:20 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:56:20 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (1m)
+2026-07-03 22:56:20 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:56:20 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (15m)
+2026-07-03 22:56:40 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:57:00 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:57:20 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)
+2026-07-03 22:57:40 | WARNING | trading_bot | Alpaca devolvio barras vacias para AAPL (5m)

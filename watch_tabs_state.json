@@ -1,1 +1,23 @@
-[]
+[
+  {
+    "symbol": "SOL/USD",
+    "asset_type": "crypto",
+    "account": "Odalis2786",
+    "mode": "tracking",
+    "auto_rebuy": true
+  },
+  {
+    "symbol": "SOLUSD",
+    "asset_type": "crypto",
+    "account": "Paper",
+    "mode": "tracking",
+    "auto_rebuy": true
+  },
+  {
+    "symbol": "SOL/USD",
+    "asset_type": "crypto",
+    "account": "Paper 2",
+    "mode": "tracking",
+    "auto_rebuy": true
+  }
+]
