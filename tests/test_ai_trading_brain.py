@@ -218,6 +218,8 @@ class AITradingBrainTests(unittest.TestCase):
             live_trading_enabled=False,
             manual_approval_required=True,
             kill_switch=False,
+            auto_trade_stocks_enabled=True,
+            auto_trade_cryptos_enabled=True,
         )
         signal = self.service.generate_signal("SOL/USD", "crypto", "Paper")
         self.assertIn("No hay fondos asignados", signal["reason"])

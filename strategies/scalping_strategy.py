@@ -9,6 +9,15 @@ class ScalpingSignal:
 
 
 class ScalpingStrategy:
+    """
+    Stock scalping strategy - supports buy-and-hold positions.
+    
+    - STOCK-ONLY strategy
+    - Buy only (no shorting)
+    - Can hold for swing trades (multiple days)
+    - No automatic stop loss
+    - No automatic sell below average cost
+    """
     def __init__(self, short_window: int = 5, long_window: int = 20) -> None:
         self.short_window = short_window
         self.long_window = long_window

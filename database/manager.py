@@ -138,6 +138,7 @@ class TradingBrainDatabase:
                 filled_price REAL NOT NULL,
                 fees REAL NOT NULL,
                 status TEXT NOT NULL,
+                initiated_by TEXT NOT NULL DEFAULT 'unknown',
                 broker_order_id TEXT NOT NULL,
                 signal_id INTEGER,
                 created_at TEXT NOT NULL,
@@ -172,12 +173,15 @@ class TradingBrainDatabase:
                 dataset_start TEXT NOT NULL,
                 dataset_end TEXT NOT NULL,
                 number_of_samples INTEGER NOT NULL,
+                trained_with_outcomes_count INTEGER NOT NULL DEFAULT 0,
+                label_type TEXT NOT NULL DEFAULT 'result_15m_fallback_30m',
                 accuracy REAL NOT NULL,
                 precision REAL NOT NULL,
                 recall REAL NOT NULL,
                 win_rate REAL NOT NULL,
                 profit_factor REAL NOT NULL,
                 max_drawdown REAL NOT NULL,
+                approved_for_paper INTEGER NOT NULL DEFAULT 0,
                 approved_for_live INTEGER NOT NULL,
                 notes TEXT NOT NULL
             )
@@ -202,6 +206,8 @@ class TradingBrainDatabase:
                 live_trading_enabled INTEGER NOT NULL,
                 manual_approval_required INTEGER NOT NULL,
                 kill_switch INTEGER NOT NULL,
+                auto_trade_stocks_enabled INTEGER NOT NULL DEFAULT 1,
+                auto_trade_cryptos_enabled INTEGER NOT NULL DEFAULT 1,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL,
                 FOREIGN KEY(account_id) REFERENCES accounts(id)
@@ -212,19 +218,27 @@ class TradingBrainDatabase:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 signal_id INTEGER NOT NULL UNIQUE,
                 symbol TEXT NOT NULL,
+                asset_type TEXT,
+                entry_price REAL,
+                timestamp_signal TEXT,
                 evaluated_at TEXT NOT NULL,
+                price_after_5m REAL,
                 max_profit_5m REAL,
                 max_drawdown_5m REAL,
                 result_5m TEXT,
+                price_after_15m REAL,
                 max_profit_15m REAL,
                 max_drawdown_15m REAL,
                 result_15m TEXT,
+                price_after_30m REAL,
                 max_profit_30m REAL,
                 max_drawdown_30m REAL,
                 result_30m TEXT,
+                price_after_60m REAL,
                 max_profit_60m REAL,
                 max_drawdown_60m REAL,
                 result_60m TEXT,
+                final_label TEXT,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL,
                 FOREIGN KEY(signal_id) REFERENCES signals(id)
@@ -234,6 +248,37 @@ class TradingBrainDatabase:
         with self.connect() as connection:
             for statement in statements:
                 connection.execute(statement)
+            self._ensure_schema_migrations(connection)
+
+    def _ensure_schema_migrations(self, connection: sqlite3.Connection) -> None:
+        self._ensure_column_exists(connection, "signal_outcomes", "asset_type", "TEXT")
+        self._ensure_column_exists(connection, "signal_outcomes", "entry_price", "REAL")
+        self._ensure_column_exists(connection, "signal_outcomes", "timestamp_signal", "TEXT")
+        self._ensure_column_exists(connection, "signal_outcomes", "price_after_5m", "REAL")
+        self._ensure_column_exists(connection, "signal_outcomes", "price_after_15m", "REAL")
+        self._ensure_column_exists(connection, "signal_outcomes", "price_after_30m", "REAL")
+        self._ensure_column_exists(connection, "signal_outcomes", "price_after_60m", "REAL")
+        self._ensure_column_exists(connection, "signal_outcomes", "final_label", "TEXT")
+
+        self._ensure_column_exists(connection, "model_training_runs", "trained_with_outcomes_count", "INTEGER NOT NULL DEFAULT 0")
+        self._ensure_column_exists(connection, "model_training_runs", "label_type", "TEXT NOT NULL DEFAULT 'result_15m_fallback_30m'")
+        self._ensure_column_exists(connection, "model_training_runs", "approved_for_paper", "INTEGER NOT NULL DEFAULT 0")
+        self._ensure_column_exists(connection, "ai_runtime_settings", "auto_trade_stocks_enabled", "INTEGER NOT NULL DEFAULT 1")
+        self._ensure_column_exists(connection, "ai_runtime_settings", "auto_trade_cryptos_enabled", "INTEGER NOT NULL DEFAULT 1")
+        self._ensure_column_exists(connection, "trades", "initiated_by", "TEXT NOT NULL DEFAULT 'unknown'")
+
+    def _ensure_column_exists(
+        self,
+        connection: sqlite3.Connection,
+        table_name: str,
+        column_name: str,
+        column_definition: str,
+    ) -> None:
+        rows = connection.execute(f"PRAGMA table_info({table_name})").fetchall()
+        existing_columns = {str(row[1]) for row in rows}
+        if column_name in existing_columns:
+            return
+        connection.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_definition}")
 
     @staticmethod
     def _now_iso() -> str:
@@ -361,6 +406,8 @@ class TradingBrainDatabase:
         live_trading_enabled: bool,
         manual_approval_required: bool,
         kill_switch: bool,
+        auto_trade_stocks_enabled: bool,
+        auto_trade_cryptos_enabled: bool,
     ) -> None:
         now = self._now_iso()
         with self.connect() as connection:
@@ -374,6 +421,8 @@ class TradingBrainDatabase:
                 1 if live_trading_enabled else 0,
                 1 if manual_approval_required else 0,
                 1 if kill_switch else 0,
+                1 if auto_trade_stocks_enabled else 0,
+                1 if auto_trade_cryptos_enabled else 0,
                 now,
             )
             if row is None:
@@ -381,8 +430,9 @@ class TradingBrainDatabase:
                     """
                     INSERT INTO ai_runtime_settings (
                         account_id, signal_only_mode, paper_trading, live_trading_enabled,
-                        manual_approval_required, kill_switch, created_at, updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        manual_approval_required, kill_switch, auto_trade_stocks_enabled,
+                        auto_trade_cryptos_enabled, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (account_id, *payload, now),
                 )
@@ -392,7 +442,9 @@ class TradingBrainDatabase:
                 """
                 UPDATE ai_runtime_settings
                 SET signal_only_mode = ?, paper_trading = ?, live_trading_enabled = ?,
-                    manual_approval_required = ?, kill_switch = ?, updated_at = ?
+                    manual_approval_required = ?, kill_switch = ?,
+                    auto_trade_stocks_enabled = ?, auto_trade_cryptos_enabled = ?,
+                    updated_at = ?
                 WHERE account_id = ?
                 """,
                 (*payload, account_id),
@@ -563,8 +615,8 @@ class TradingBrainDatabase:
                 """
                 INSERT INTO trades (
                     timestamp, account_id, symbol, asset_type, side, order_type, qty, limit_price,
-                    filled_price, fees, status, broker_order_id, signal_id, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    filled_price, fees, status, initiated_by, broker_order_id, signal_id, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     payload["timestamp"],
@@ -578,6 +630,7 @@ class TradingBrainDatabase:
                     payload["filled_price"],
                     payload["fees"],
                     payload["status"],
+                    payload.get("initiated_by", "unknown"),
                     payload["broker_order_id"],
                     payload.get("signal_id"),
                     payload.get("created_at", payload["timestamp"]),
@@ -676,9 +729,10 @@ class TradingBrainDatabase:
                 """
                 INSERT INTO model_training_runs (
                     timestamp, model_version, asset_scope, dataset_start, dataset_end,
-                    number_of_samples, accuracy, precision, recall, win_rate,
-                    profit_factor, max_drawdown, approved_for_live, notes
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    number_of_samples, trained_with_outcomes_count, label_type,
+                    accuracy, precision, recall, win_rate,
+                    profit_factor, max_drawdown, approved_for_paper, approved_for_live, notes
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     payload["timestamp"],
@@ -687,12 +741,15 @@ class TradingBrainDatabase:
                     payload["dataset_start"],
                     payload["dataset_end"],
                     payload["number_of_samples"],
+                    payload.get("trained_with_outcomes_count", payload["number_of_samples"]),
+                    payload.get("label_type", "result_15m_fallback_30m"),
                     payload["accuracy"],
                     payload["precision"],
                     payload["recall"],
                     payload["win_rate"],
                     payload["profit_factor"],
                     payload["max_drawdown"],
+                    1 if payload.get("approved_for_paper", False) else 0,
                     1 if payload["approved_for_live"] else 0,
                     payload["notes"],
                 ),
@@ -705,6 +762,14 @@ class TradingBrainDatabase:
                 "SELECT * FROM model_training_runs ORDER BY timestamp DESC LIMIT 1"
             ).fetchone()
             return dict(row) if row is not None else None
+
+    def list_training_runs(self, limit: int = 100) -> list[dict[str, Any]]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                "SELECT * FROM model_training_runs ORDER BY timestamp DESC LIMIT ?",
+                (int(limit),),
+            ).fetchall()
+            return [dict(row) for row in rows]
 
     def insert_decision_log(self, payload: dict[str, Any]) -> int:
         with self.connect() as connection:
@@ -868,10 +933,7 @@ class TradingBrainDatabase:
                 """
                 SELECT COUNT(*) AS count
                 FROM signal_outcomes
-                WHERE result_5m IS NOT NULL
-                  AND result_15m IS NOT NULL
-                  AND result_30m IS NOT NULL
-                  AND result_60m IS NOT NULL
+                                WHERE final_label IS NOT NULL
                 """
             ).fetchone()
             return int(row["count"]) if row is not None else 0
@@ -884,10 +946,7 @@ class TradingBrainDatabase:
                 SELECT COUNT(*) AS count
                 FROM signal_outcomes
                 WHERE updated_at LIKE ?
-                  AND result_5m IS NOT NULL
-                  AND result_15m IS NOT NULL
-                  AND result_30m IS NOT NULL
-                  AND result_60m IS NOT NULL
+                                    AND final_label IS NOT NULL
                 """,
                 (f"{today_prefix}%",),
             ).fetchone()
@@ -948,17 +1007,43 @@ class TradingBrainDatabase:
         samples: list[dict[str, Any]] = []
         with self.connect() as connection:
             rows = connection.execute(
-                "SELECT features_json, signal_type, confidence_score FROM signals ORDER BY timestamp ASC"
+                """
+                SELECT
+                    s.features_json,
+                    s.confidence_score,
+                    s.timestamp,
+                    o.final_label,
+                    o.result_15m,
+                    o.result_30m,
+                    o.max_profit_15m,
+                    o.max_drawdown_15m,
+                    o.max_profit_30m,
+                    o.max_drawdown_30m
+                FROM signals AS s
+                INNER JOIN signal_outcomes AS o ON o.signal_id = s.id
+                WHERE o.final_label IS NOT NULL
+                ORDER BY s.timestamp ASC
+                """
             ).fetchall()
         for row in rows:
             features = json.loads(str(row["features_json"]))
-            signal_type = str(row["signal_type"])
-            label = 1 if signal_type in {"BUY", "BUY_SMALL", "SELL_ALLOWED"} else 0
+            final_label = str(row["final_label"] or "neutral").strip().lower()
+            label = 1 if final_label == "win" else 0
+            if final_label not in {"win", "loss", "neutral"}:
+                continue
+            label_source = "result_15m" if row["result_15m"] is not None else "result_30m"
+            max_profit = float(row["max_profit_15m"] or 0.0) if label_source == "result_15m" else float(row["max_profit_30m"] or 0.0)
+            max_drawdown = float(row["max_drawdown_15m"] or 0.0) if label_source == "result_15m" else float(row["max_drawdown_30m"] or 0.0)
             samples.append(
                 {
                     "features": features,
                     "label": label,
+                    "final_label": final_label,
+                    "label_source": label_source,
+                    "timestamp": str(row["timestamp"] or ""),
                     "confidence_score": float(row["confidence_score"] or 0.0),
+                    "max_profit_pct": max_profit,
+                    "max_drawdown_pct": max_drawdown,
                 }
             )
         return samples

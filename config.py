@@ -129,8 +129,87 @@ class Settings:
     ai_openai_news_trigger_importance: float = float(_env("AI_OPENAI_NEWS_TRIGGER_IMPORTANCE", default="65"))
     ai_min_volume_24h_usd: float = float(_env("AI_MIN_VOLUME_24H_USD", default="100000"))
     ai_min_execution_confidence: float = float(_env("AI_MIN_EXECUTION_CONFIDENCE", default="60"))
+    ai_outcome_win_profit_pct: float = float(_env("AI_OUTCOME_WIN_PROFIT_PCT", default="0.25"))
+    ai_outcome_loss_drawdown_pct: float = float(_env("AI_OUTCOME_LOSS_DRAWDOWN_PCT", default="0.25"))
+    ai_training_label_type: str = _env("AI_TRAINING_LABEL_TYPE", default="result_15m_fallback_30m").lower()
     ai_auto_train_mode: str = _env("AI_AUTO_TRAIN_MODE", default="12h").lower()
     ai_dev_mode: bool = _env_bool("AI_DEV_MODE", default=False)
+
+    # ===== STOCKS CONFIGURATION =====
+    stock_allow_hold: bool = _env_bool("STOCK_ALLOW_HOLD", default=True)
+    stock_allow_stop_loss: bool = _env_bool("STOCK_ALLOW_STOP_LOSS", default=False)
+    stock_no_auto_sell_below_avg_cost: bool = _env_bool("STOCK_NO_AUTO_SELL_BELOW_AVG_COST", default=True)
+    stock_auto_sell_profit_pct: float = float(_env("STOCK_AUTO_SELL_PROFIT_PCT", default="0.50"))
+
+    # ===== CRYPTO CONFIGURATION =====
+    crypto_allow_hold: bool = _env_bool("CRYPTO_ALLOW_HOLD", default=False)
+    crypto_allow_stop_loss: bool = _env_bool("CRYPTO_ALLOW_STOP_LOSS", default=True)
+    crypto_allow_short_signals: bool = _env_bool("CRYPTO_ALLOW_SHORT_SIGNALS", default=True)
+    crypto_allow_short_execution: bool = _env_bool("CRYPTO_ALLOW_SHORT_EXECUTION", default=False)
+    crypto_max_hold_minutes: int = int(_env("CRYPTO_MAX_HOLD_MINUTES", default="30"))
+    crypto_min_entry_score: float = float(_env("CRYPTO_MIN_ENTRY_SCORE", default="75.0"))
+    crypto_buy_small_score_threshold: float = float(_env("CRYPTO_BUY_SMALL_SCORE_THRESHOLD", default="84.0"))
+    crypto_no_auto_sell_below_avg_cost: bool = _env_bool("CRYPTO_NO_AUTO_SELL_BELOW_AVG_COST", default=False)
+    crypto_force_market_order_for_exits: bool = _env_bool("CRYPTO_FORCE_MARKET_ORDER_FOR_EXITS", default=True)
+    
+    # Volatility tiers: BTC/ETH (tier1), SOL/XRP/LINK/AVAX/DOGE (tier2), Memes (tier3)
+    # BTC/ETH (most stable)
+    crypto_btc_eth_stop_loss_pct: float = float(_env("CRYPTO_BTC_ETH_STOP_LOSS_PCT", default="0.30"))
+    crypto_btc_eth_tp1_pct: float = float(_env("CRYPTO_BTC_ETH_TP1_PCT", default="0.35"))
+    crypto_btc_eth_tp2_pct: float = float(_env("CRYPTO_BTC_ETH_TP2_PCT", default="0.60"))
+    crypto_btc_eth_max_tp_pct: float = float(_env("CRYPTO_BTC_ETH_MAX_TP_PCT", default="0.80"))
+
+    # ALT-coins (medium volatility)
+    crypto_alt_stop_loss_pct: float = float(_env("CRYPTO_ALT_STOP_LOSS_PCT", default="0.42"))
+    crypto_alt_tp1_pct: float = float(_env("CRYPTO_ALT_TP1_PCT", default="0.50"))
+    crypto_alt_tp2_pct: float = float(_env("CRYPTO_ALT_TP2_PCT", default="0.90"))
+    crypto_alt_max_tp_pct: float = float(_env("CRYPTO_ALT_MAX_TP_PCT", default="1.20"))
+
+    # Memes (high volatility)
+    crypto_meme_stop_loss_pct: float = float(_env("CRYPTO_MEME_STOP_LOSS_PCT", default="0.75"))
+    crypto_meme_tp1_pct: float = float(_env("CRYPTO_MEME_TP1_PCT", default="0.80"))
+    crypto_meme_tp2_pct: float = float(_env("CRYPTO_MEME_TP2_PCT", default="1.50"))
+    crypto_meme_max_tp_pct: float = float(_env("CRYPTO_MEME_MAX_TP_PCT", default="2.50"))
+
+    # CryptoPanic caching (to respect 600 req/month quota)
+    cryptopanic_cache_seconds: int = int(_env("CRYPTOPANIC_CACHE_SECONDS", default="1800"))  # 30 minutes
+    cryptopanic_general_news_interval_seconds: int = int(_env("CRYPTOPANIC_GENERAL_NEWS_INTERVAL_SECONDS", default="7200"))  # 2 hours
+    cryptopanic_max_requests_per_day: int = int(_env("CRYPTOPANIC_MAX_REQUESTS_PER_DAY", default="20"))
+    cryptopanic_request_tracking_enabled: bool = _env_bool("CRYPTOPANIC_REQUEST_TRACKING_ENABLED", default=True)
+
+    # Crypto dynamic asset list (will be fetched from Alpaca)
+    crypto_preferred_symbols: str = _env("CRYPTO_PREFERRED_SYMBOLS", default="BTC/USD,ETH/USD,SOL/USD,XRP/USD,DOGE/USD,LINK/USD,AVAX/USD,LTC/USD")
+
+    def get_crypto_thresholds(self, symbol: str) -> dict[str, float]:
+        """Get stop loss and TP thresholds based on crypto volatility tier."""
+        symbol_upper = str(symbol or "").upper().replace("/USD", "")
+        
+        # Tier 1: BTC, ETH (stable)
+        if symbol_upper in {"BTC", "ETH"}:
+            return {
+                "stop_loss_pct": self.crypto_btc_eth_stop_loss_pct,
+                "tp1_pct": self.crypto_btc_eth_tp1_pct,
+                "tp2_pct": self.crypto_btc_eth_tp2_pct,
+                "max_tp_pct": self.crypto_btc_eth_max_tp_pct,
+            }
+        
+        # Tier 3: Memes (high volatility)
+        meme_symbols = {"PEPE", "BONK", "SHIB", "WIF", "TRUMP", "HYPE"}
+        if symbol_upper in meme_symbols:
+            return {
+                "stop_loss_pct": self.crypto_meme_stop_loss_pct,
+                "tp1_pct": self.crypto_meme_tp1_pct,
+                "tp2_pct": self.crypto_meme_tp2_pct,
+                "max_tp_pct": self.crypto_meme_max_tp_pct,
+            }
+        
+        # Tier 2: ALT-coins (default)
+        return {
+            "stop_loss_pct": self.crypto_alt_stop_loss_pct,
+            "tp1_pct": self.crypto_alt_tp1_pct,
+            "tp2_pct": self.crypto_alt_tp2_pct,
+            "max_tp_pct": self.crypto_alt_max_tp_pct,
+        }
 
     def account_profiles(self) -> dict[str, dict[str, str]]:
         profiles: dict[str, dict[str, str]] = {

@@ -43,7 +43,7 @@ class ModelRegistry:
 
     def load_approved_bundle(self) -> dict[str, Any] | None:
         state = self._load_state()
-        version = state.get("approved") or state.get("latest")
+        version = state.get("approved")
         if not version:
             return None
         model_path = self.path / f"{version}.pkl"

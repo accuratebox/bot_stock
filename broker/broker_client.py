@@ -186,6 +186,40 @@ class AlpacaBrokerClient:
         cryptos = self.list_cryptos(status="active", only_tradable=True)
         return stocks + cryptos
 
+    def get_eligible_cryptos_for_scalping(self) -> list[dict]:
+        """
+        Get crypto assets eligible for scalping on Alpaca.
+        
+        Filters:
+        - tradable=true
+        - status=active
+        - fractionable=true (for precise position sizing)
+        - shortable=false (Alpaca crypto doesn't allow shorting; we'll use LONG only)
+        
+        Returns:
+            List of eligible crypto assets sorted by symbol
+        """
+        all_cryptos = self.list_all_cryptos()
+        eligible = []
+        
+        for asset in all_cryptos:
+            symbol = str(asset.get("symbol", "")).upper().strip()
+            if not symbol:
+                continue
+            
+            is_tradable = asset.get("tradable") is True
+            is_active = str(asset.get("status", "")).lower() == "active"
+            is_fractionable = asset.get("fractionable") is True
+            is_shortable = asset.get("shortable") is True
+            
+            # Accept only if meets all criteria
+            if is_tradable and is_active and is_fractionable and not is_shortable:
+                eligible.append(asset)
+        
+        # Sort by symbol for consistency
+        eligible.sort(key=lambda a: str(a.get("symbol", "")))
+        return eligible
+
     @staticmethod
     def _normalize_order_symbol(symbol: str) -> str:
         normalized = str(symbol or "").upper().replace(" ", "")
