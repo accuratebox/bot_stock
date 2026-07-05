@@ -5,6 +5,7 @@ from config import settings
 from data.market_data import MarketDataService
 from orders.order_manager import OrderManager
 from portfolio.position_manager import PositionManager
+from runtime.alpaca_state import AlpacaRuntimeState
 from scheduling.market_open_scheduler import MarketOpenScheduler
 from risk.risk_manager import RiskManager
 from strategies.scalping_strategy import ScalpingStrategy
@@ -15,14 +16,17 @@ from utils.logger import get_logger
 def main() -> None:
     logger = get_logger("trading_bot")
     logger.info("Iniciando trading bot UI")
+    runtime_state = AlpacaRuntimeState()
 
     broker = AlpacaBrokerClient(
         endpoint=settings.alpaca_endpoint,
         api_key=settings.alpaca_api_key,
         api_secret=settings.alpaca_api_secret,
         logger=logger,
+        account_name="main",
+        runtime_state=runtime_state,
     )
-    market_data = MarketDataService(logger=logger)
+    market_data = MarketDataService(logger=logger, account_name="main", runtime_state=runtime_state)
     risk_manager = RiskManager(
         max_daily_loss=settings.max_daily_loss,
         risk_per_trade_pct=settings.risk_per_trade_pct,

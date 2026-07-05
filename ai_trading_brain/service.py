@@ -3,6 +3,7 @@ from __future__ import annotations
 import calendar
 import json
 import math
+from collections import deque
 import threading
 import time
 from datetime import datetime, timedelta, timezone
@@ -19,6 +20,7 @@ from database.manager import TradingBrainDatabase
 from ml_model.model_registry import ModelRegistry
 from ml_model.model_trainer import ModelTrainer
 from ml_model.predictor import SignalPredictor
+from runtime.alpaca_streams import AlpacaStreamManager
 
 
 class AITradingBrainService:
@@ -62,12 +64,14 @@ class AITradingBrainService:
         self._last_auto_trained_outcomes = 0
         self._news_fetch_cache_by_symbol: dict[str, tuple[float, list[dict[str, str]]]] = {}
         self._news_fetch_cooldown_until_by_symbol: dict[str, float] = {}
+        self._stream_bar_history_by_symbol: dict[str, deque[dict[str, Any]]] = {}
         self._cryptopanic_usage_lock = threading.Lock()
         self._cryptopanic_monthly_limit = max(int(getattr(settings, "cryptopanic_monthly_limit", 600) or 600), 1)
         self._cryptopanic_used_baseline = max(int(getattr(settings, "cryptopanic_used_this_month", 0) or 0), 0)
         self._cryptopanic_request_weekdays = self._parse_cryptopanic_request_days(
             str(getattr(settings, "cryptopanic_request_days", "mon,tue,wed,thu,fri") or "mon,tue,wed,thu,fri")
         )
+        self._ai_target_profit_per_share = max(float(getattr(settings, "ai_target_profit_per_share", 0.05) or 0.05), 0.0)
         self._cryptopanic_usage_path = Path(settings.ai_brain_db_path).resolve().parent / "cryptopanic_usage.json"
         self._cryptopanic_usage_data = self._load_cryptopanic_usage()
         self.auto_controller = AutoTradingController(
@@ -105,6 +109,17 @@ class AITradingBrainService:
             loop_fn=self._training_cycle,
             sleep_seconds_fn=self._training_interval_seconds,
             logger=logger,
+        )
+        self.stream_manager = AlpacaStreamManager(
+            alpaca_endpoint=self.broker.endpoint,
+            api_key=str(getattr(self.broker, "api_key", "") or ""),
+            api_secret=str(getattr(self.broker, "api_secret", "") or ""),
+            logger=logger,
+            symbol_provider=self._stream_subscription_symbols,
+            market_event_callback=self._handle_stream_market_event,
+            news_event_callback=self._handle_stream_news_event,
+            trade_update_callback=self._handle_stream_trade_update,
+            paper_trading=bool(settings.paper_trading),
         )
         self.initialize()
 
@@ -200,6 +215,7 @@ class AITradingBrainService:
         self.refresh_account_context(account_name)
         with self._worker_lock:
             self._active_account_for_workers = account_name
+        self.stream_manager.start(account_name)
         self.data_collector_worker.start()
         self.signal_scanner_worker.start()
         self.outcome_labeler_worker.start()
@@ -209,6 +225,7 @@ class AITradingBrainService:
         return self.get_automation_status(account_name)
 
     def pause_automation(self) -> dict[str, Any]:
+        self.stream_manager.stop()
         self.data_collector_worker.stop()
         self.signal_scanner_worker.stop()
         self.outcome_labeler_worker.stop()
@@ -224,7 +241,10 @@ class AITradingBrainService:
         training_cycle_seconds = max(float(self._training_interval_seconds() or 0.0), 0.0)
         now_ts = time.time()
         last_training_ts = float(getattr(self.model_trainer_worker, "last_run_at", 0.0) or 0.0)
-        training_elapsed_seconds = max(now_ts - last_training_ts, 0.0) if last_training_ts > 0.0 else 0.0
+        last_training_attempt_ts = float(getattr(self.model_trainer_worker, "last_attempt_at", 0.0) or 0.0)
+        training_started_ts = float(getattr(self.model_trainer_worker, "started_at", 0.0) or 0.0)
+        progress_anchor_ts = max(last_training_ts, last_training_attempt_ts, training_started_ts)
+        training_elapsed_seconds = max(now_ts - progress_anchor_ts, 0.0) if progress_anchor_ts > 0.0 else 0.0
         if training_cycle_seconds <= 0.0:
             training_progress_pct = 0.0
             training_remaining_seconds = 0.0
@@ -269,6 +289,7 @@ class AITradingBrainService:
             "training_elapsed_seconds": training_elapsed_seconds,
             "training_remaining_seconds": training_remaining_seconds,
             "training_progress_pct": training_progress_pct,
+            "training_last_error": str(getattr(self.model_trainer_worker, "last_error", "") or ""),
             "model_current": approved_model or "heuristic",
             "model_latest_trained": latest_model or "none",
             "model_approved_paper": approved_model or "manual_pending",
@@ -396,15 +417,24 @@ class AITradingBrainService:
         features["composite_score"] = composite["score"]
         prediction = self.predictor.predict_signal(features)
 
+        current_price = float(features["price"])
+        average_cost = float(features["average_cost"])
         blocked_reason = self._blocked_buy_reason(symbol=symbol, account_id=account_id, features=features, account_name=account_name)
         signal_type = str(prediction["action"])
         reason = str(prediction["reason"])
+        target_profit_per_share = self._ai_target_profit_per_share_value()
+        target_take_profit = current_price + target_profit_per_share
+        if signal_type in {"BUY", "BUY_SMALL"}:
+            recent_candles = self.market_data.get_candles(symbol=symbol, interval="1m", limit=20)
+            recent_high = max((float(candle.get("high", current_price) or current_price) for candle in recent_candles), default=current_price)
+            atr = float(features.get("atr", 0.0) or 0.0)
+            if recent_high + (atr * 0.35) < target_take_profit:
+                blocked_reason = (blocked_reason + " | " if blocked_reason else "") + "Target IA no alcanzable ahora"
+
         if blocked_reason:
             signal_type = "AVOID" if signal_type in {"BUY", "BUY_SMALL"} else signal_type
             reason = f"{reason} | blocked_reason: {blocked_reason}"
 
-        current_price = float(features["price"])
-        average_cost = float(features["average_cost"])
         min_sell_price = self._minimum_sell_price(average_cost)
         if average_cost > 0 and not self._is_sell_allowed(current_price=current_price, average_cost=average_cost):
             signal_type = "HOLD"
@@ -431,7 +461,7 @@ class AITradingBrainService:
                 "entry_price": current_price,
                 "suggested_limit_price": suggested_limit,
                 "invalidation_price": max(current_price - float(features["atr"] or 0.0), 0.0),
-                "take_profit_price": max(suggested_limit, current_price + float(self.settings.ai_minimum_profit)),
+                "take_profit_price": max(suggested_limit + target_profit_per_share, target_take_profit),
                 "risk_level": self._risk_label(float(prediction["risk_score"])),
                 "features_json": features,
                 "openai_analysis_json": analysis,
@@ -458,6 +488,12 @@ class AITradingBrainService:
         latest["average_cost"] = average_cost
         latest["protection_status"] = "HOLD" if (average_cost > 0 and not self._is_sell_allowed(current_price=current_price, average_cost=average_cost)) else "SELL_ALLOWED" if (average_cost > 0 and self._is_sell_allowed(current_price=current_price, average_cost=average_cost)) else "ACTIVE"
         return latest
+
+    def update_ai_target_profit_per_share(self, value: float) -> None:
+        self._ai_target_profit_per_share = max(float(value or 0.0), 0.0)
+
+    def _ai_target_profit_per_share_value(self) -> float:
+        return max(float(getattr(self, "_ai_target_profit_per_share", 0.05) or 0.05), 0.0)
 
     def list_signals(self, limit: int = 25) -> list[dict[str, Any]]:
         return self.database.latest_signals(limit=limit)
@@ -588,6 +624,13 @@ class AITradingBrainService:
         version = self.registry.latest_version()
         if not version:
             raise ValueError("No hay modelo para aprobar")
+        return self.approve_model_version(version)
+
+    def approve_model_version(self, version: str) -> str:
+        if not version:
+            raise ValueError("Version de modelo invalida")
+        if version not in self.registry.available_versions():
+            raise ValueError(f"Modelo no encontrado: {version}")
         self.registry.approve_model(version)
         self.database.insert_decision_log(
             {
@@ -600,6 +643,101 @@ class AITradingBrainService:
             }
         )
         return version
+
+    def freeze_candidate_version(self, version: str) -> str:
+        if not version:
+            raise ValueError("Version de modelo invalida")
+        self.registry.freeze_candidate(version)
+        self.database.insert_decision_log(
+            {
+                "timestamp": self._now_iso(),
+                "symbol": "*",
+                "decision": "MODEL_FROZEN",
+                "reason": f"version={version}",
+                "blocked_reason": "",
+                "raw_context_json": {"version": version},
+            }
+        )
+        return version
+
+    def clear_frozen_candidate(self) -> None:
+        frozen = self.registry.frozen_candidate()
+        self.registry.clear_frozen_candidate()
+        self.database.insert_decision_log(
+            {
+                "timestamp": self._now_iso(),
+                "symbol": "*",
+                "decision": "MODEL_UNFROZEN",
+                "reason": f"version={frozen or 'none'}",
+                "blocked_reason": "",
+                "raw_context_json": {"version": frozen},
+            }
+        )
+
+    def delete_model_version(self, version: str) -> str:
+        version_text = str(version or "").strip()
+        if not version_text:
+            raise ValueError("Version de modelo invalida")
+        approved = self.registry.approved_version() or ""
+        if version_text == approved:
+            raise ValueError("No se puede eliminar el modelo actualmente aprobado")
+        self.registry.delete_version(version_text)
+        self.database.insert_decision_log(
+            {
+                "timestamp": self._now_iso(),
+                "symbol": "*",
+                "decision": "MODEL_DELETED",
+                "reason": f"version={version_text}",
+                "blocked_reason": "",
+                "raw_context_json": {"version": version_text},
+            }
+        )
+        return version_text
+
+    def set_model_alias(self, version: str, alias: str) -> str:
+        version_text = str(version or "").strip()
+        if not version_text:
+            raise ValueError("Version de modelo invalida")
+        self.registry.set_alias(version_text, alias)
+        alias_text = self.registry.get_alias(version_text)
+        self.database.insert_decision_log(
+            {
+                "timestamp": self._now_iso(),
+                "symbol": "*",
+                "decision": "MODEL_ALIAS_SET",
+                "reason": f"version={version_text}; alias={alias_text or 'cleared'}",
+                "blocked_reason": "",
+                "raw_context_json": {"version": version_text, "alias": alias_text},
+            }
+        )
+        return alias_text
+
+    def list_model_candidates(self, limit: int = 12) -> dict[str, Any]:
+        approved = self.registry.approved_version() or ""
+        latest = self.registry.latest_version() or ""
+        frozen = self.registry.frozen_candidate() or ""
+        available_versions = set(self.registry.available_versions())
+        runs = self.database.list_training_runs(limit=max(int(limit), 1))
+        rows: list[dict[str, Any]] = []
+        for row in runs:
+            version = str(row.get("model_version", "") or "")
+            if not version or version not in available_versions:
+                continue
+            rows.append(
+                {
+                    **row,
+                    "alias": self.registry.get_alias(version),
+                    "is_approved": version == approved,
+                    "is_latest": version == latest,
+                    "is_frozen": version == frozen,
+                }
+            )
+        return {
+            "approved": approved,
+            "latest": latest,
+            "frozen": frozen,
+            "rows": rows,
+        }
 
     def rollback_model(self) -> str | None:
         version = self.registry.rollback_to_previous()
@@ -785,7 +923,252 @@ class AITradingBrainService:
             max_daily_loss=float(funds.get("max_daily_loss", 0.0) or 0.0),
             enabled=bool(funds.get("enabled", 1)),
         )
-        return {"status": "submitted", "order": order, "qty": qty, "limit_price": limit_price}
+
+        immediate_exit = self._place_immediate_ai_target_exit(
+            account_id=account_id,
+            symbol=str(signal["symbol"]),
+            asset_type=str(signal["asset_type"]),
+            buy_order=order,
+            requested_qty=float(qty),
+            configured_take_profit=float(signal.get("take_profit_price", 0.0) or 0.0),
+            initiated_by=initiated_by,
+        )
+        return {
+            "status": "submitted",
+            "order": order,
+            "qty": qty,
+            "limit_price": limit_price,
+            "immediate_exit": immediate_exit,
+        }
+
+    def _place_immediate_ai_target_exit(
+        self,
+        account_id: int,
+        symbol: str,
+        asset_type: str,
+        buy_order: dict[str, Any],
+        requested_qty: float,
+        configured_take_profit: float,
+        initiated_by: str,
+    ) -> dict[str, Any]:
+        symbol_normalized = str(symbol).upper().strip()
+        resolved_order = self._wait_ai_order_progress(buy_order=buy_order, requested_qty=requested_qty)
+        filled_qty = float(resolved_order.get("filled_qty", 0.0) or 0.0)
+        if filled_qty <= 0:
+            return {
+                "status": "pending_fill",
+                "reason": "buy_order_not_filled_yet",
+                "buy_order_id": str(resolved_order.get("id", "")),
+            }
+
+        existing = self._find_pending_sell_order(symbol=symbol_normalized)
+        if existing is not None:
+            return {
+                "status": "pending_existing",
+                "order_id": str(existing.get("id", "")),
+                "limit_price": float(existing.get("limit_price", 0.0) or 0.0),
+            }
+
+        filled_price = float(
+            resolved_order.get("filled_avg_price", 0.0)
+            or resolved_order.get("avg_entry_price", 0.0)
+            or buy_order.get("filled_avg_price", 0.0)
+            or buy_order.get("avg_entry_price", 0.0)
+            or buy_order.get("limit_price", 0.0)
+            or 0.0
+        )
+        if filled_price <= 0:
+            return {
+                "status": "pending_price",
+                "reason": "filled_price_unavailable",
+                "filled_qty": filled_qty,
+            }
+
+        min_sell_price = self._minimum_sell_price(filled_price)
+        target_price = float(configured_take_profit or 0.0)
+        if target_price <= 0:
+            target_price = min_sell_price
+        limit_price = round(max(target_price, min_sell_price), 6)
+
+        sell_order = self.order_manager.create_limit_order(
+            symbol=symbol_normalized,
+            qty=float(filled_qty),
+            side="sell",
+            limit_price=limit_price,
+            time_in_force="gtc",
+        )
+        self.database.insert_trade(
+            {
+                "timestamp": self._now_iso(),
+                "account_id": account_id,
+                "symbol": symbol_normalized,
+                "asset_type": str(asset_type),
+                "side": "sell",
+                "order_type": "limit",
+                "qty": float(filled_qty),
+                "limit_price": limit_price,
+                "filled_price": float(sell_order.get("filled_avg_price", 0.0) or 0.0),
+                "fees": 0.0,
+                "status": str(sell_order.get("status", "submitted")),
+                "initiated_by": f"{initiated_by}_target_immediate",
+                "broker_order_id": str(sell_order.get("id", "")),
+                "signal_id": None,
+                "created_at": self._now_iso(),
+            }
+        )
+        self.logger.info(
+            "IA salida inmediata colocada %s qty=%.8f limit=%.8f",
+            symbol_normalized,
+            filled_qty,
+            limit_price,
+        )
+        return {
+            "status": "submitted",
+            "order_id": str(sell_order.get("id", "")),
+            "limit_price": limit_price,
+            "qty": float(filled_qty),
+        }
+
+    def _wait_ai_order_progress(
+        self,
+        buy_order: dict[str, Any],
+        requested_qty: float,
+        max_attempts: int = 12,
+        sleep_seconds: float = 0.35,
+    ) -> dict[str, Any]:
+        order_id = str(buy_order.get("id", "")).strip()
+        current = dict(buy_order)
+        if not order_id:
+            return current
+
+        for _ in range(max_attempts):
+            status = str(current.get("status", "")).lower().strip()
+            filled_qty = float(current.get("filled_qty", 0.0) or 0.0)
+            if filled_qty >= (requested_qty - 1e-8) or status in {"filled", "canceled", "rejected", "expired"}:
+                return current
+            time.sleep(sleep_seconds)
+            try:
+                current = self.broker.get_order(order_id)
+            except Exception:
+                break
+        return current
+
+    def _find_pending_sell_order(self, symbol: str) -> dict[str, Any] | None:
+        target = self._symbol_key(symbol)
+        pending_statuses = {
+            "new",
+            "accepted",
+            "pending_new",
+            "partially_filled",
+            "accepted_for_bidding",
+            "pending_replace",
+            "stopped",
+            "calculated",
+        }
+        try:
+            orders = self.broker.list_orders(status="open", limit=200)
+        except Exception:
+            return None
+
+        for order in orders:
+            side = str(order.get("side", "")).lower().strip()
+            status = str(order.get("status", "")).lower().strip()
+            if side != "sell" or status not in pending_statuses:
+                continue
+            if self._symbol_key(str(order.get("symbol", ""))) != target:
+                continue
+            return order
+        return None
+
+    @staticmethod
+    def _aggregate_stream_bars(bars: list[dict[str, Any]], window: int) -> list[dict[str, Any]]:
+        if window <= 0:
+            return []
+
+        aggregated: list[dict[str, Any]] = []
+        chunk: list[dict[str, Any]] = []
+        for bar in bars:
+            chunk.append(bar)
+            if len(chunk) < window:
+                continue
+
+            opens = float(chunk[0].get("open", chunk[0].get("close", 0.0)) or 0.0)
+            closes = float(chunk[-1].get("close", chunk[-1].get("open", 0.0)) or 0.0)
+            highs = [float(row.get("high", 0.0) or 0.0) for row in chunk]
+            lows = [float(row.get("low", 0.0) or 0.0) for row in chunk]
+            volumes = [float(row.get("volume", 0.0) or 0.0) for row in chunk]
+            aggregated.append(
+                {
+                    "open": opens,
+                    "high": max(highs) if highs else closes,
+                    "low": min(lows) if lows else closes,
+                    "close": closes,
+                    "volume": sum(volumes),
+                    "timestamp": chunk[-1].get("timestamp"),
+                }
+            )
+            chunk = []
+
+        if chunk:
+            opens = float(chunk[0].get("open", chunk[0].get("close", 0.0)) or 0.0)
+            closes = float(chunk[-1].get("close", chunk[-1].get("open", 0.0)) or 0.0)
+            highs = [float(row.get("high", 0.0) or 0.0) for row in chunk]
+            lows = [float(row.get("low", 0.0) or 0.0) for row in chunk]
+            volumes = [float(row.get("volume", 0.0) or 0.0) for row in chunk]
+            aggregated.append(
+                {
+                    "open": opens,
+                    "high": max(highs) if highs else closes,
+                    "low": min(lows) if lows else closes,
+                    "close": closes,
+                    "volume": sum(volumes),
+                    "timestamp": chunk[-1].get("timestamp"),
+                }
+            )
+
+        return aggregated
+
+    def _stream_market_context(self, symbol: str, account_id: int, asset_type: str) -> dict[str, Any] | None:
+        snapshots = self.database.latest_market_snapshots(symbol=symbol, limit=180)
+        if not snapshots:
+            return None
+
+        bars_1m = list(reversed([
+            {
+                "open": float(row.get("open", row.get("close", 0.0)) or 0.0),
+                "high": float(row.get("high", row.get("close", 0.0)) or 0.0),
+                "low": float(row.get("low", row.get("close", 0.0)) or 0.0),
+                "close": float(row.get("close", row.get("price", 0.0)) or 0.0),
+                "volume": float(row.get("volume", 0.0) or 0.0),
+                "timestamp": row.get("timestamp"),
+            }
+            for row in snapshots
+        ]))
+        bars_5m = self._aggregate_stream_bars(bars_1m, 5)
+        bars_15m = self._aggregate_stream_bars(bars_1m, 15)
+        latest = bars_1m[-1] if bars_1m else {}
+        price = float(latest.get("close", 0.0) or 0.0)
+        quote = self.market_data.runtime_state.get_quote(self.market_data.account_name, symbol, ttl_seconds=30.0)
+        if quote is None:
+            quote = {}
+        if price <= 0.0:
+            price = float(self.market_data.get_last_price(symbol))
+        if not quote:
+            try:
+                quote = self.market_data.get_latest_quote(symbol)
+            except Exception:
+                quote = {}
+
+        return {
+            "asset_type": asset_type,
+            "price": price,
+            "quote": quote,
+            "candles_1m": bars_1m,
+            "candles_5m": bars_5m,
+            "candles_15m": bars_15m,
+            "latest_snapshot": snapshots[0],
+            "account_id": account_id,
+        }
 
     def place_limit_sell_if_allowed(
         self,
@@ -864,11 +1247,19 @@ class AITradingBrainService:
         return {"status": "submitted", "order": order, "limit_price": limit_price}
 
     def _build_features(self, symbol: str, asset_type: str, account_id: int) -> dict[str, Any]:
-        candles_1m = self.market_data.get_candles(symbol=symbol, interval="1m", limit=60)
-        candles_5m = self.market_data.get_candles(symbol=symbol, interval="5m", limit=60)
-        candles_15m = self.market_data.get_candles(symbol=symbol, interval="15m", limit=60)
-        price = float(self.market_data.get_last_price(symbol))
-        quote = self.market_data.get_latest_quote(symbol)
+        context = self._stream_market_context(symbol=symbol, account_id=account_id, asset_type=asset_type)
+        if context is None:
+            candles_1m = self.market_data.get_candles(symbol=symbol, interval="1m", limit=60)
+            candles_5m = self.market_data.get_candles(symbol=symbol, interval="5m", limit=60)
+            candles_15m = self.market_data.get_candles(symbol=symbol, interval="15m", limit=60)
+            price = float(self.market_data.get_last_price(symbol))
+            quote = self.market_data.get_latest_quote(symbol)
+        else:
+            candles_1m = context["candles_1m"]
+            candles_5m = context["candles_5m"]
+            candles_15m = context["candles_15m"]
+            price = float(context["price"])
+            quote = context["quote"]
         metrics = self.calculate_average_cost(symbol=symbol, account_id=account_id)
         average_cost = float(metrics["average_cost"])
         rsi = self._calc_rsi(candles_1m)
@@ -914,6 +1305,8 @@ class AITradingBrainService:
         return max(60.0, min(300.0, configured))
 
     def _collector_cycle(self) -> None:
+        if self.stream_manager.connected:
+            return
         self._reset_daily_counters_if_needed()
         with self._worker_lock:
             account_name = self._active_account_for_workers
@@ -979,6 +1372,8 @@ class AITradingBrainService:
         )
 
     def _news_social_cycle(self) -> None:
+        if self.stream_manager.connected:
+            return
         self._reset_daily_counters_if_needed()
         with self._worker_lock:
             account_name = self._active_account_for_workers
@@ -1126,13 +1521,20 @@ class AITradingBrainService:
             volume_15m_sum = sum(closed_1m[:15])
             avg_volume_1m_20 = sum(closed_1m[:20]) / max(len(closed_1m[:20]), 1)
 
-            try:
-                candles_5m = self.market_data.get_candles(symbol=symbol, interval="5m", limit=20)
-                self._api_calls_today += 1
-                self._mark_api_recovered()
-            except Exception as ex:
-                candles_5m = []
-                self._last_api_error = str(ex)
+            candles_5m = self._aggregate_stream_bars(
+                [
+                    {
+                        "open": float(row.get("open", row.get("close", 0.0)) or 0.0),
+                        "high": float(row.get("high", row.get("close", 0.0)) or 0.0),
+                        "low": float(row.get("low", row.get("close", 0.0)) or 0.0),
+                        "close": float(row.get("close", row.get("price", 0.0)) or 0.0),
+                        "volume": float(row.get("volume", 0.0) or 0.0),
+                        "timestamp": row.get("timestamp"),
+                    }
+                    for row in list(reversed(snapshots[:120]))
+                ],
+                5,
+            )
             candle_5m_volumes = [float(candle.get("volume", 0.0) or 0.0) for candle in candles_5m]
             avg_volume_5m_20 = sum(candle_5m_volumes[-20:]) / max(len(candle_5m_volumes[-20:]), 1)
 
@@ -1222,6 +1624,13 @@ class AITradingBrainService:
                 ),
             )
             final_score = round(min(100.0, price_action_score + volume_score + liquidity_score + news_score + risk_score), 2)
+            target_profit_per_share = self._ai_target_profit_per_share_value()
+            target_take_profit = price + target_profit_per_share
+            recent_high_15m = max((float(row.get("high", price) or price) for row in snapshots[:15]), default=price)
+            atr_now = float(latest.get("atr", 0.0) or 0.0)
+            if recent_high_15m + (atr_now * 0.35) < target_take_profit:
+                blocked_reasons.append("Target IA no alcanzable ahora")
+
             if final_score < 45:
                 blocked_reasons.append("Score menor al mínimo")
             if final_score < 45:
@@ -1232,6 +1641,9 @@ class AITradingBrainService:
                 action = "BUY_SMALL"
             else:
                 action = "BUY"
+
+            if action in {"BUY", "BUY_SMALL"} and any("Target IA no alcanzable ahora" == reason for reason in blocked_reasons):
+                action = "WATCH"
 
             metrics = self.calculate_average_cost(symbol=symbol, account_id=account_id)
             average_cost = float(metrics.get("average_cost", 0.0) or 0.0)
@@ -1320,7 +1732,7 @@ class AITradingBrainService:
                     "entry_price": price,
                     "suggested_limit_price": price,
                     "invalidation_price": max(price - float(latest.get("atr", 0.0) or 0.0), 0.0),
-                    "take_profit_price": max(price + float(self.settings.ai_minimum_profit), min_sell_price if min_sell_price > 0 else price),
+                    "take_profit_price": max(price + target_profit_per_share, min_sell_price if min_sell_price > 0 else price + target_profit_per_share),
                     "risk_level": self._risk_label(100.0 - final_score),
                     "features_json": features,
                     "openai_analysis_json": openai_analysis,
@@ -1475,6 +1887,31 @@ class AITradingBrainService:
         }
         return float(mapping.get(mode, 12.0 * 3600.0))
 
+    def _stream_subscription_symbols(self, account_name: str) -> dict[str, list[str]]:
+        symbols = self._symbols_for_collection(account_name)
+        stock_symbols: list[str] = []
+        crypto_symbols: list[str] = []
+        seen: set[str] = set()
+        for item in symbols:
+            symbol = str(item.get("symbol", "")).upper().strip()
+            if not symbol or symbol in seen:
+                continue
+            seen.add(symbol)
+            asset_type = str(item.get("asset_type", "stock")).lower().strip()
+            if asset_type == "crypto" or "/" in symbol or symbol.endswith("USD"):
+                crypto_symbols.append(symbol)
+            else:
+                stock_symbols.append(symbol)
+
+        default_symbol = str(self.settings.default_symbol).upper().strip()
+        if default_symbol and default_symbol not in seen:
+            if "/" in default_symbol or default_symbol.endswith("USD"):
+                crypto_symbols.append(default_symbol)
+            else:
+                stock_symbols.append(default_symbol)
+
+        return {"stocks": stock_symbols, "crypto": crypto_symbols}
+
     def _symbols_for_collection(self, account_name: str) -> list[dict[str, str]]:
         symbols: dict[str, dict[str, str]] = {}
 
@@ -1511,6 +1948,196 @@ class AITradingBrainService:
             )
 
         return list(symbols.values())
+
+    def _handle_stream_market_event(self, message_type: str, payload: dict[str, Any]) -> None:
+        symbol = str(payload.get("S", "")).upper().strip()
+        if not symbol:
+            return
+
+        asset_type = "crypto" if "/" in symbol or symbol.endswith("USD") else "stock"
+        price = float(payload.get("p", payload.get("c", 0.0)) or 0.0)
+        if message_type == "q":
+            bid = float(payload.get("bp", 0.0) or 0.0)
+            ask = float(payload.get("ap", 0.0) or 0.0)
+            midpoint = (bid + ask) / 2.0 if bid > 0.0 and ask > 0.0 else price
+            quote_payload = {
+                "bid": bid,
+                "ask": ask,
+                "bid_size": payload.get("bs", 0),
+                "ask_size": payload.get("as", 0),
+                "timestamp": payload.get("t"),
+                "spread": max(ask - bid, 0.0),
+                "spread_pct": ((max(ask - bid, 0.0) / midpoint) * 100.0) if midpoint > 0 else 0.0,
+            }
+            self.market_data.runtime_state.set_quote(self.market_data.account_name, symbol, quote_payload)
+            if midpoint > 0.0:
+                self.market_data.update_latest_price(symbol, midpoint)
+            return
+
+        if message_type == "t" and price > 0.0:
+            self.market_data.update_latest_price(symbol, price)
+            return
+
+        if message_type not in {"b", "u", "d"}:
+            return
+
+        bar = {
+            "open": float(payload.get("o", price) or price),
+            "high": float(payload.get("h", price) or price),
+            "low": float(payload.get("l", price) or price),
+            "close": float(payload.get("c", price) or price),
+            "volume": float(payload.get("v", 0.0) or 0.0),
+            "timestamp": payload.get("t"),
+        }
+        history = self._stream_bar_history_by_symbol.setdefault(self._symbol_key(symbol), deque(maxlen=120))
+        history.append(bar)
+        history_list = list(history)
+        close_price = float(bar["close"])
+        self.market_data.update_latest_price(symbol, close_price)
+        quote = self.market_data.runtime_state.get_quote(self.market_data.account_name, symbol, ttl_seconds=30.0) or {}
+        snapshot = {
+            "timestamp": self._now_iso(),
+            "symbol": symbol,
+            "asset_type": asset_type,
+            "price": close_price,
+            "open": float(bar["open"]),
+            "high": float(bar["high"]),
+            "low": float(bar["low"]),
+            "close": close_price,
+            "volume": float(bar["volume"]),
+            "vwap": float(self.market_data.calculate_vwap(history_list)) if history_list else close_price,
+            "rsi": self._calc_rsi(history_list),
+            "atr": self._calc_atr(history_list),
+            "spread": float(quote.get("spread", 0.0) or 0.0),
+            "percent_change_1m": self._pct_change(history_list, 1),
+            "percent_change_5m": self._pct_change(history_list, 5),
+            "percent_change_15m": self._pct_change(history_list, 15),
+            "source": "stream",
+        }
+        self.database.insert_market_snapshot(snapshot)
+        self._last_collected_at_by_symbol[self._symbol_key(symbol)] = time.monotonic()
+
+    def _handle_stream_news_event(self, _: str, payload: dict[str, Any]) -> None:
+        headline = str(payload.get("headline", "") or payload.get("summary", "") or "").strip()
+        if not headline:
+            return
+
+        source = str(payload.get("source", "news") or "news").strip()
+        url = str(payload.get("url", "") or "").strip()
+        author = str(payload.get("author", "") or "").strip()
+        symbols = [str(symbol or "").upper().strip() for symbol in payload.get("symbols", []) if str(symbol or "").strip()]
+        if not symbols:
+            symbols = [str(self.settings.default_symbol).upper().strip()]
+
+        now_iso = self._now_iso()
+        for symbol in symbols:
+            if not symbol:
+                continue
+            signature = self._news_signature(symbol=symbol, source=source, title_or_text=headline, url=url)
+            if self._is_duplicate_news_signature(signature):
+                continue
+
+            quick = self._quick_news_assessment(headline)
+            strong_event = quick["importance_score"] >= float(getattr(self.settings, "ai_openai_news_trigger_importance", 65.0) or 65.0) or quick["risk_score"] >= 70
+            analysis: dict[str, Any] = {
+                "symbol": symbol,
+                "asset_type": "crypto" if "/" in symbol or symbol.endswith("USD") else "stock",
+                "sentiment": quick["sentiment"],
+                "event_type": quick["event_type"],
+                "importance_score": quick["importance_score"],
+                "risk_score": quick["risk_score"],
+                "summary": headline[:180],
+                "possible_market_impact": "Potential impact detected" if strong_event else "Low impact",
+                "action_bias": "neutral",
+            }
+
+            if strong_event and bool(self.settings.openai_api_key):
+                self._openai_calls_today += 1
+                self._last_openai_call_at = now_iso
+                analysis = self.openai_analyzer.analyze_text(
+                    symbol=symbol,
+                    asset_type=str(analysis["asset_type"]),
+                    text=headline,
+                    source=source,
+                    author=author,
+                    context={"account_name": self._active_account_for_workers, "origin": "news_stream"},
+                )
+
+            self.database.insert_news_event(
+                {
+                    "timestamp": now_iso,
+                    "symbol": symbol,
+                    "asset_type": str(analysis.get("asset_type", "stock")),
+                    "source": source,
+                    "title_or_text": headline,
+                    "url": url,
+                    "author": author,
+                    "influence_score": float(analysis.get("importance_score", 0.0) or 0.0) / 100.0,
+                    "sentiment_score": self._sentiment_to_float(str(analysis.get("sentiment", "neutral"))),
+                    "ai_summary": str(analysis.get("summary", "")),
+                    "ai_classification": str(analysis.get("event_type", "other")),
+                    "raw_payload": analysis,
+                }
+            )
+            self._mark_news_signature_seen(signature)
+
+            if strong_event:
+                self.database.insert_decision_log(
+                    {
+                        "timestamp": now_iso,
+                        "symbol": symbol,
+                        "decision": "NEWS",
+                        "reason": f"source={source}; importance={analysis.get('importance_score', 0)}; risk={analysis.get('risk_score', 0)}",
+                        "blocked_reason": "",
+                        "raw_context_json": {"title": headline, "source": source, "url": url},
+                    }
+                )
+
+    def _handle_stream_trade_update(self, _: str, payload: dict[str, Any]) -> None:
+        event = str(payload.get("event", "")).lower().strip()
+        order = payload.get("order", {})
+        if not isinstance(order, dict):
+            return
+
+        account_name = self._active_account_for_workers
+        if not account_name:
+            return
+
+        account = self.refresh_account_context(account_name)
+        account_id = int(account["id"])
+        symbol = str(order.get("symbol", "") or "").upper().strip()
+        if not symbol:
+            return
+
+        order_payload = {
+            "timestamp": str(payload.get("timestamp", order.get("updated_at", self._now_iso()))),
+            "account_id": account_id,
+            "symbol": symbol,
+            "asset_type": "crypto" if "/" in symbol or symbol.endswith("USD") else "stock",
+            "side": str(order.get("side", "") or "unknown").lower().strip(),
+            "order_type": str(order.get("order_type", "") or "market").lower().strip(),
+            "qty": float(order.get("qty", order.get("filled_qty", 0.0)) or 0.0),
+            "limit_price": float(order.get("limit_price", 0.0) or 0.0),
+            "filled_price": float(order.get("filled_avg_price", payload.get("price", 0.0)) or payload.get("price", 0.0) or 0.0),
+            "fees": 0.0,
+            "status": str(order.get("status", event or "unknown") or event or "unknown"),
+            "initiated_by": "trade_updates",
+            "broker_order_id": str(order.get("id", "") or ""),
+            "signal_id": None,
+            "created_at": str(order.get("created_at", payload.get("timestamp", self._now_iso()))),
+        }
+        if not order_payload["broker_order_id"]:
+            return
+
+        self.database.upsert_trade_order(order_payload)
+        self.broker.runtime_state.invalidate_orders(self.broker.account_name)
+        self.broker.runtime_state.invalidate_positions(self.broker.account_name)
+
+        if event in {"fill", "partial_fill", "canceled", "expired", "rejected", "replaced", "done_for_day", "pending_cancel", "order_cancel_rejected", "order_replace_rejected"}:
+            try:
+                self.position_manager.synchronize_open_positions()
+            except Exception as ex:
+                self._last_api_error = str(ex)
 
     def _should_collect_symbol(self, symbol: str, asset_type: str) -> bool:
         key = self._symbol_key(symbol)

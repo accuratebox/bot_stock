@@ -1,4 +1,8 @@
 {
-  "approved": "general_model_20260704_040209",
-  "latest": "general_model_20260704_040209"
+  "approved": "general_model_20260705_105723",
+  "latest": "general_model_20260705_105723",
+  "frozen_candidate": "",
+  "aliases": {
+    "general_model_20260704_150111": "Primer modelo"
+  }
 }

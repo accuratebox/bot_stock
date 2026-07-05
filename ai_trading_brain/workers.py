@@ -36,6 +36,8 @@ class _LoopWorker:
         self._thread: threading.Thread | None = None
         self._stop_event = threading.Event()
         self.running = False
+        self.started_at = 0.0
+        self.last_attempt_at = 0.0
         self.last_run_at = 0.0
         self.last_error = ""
 
@@ -43,6 +45,7 @@ class _LoopWorker:
         if self._thread is not None and self._thread.is_alive():
             return
         self._stop_event.clear()
+        self.started_at = time.time()
         self._thread = threading.Thread(target=self._run, daemon=True, name=self.name)
         self._thread.start()
 
@@ -52,6 +55,7 @@ class _LoopWorker:
     def _run(self) -> None:
         self.running = True
         while not self._stop_event.is_set():
+            self.last_attempt_at = time.time()
             try:
                 self._loop_fn()
                 self.last_run_at = time.time()

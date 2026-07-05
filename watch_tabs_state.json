@@ -1,9 +1,29 @@
 [
   {
+    "symbol": "XRP/USD",
+    "asset_type": "crypto",
+    "account": "Paper 2",
+    "mode": "tracking",
+    "auto_rebuy": true,
+    "rebuy_capital": "20000.00",
+    "target_profit_per_share": "0.0100"
+  },
+  {
     "symbol": "SOL/USD",
     "asset_type": "crypto",
     "account": "Paper 2",
     "mode": "tracking",
-    "auto_rebuy": true
+    "auto_rebuy": true,
+    "rebuy_capital": "10000.00",
+    "target_profit_per_share": "0.5000"
+  },
+  {
+    "symbol": "ETH/USD",
+    "asset_type": "crypto",
+    "account": "Paper 2",
+    "mode": "tracking",
+    "auto_rebuy": true,
+    "rebuy_capital": "20000.00",
+    "target_profit_per_share": "2.0000"
   }
 ]

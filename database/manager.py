@@ -646,6 +646,70 @@ class TradingBrainDatabase:
             ).fetchall()
             return [dict(row) for row in rows]
 
+    def upsert_trade_order(self, payload: dict[str, Any]) -> int:
+        with self.connect() as connection:
+            row = connection.execute(
+                "SELECT id FROM trades WHERE account_id = ? AND broker_order_id = ?",
+                (payload["account_id"], payload["broker_order_id"]),
+            ).fetchone()
+            if row is None:
+                cursor = connection.execute(
+                    """
+                    INSERT INTO trades (
+                        timestamp, account_id, symbol, asset_type, side, order_type, qty, limit_price,
+                        filled_price, fees, status, initiated_by, broker_order_id, signal_id, created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        payload["timestamp"],
+                        payload["account_id"],
+                        payload["symbol"],
+                        payload["asset_type"],
+                        payload["side"],
+                        payload["order_type"],
+                        payload["qty"],
+                        payload["limit_price"],
+                        payload["filled_price"],
+                        payload["fees"],
+                        payload["status"],
+                        payload.get("initiated_by", "trade_updates"),
+                        payload["broker_order_id"],
+                        payload.get("signal_id"),
+                        payload.get("created_at", payload["timestamp"]),
+                    ),
+                )
+                return int(cursor.lastrowid)
+
+            connection.execute(
+                """
+                UPDATE trades
+                SET timestamp = ?, symbol = ?, asset_type = ?, side = ?, order_type = ?,
+                    limit_price = ?, filled_price = ?, fees = ?, status = ?, initiated_by = ?,
+                    signal_id = ?
+                WHERE account_id = ? AND broker_order_id = ?
+                """,
+                (
+                    payload["timestamp"],
+                    payload["symbol"],
+                    payload["asset_type"],
+                    payload["side"],
+                    payload["order_type"],
+                    payload["limit_price"],
+                    payload["filled_price"],
+                    payload["fees"],
+                    payload["status"],
+                    payload.get("initiated_by", "trade_updates"),
+                    payload.get("signal_id"),
+                    payload["account_id"],
+                    payload["broker_order_id"],
+                ),
+            )
+            current = connection.execute(
+                "SELECT id FROM trades WHERE account_id = ? AND broker_order_id = ?",
+                (payload["account_id"], payload["broker_order_id"]),
+            ).fetchone()
+            return int(current["id"]) if current is not None else 0
+
     def upsert_position(self, payload: dict[str, Any]) -> None:
         now = payload.get("last_updated", self._now_iso())
         with self.connect() as connection:

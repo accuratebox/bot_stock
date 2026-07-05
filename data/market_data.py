@@ -4,25 +4,34 @@ from typing import Any
 import requests
 
 from config import settings
+from runtime.alpaca_state import AlpacaRuntimeState
 
 
 class MarketDataService:
-    def __init__(self, logger: Any) -> None:
+    def __init__(self, logger: Any, account_name: str | None = None, runtime_state: AlpacaRuntimeState | None = None) -> None:
         self.logger = logger
         self._session = requests.Session()
         self._cache: dict[str, tuple[float, float]] = {}
         self._quote_cache: dict[str, tuple[float, dict]] = {}
         self._bars_cache: dict[str, tuple[float, list[dict]]] = {}
-        self._cache_ttl_seconds = 8.0
+        self._cache_ttl_seconds = 30.0
         self._max_retries = 3
         self.endpoint = settings.alpaca_endpoint
         self.api_key = settings.alpaca_api_key
         self.api_secret = settings.alpaca_api_secret
+        self.account_name = account_name or self.endpoint
+        self.runtime_state = runtime_state or AlpacaRuntimeState()
 
     def set_connection(self, endpoint: str, api_key: str, api_secret: str) -> None:
         self.endpoint = endpoint.rstrip("/")
         self.api_key = api_key
         self.api_secret = api_secret
+        self.account_name = self.account_name or self.endpoint
+
+    def update_latest_price(self, symbol: str, price: float) -> None:
+        normalized = symbol.upper().replace(" ", "")
+        self._cache[normalized] = (time.time(), float(price))
+        self.runtime_state.set_latest_price_value(self.account_name, normalized, float(price))
 
     def get_last_price(self, symbol: str) -> float:
         normalized = symbol.upper().replace(" ", "")
@@ -33,11 +42,17 @@ class MarketDataService:
             if (time.time() - cached_at) <= self._cache_ttl_seconds:
                 return cached_price
 
+        shared_price = self.runtime_state.get_latest_price(self.account_name, normalized, ttl_seconds=30.0)
+        if shared_price is not None:
+            self._cache[normalized] = (time.time(), float(shared_price))
+            return float(shared_price)
+
         if self._is_crypto_symbol(normalized):
             value = self._get_crypto_price_alpaca(normalized)
         else:
             value = self._get_stock_price_alpaca(normalized)
         self._cache[normalized] = (time.time(), value)
+        self.runtime_state.set_latest_price_value(self.account_name, normalized, value)
         return value
 
     def get_latest_quote(self, symbol: str) -> dict:
@@ -85,6 +100,7 @@ class MarketDataService:
         result["spread_pct"] = (spread / mid * 100.0) if mid > 0 else 0.0
 
         self._quote_cache[normalized] = (time.time(), result)
+        self.runtime_state.set_quote(self.account_name, normalized, result)
         return result
 
     def get_latest_trade(self, symbol: str) -> dict:
@@ -209,7 +225,9 @@ class MarketDataService:
         last_error: Exception | None = None
         for attempt in range(self._max_retries):
             try:
+                self.runtime_state.acquire(self.account_name)
                 response = self._session.get(url, params=params, headers=headers, timeout=15)
+                self.runtime_state.record_response(self.account_name, response)
                 if response.status_code == 429 and attempt < (self._max_retries - 1):
                     retry_after = response.headers.get("Retry-After")
                     if retry_after is not None and retry_after.isdigit():
@@ -260,6 +278,11 @@ class MarketDataService:
         if normalized.endswith("USD") and len(normalized) > 3:
             return f"{normalized[:-3]}/USD"
         return normalized
+
+    def invalidate_price(self, symbol: str) -> None:
+        normalized = symbol.upper().replace(" ", "")
+        self._cache.pop(normalized, None)
+        self._quote_cache.pop(normalized, None)
 
     @staticmethod
     def calculate_vwap(candles: list[dict]) -> float:

@@ -112,6 +112,7 @@ class Settings:
     ai_default_max_capital_assigned: float = float(_env("AI_DEFAULT_MAX_CAPITAL_ASSIGNED", default="1000.0"))
     ai_default_max_position_size: float = float(_env("AI_DEFAULT_MAX_POSITION_SIZE", default="250.0"))
     ai_default_max_daily_loss: float = float(_env("AI_DEFAULT_MAX_DAILY_LOSS", default="100.0"))
+    ai_target_profit_per_share: float = float(_env("AI_TARGET_PROFIT_PER_SHARE", default="0.05"))
     ai_fees_buffer: float = float(_env("AI_FEES_BUFFER", default="0.02"))
     ai_slippage_buffer: float = float(_env("AI_SLIPPAGE_BUFFER", default="0.03"))
     ai_minimum_profit: float = float(_env("AI_MINIMUM_PROFIT", default="0.05"))

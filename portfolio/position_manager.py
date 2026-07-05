@@ -172,6 +172,7 @@ class PositionManager:
         positions = self.get_open_positions()
         synced = 0
         already_linked = 0
+        repaired_limits = 0
 
         for position in positions:
             symbol = str(position.get("symbol", "")).upper()
@@ -202,7 +203,7 @@ class PositionManager:
                     "reason_buy": "recovered_after_restart",
                     "reason_sell": "",
                     "duration_seconds": 0,
-                    "order_type": "market",
+                    "order_type": "recovered",
                     "slippage_estimated": 0.0,
                     "spread_at_entry": 0.0,
                     "spread_pct_at_entry": 0.0,
@@ -211,13 +212,23 @@ class PositionManager:
             )
             synced += 1
 
+        repaired_actions = self._ensure_target_limits_for_open_positions(positions)
+        repaired_limits = sum(
+            1
+            for action in repaired_actions
+            if str(action.get("action", "")) in {"LIMIT_SELL_PLACED", "LIMIT_SELL_PENDING"}
+        )
+
         if synced > 0:
             self.logger.info("Recuperacion de posiciones abierta(s): %s", synced)
+        if repaired_limits > 0:
+            self.logger.info("Targets limit reparados al iniciar: %s", repaired_limits)
 
         return {
             "open_positions": len(positions),
             "synced": synced,
             "already_linked": already_linked,
+            "repaired_limits": repaired_limits,
         }
 
     def get_open_positions(self) -> list[dict[str, Any]]:
@@ -246,6 +257,7 @@ class PositionManager:
         actions: list[dict[str, Any]] = []
         actions.extend(self._finalize_filled_limit_exits())
         open_positions = self.get_open_positions()
+        actions.extend(self._ensure_target_limits_for_open_positions(open_positions))
         minutes_to_close = self.minutes_to_close()
 
         for position in open_positions:
@@ -262,6 +274,36 @@ class PositionManager:
             close_result = self._close_profitable_position(snapshot, exit_reason)
             actions.append(close_result)
 
+        return actions
+
+    def _ensure_target_limits_for_open_positions(self, open_positions: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        actions: list[dict[str, Any]] = []
+        for position in open_positions:
+            snapshot = self._build_snapshot(position)
+            if snapshot.qty <= 0:
+                continue
+
+            existing_order = self._find_pending_sell_order(snapshot.symbol)
+            if existing_order is not None:
+                continue
+
+            try:
+                result = self._place_immediate_target_exit(
+                    symbol=snapshot.symbol,
+                    qty=snapshot.qty,
+                    avg_entry_price=snapshot.avg_entry_price,
+                    current_price=snapshot.current_price,
+                    reason_sell="reconcile_missing_target_limit",
+                )
+                action = str(result.get("action", "") or "")
+                if action in {"LIMIT_SELL_PLACED", "LIMIT_SELL_PENDING"}:
+                    actions.append(result)
+            except Exception as ex:
+                self.logger.warning(
+                    "No se pudo reconciliar salida limit faltante para %s: %s",
+                    snapshot.symbol,
+                    ex,
+                )
         return actions
 
     def can_open_new_trade(self, symbol: str, ignore_close_window: bool = False) -> tuple[bool, str]:
@@ -301,7 +343,14 @@ class PositionManager:
 
         return True, "ok"
 
-    def open_position(self, symbol: str, qty: float, reason: str, spread_pct: float = 0.0) -> dict[str, Any]:
+    def open_position(
+        self,
+        symbol: str,
+        qty: float,
+        reason: str,
+        spread_pct: float = 0.0,
+        target_profit_per_share: float | None = None,
+    ) -> dict[str, Any]:
         symbol = symbol.upper()
         
         # Validation for CRYPTO: require stop loss to be configured
@@ -326,15 +375,35 @@ class PositionManager:
 
         current_price = self.market_data.get_last_price(symbol)
         quote = self.market_data.get_latest_quote(symbol)
+        if self._is_crypto_symbol(symbol):
+            crypto_target_profit = self._crypto_target_profit_amount(symbol, current_price)
+            effective_target_profit_per_share = max(float(target_profit_per_share or 0.0), crypto_target_profit)
+        else:
+            effective_target_profit_per_share = float(target_profit_per_share or self.target_profit_per_share)
+        if effective_target_profit_per_share <= 0:
+            raise ValueError("El target de ganancia por accion debe ser mayor que cero")
         entry_tif = "gtc"
         if self._is_crypto_symbol(symbol):
             configured_tif = str(getattr(self.settings, "crypto_entry_time_in_force", "ioc") or "ioc").lower().strip()
             entry_tif = configured_tif or "ioc"
+        buy_submitted_at = time.monotonic()
         order = self.order_manager.create_market_order(symbol=symbol, qty=requested_qty, side="buy", time_in_force=entry_tif)
 
-        resolved_order = self._wait_order_fill(order, requested_qty=requested_qty, max_attempts=30, sleep_seconds=0.5)
+        # Fast path: for market buys we only need the first confirmed fill to post target limit quickly.
+        resolved_order = self._wait_order_fill(
+            order,
+            requested_qty=requested_qty,
+            max_attempts=10,
+            sleep_seconds=0.12,
+            stop_on_any_fill=True,
+        )
         order_status = str(resolved_order.get("status", "")).lower()
         filled_qty = float(resolved_order.get("filled_qty", 0.0) or 0.0)
+        if filled_qty <= 1e-8:
+            # Fallback: wait a bit longer before failing hard.
+            resolved_order = self._wait_order_fill(order, requested_qty=requested_qty, max_attempts=20, sleep_seconds=0.35)
+            order_status = str(resolved_order.get("status", "")).lower()
+            filled_qty = float(resolved_order.get("filled_qty", 0.0) or 0.0)
         if filled_qty <= 1e-8:
             order_id = str(resolved_order.get("id", order.get("id", "")))
             raise ValueError(
@@ -379,6 +448,7 @@ class PositionManager:
                 "reason_sell": "",
                 "duration_seconds": 0,
                 "order_type": "market",
+                "target_profit_per_share": effective_target_profit_per_share,
                 "slippage_estimated": slippage,
                 "spread_at_entry": quote.get("spread", 0.0),
                 "spread_pct_at_entry": quote.get("spread_pct", spread_pct),
@@ -393,6 +463,22 @@ class PositionManager:
             filled_price,
             entry_cost,
         )
+
+        immediate_exit: dict[str, Any] | None = None
+        try:
+            immediate_exit = self._place_immediate_target_exit(
+                symbol=symbol,
+                qty=filled_qty,
+                avg_entry_price=filled_price,
+                current_price=current_price,
+                reason_sell="target_immediate_after_buy",
+                target_profit_per_share=effective_target_profit_per_share,
+            )
+            elapsed_ms = (time.monotonic() - buy_submitted_at) * 1000.0
+            self.logger.info("Latency buy->limit %s %.0fms", symbol, elapsed_ms)
+        except Exception as ex:
+            self.logger.warning("No se pudo crear salida inmediata para %s: %s", symbol, ex)
+
         return {
             "trade_id": trade_id,
             "order": resolved_order,
@@ -402,7 +488,66 @@ class PositionManager:
             "partial_fill": filled_qty < (requested_qty - 1e-8),
             "entry_cost": entry_cost,
             "current_price": current_price,
+            "target_profit_per_share": effective_target_profit_per_share,
             "spread_pct": quote.get("spread_pct", spread_pct),
+            "immediate_exit": immediate_exit,
+        }
+
+    def _place_immediate_target_exit(
+        self,
+        symbol: str,
+        qty: float,
+        avg_entry_price: float,
+        current_price: float,
+        reason_sell: str,
+        target_profit_per_share: float | None = None,
+    ) -> dict[str, Any]:
+        if qty <= 0:
+            return {
+                "symbol": symbol,
+                "action": "SKIP_IMMEDIATE_EXIT",
+                "reason": "qty_zero",
+            }
+
+        existing_order = self._find_pending_sell_order(symbol)
+        if existing_order is not None:
+            return {
+                "symbol": symbol,
+                "action": "LIMIT_SELL_PENDING",
+                "reason": reason_sell,
+                "order_id": str(existing_order.get("id", "")),
+                "limit_price": float(existing_order.get("limit_price", current_price) or current_price),
+            }
+
+        effective_target = float(target_profit_per_share or self.get_target_profit_per_share_for_symbol(symbol))
+        if self._is_crypto_symbol(symbol):
+            effective_target = max(effective_target, self._crypto_target_profit_amount(symbol, avg_entry_price))
+        limit_price = self._suggest_limit_exit_price(
+            current_price=current_price,
+            avg_entry_price=avg_entry_price,
+            target_profit_per_share=effective_target,
+        )
+        order = self.order_manager.create_limit_order(
+            symbol=symbol,
+            qty=float(qty),
+            side="sell",
+            limit_price=limit_price,
+            time_in_force="gtc",
+        )
+        self.logger.info(
+            "Salida inmediata creada %s qty=%.8f limit=%.8f reason=%s",
+            symbol,
+            qty,
+            limit_price,
+            reason_sell,
+        )
+        return {
+            "symbol": symbol,
+            "action": "LIMIT_SELL_PLACED",
+            "reason": reason_sell,
+            "order_id": str(order.get("id", "")),
+            "limit_price": float(order.get("limit_price", limit_price) or limit_price),
+            "qty": float(qty),
         }
 
     def _wait_order_fill(
@@ -411,6 +556,7 @@ class PositionManager:
         requested_qty: float | None = None,
         max_attempts: int = 8,
         sleep_seconds: float = 0.5,
+        stop_on_any_fill: bool = False,
     ) -> dict[str, Any]:
         order_id = str(order.get("id", "")).strip()
         if not order_id or not hasattr(self.broker, "get_order"):
@@ -420,6 +566,8 @@ class PositionManager:
         for _ in range(max_attempts):
             status = str(current.get("status", "")).lower()
             filled_qty = float(current.get("filled_qty", 0.0) or 0.0)
+            if stop_on_any_fill and filled_qty > 1e-8:
+                return current
             if requested_qty is not None and filled_qty >= (float(requested_qty) - 1e-8):
                 return current
             if status in {"filled", "canceled", "rejected", "expired"}:
@@ -487,10 +635,11 @@ class PositionManager:
                 "limit_price": float(existing_order.get("limit_price", snapshot.current_price) or snapshot.current_price),
             }
 
+        target_profit_per_share = self.get_target_profit_per_share_for_symbol(snapshot.symbol)
         limit_price = self._suggest_limit_exit_price(
             current_price=snapshot.current_price,
             avg_entry_price=snapshot.avg_entry_price,
-            target_profit_per_share=float(self.target_profit_per_share),
+            target_profit_per_share=target_profit_per_share,
         )
         order = self.order_manager.create_limit_order(
             symbol=snapshot.symbol,
@@ -508,7 +657,7 @@ class PositionManager:
             "qty": snapshot.qty,
         }
 
-    def _find_pending_sell_order(self, symbol: str) -> dict[str, Any] | None:
+    def _find_pending_sell_order(self, symbol: str, *, suppress_errors: bool = True) -> dict[str, Any] | None:
         target = self._symbol_key(symbol)
         pending_statuses = {
             "new",
@@ -523,6 +672,8 @@ class PositionManager:
         try:
             orders = self.broker.list_orders(status="open", limit=200)
         except Exception:
+            if not suppress_errors:
+                raise
             return None
 
         for order in orders:
@@ -535,6 +686,9 @@ class PositionManager:
             return order
         return None
 
+    def get_pending_sell_order(self, symbol: str, *, suppress_errors: bool = True) -> dict[str, Any] | None:
+        return self._find_pending_sell_order(symbol, suppress_errors=suppress_errors)
+
     @staticmethod
     def _suggest_limit_exit_price(current_price: float, avg_entry_price: float, target_profit_per_share: float) -> float:
         # Never place an automatic sell limit below the configured target-profit threshold.
@@ -542,6 +696,16 @@ class PositionManager:
         min_target_price = float(avg_entry_price) + float(target_profit_per_share)
         limit_price = max(current, min_target_price)
         return round(limit_price, 6)
+
+    @staticmethod
+    def _suggest_force_limit_exit_price(current_price: float, quote: dict[str, Any] | None) -> float:
+        bid_price = 0.0
+        if quote is not None:
+            bid_price = float(quote.get("bid", 0.0) or 0.0)
+        base_price = bid_price if bid_price > 0 else float(current_price)
+        if base_price <= 0:
+            raise ValueError("No se pudo determinar precio limite de salida")
+        return round(base_price, 6)
 
     def _finalize_filled_limit_exits(self) -> list[dict[str, Any]]:
         actions: list[dict[str, Any]] = []
@@ -640,28 +804,19 @@ class PositionManager:
             return {"symbol": snapshot.symbol, "action": "HOLD", "reason": "never_sell_at_loss"}
 
         trigger_price = float(snapshot.current_price)
-
-        try:
-            open_orders = self.broker.list_orders(status="open", limit=200)
-        except Exception:
-            open_orders = []
-
-        target_symbol = self._symbol_key(snapshot.symbol)
-        for order in open_orders:
-            if self._symbol_key(str(order.get("symbol", ""))) != target_symbol:
-                continue
-            order_id = str(order.get("id", "")).strip()
-            if not order_id:
-                continue
-            try:
-                self.order_manager.cancel_order(order_id)
-            except Exception:
-                self.logger.warning("No se pudo cancelar orden previa para cerrar %s: %s", snapshot.symbol, order_id)
+        cancel_summary = self._cancel_open_limit_orders_for_symbol(snapshot.symbol)
+        if int(cancel_summary.get("remaining", 0) or 0) > 0:
+            raise ValueError(
+                f"No se pudieron cancelar todos los LIMIT de {snapshot.symbol} antes de vender (restantes={cancel_summary.get('remaining')})."
+            )
 
         close_result = self.broker.close_position(snapshot.symbol)
         close_order_id = str(close_result.get("id", "") or "")
+        filled_qty = float(close_result.get("filled_qty", snapshot.qty) or snapshot.qty)
+        if filled_qty <= 1e-8:
+            filled_qty = float(snapshot.qty)
         exit_price = self._resolve_exit_price(close_result=close_result, close_order_id=close_order_id, fallback_price=trigger_price)
-        realized_pnl = (exit_price - snapshot.avg_entry_price) * snapshot.qty
+        realized_pnl = (exit_price - snapshot.avg_entry_price) * filled_qty
         duration_seconds = self._duration_seconds(snapshot.entry_time)
         trade_id = self._trade_id_for_symbol(snapshot.symbol) or str(uuid.uuid4())
         self.journal.record(
@@ -674,7 +829,7 @@ class PositionManager:
                 "exit_price": exit_price,
                 "trigger_price": trigger_price,
                 "close_order_id": close_order_id,
-                "qty": snapshot.qty,
+                "qty": filled_qty,
                 "current_price": snapshot.current_price,
                 "floating_pnl": snapshot.unrealized_pl,
                 "state": snapshot.state,
@@ -699,6 +854,78 @@ class PositionManager:
             "duration_seconds": duration_seconds,
             "close_result": close_result,
             "close_order_id": close_order_id,
+            "cancelled_limit_orders": int(cancel_summary.get("cancelled", 0) or 0),
+            "pending_limit_orders": int(cancel_summary.get("remaining", 0) or 0),
+        }
+
+    def _cancel_open_limit_orders_for_symbol(
+        self,
+        symbol: str,
+        max_attempts: int = 10,
+        sleep_seconds: float = 0.35,
+    ) -> dict[str, int]:
+        target = self._symbol_key(symbol)
+        pending_statuses = {
+            "new",
+            "accepted",
+            "pending_new",
+            "partially_filled",
+            "accepted_for_bidding",
+            "pending_replace",
+            "stopped",
+            "calculated",
+        }
+
+        cancelled = 0
+        failed = 0
+
+        try:
+            open_orders = self.broker.list_orders(status="open", limit=200)
+        except Exception:
+            open_orders = []
+
+        limit_orders = [
+            order
+            for order in open_orders
+            if self._symbol_key(str(order.get("symbol", ""))) == target
+            and str(order.get("type", "")).lower().strip() == "limit"
+            and str(order.get("status", "")).lower().strip() in pending_statuses
+        ]
+
+        for order in limit_orders:
+            order_id = str(order.get("id", "")).strip()
+            if not order_id:
+                continue
+            try:
+                if self.order_manager.cancel_order(order_id):
+                    cancelled += 1
+                else:
+                    failed += 1
+            except Exception:
+                failed += 1
+
+        remaining = 0
+        for _ in range(max_attempts):
+            try:
+                refreshed = self.broker.list_orders(status="open", limit=200)
+            except Exception:
+                break
+            remaining = sum(
+                1
+                for order in refreshed
+                if self._symbol_key(str(order.get("symbol", ""))) == target
+                and str(order.get("type", "")).lower().strip() == "limit"
+                and str(order.get("status", "")).lower().strip() in pending_statuses
+            )
+            if remaining <= 0:
+                break
+            time.sleep(sleep_seconds)
+
+        return {
+            "found": len(limit_orders),
+            "cancelled": cancelled,
+            "failed": failed,
+            "remaining": max(int(remaining), 0),
         }
 
     def _resolve_exit_price(self, close_result: dict[str, Any], close_order_id: str, fallback_price: float) -> float:
@@ -730,6 +957,23 @@ class PositionManager:
 
         return float(fallback_price)
 
+    def get_target_profit_per_share_for_symbol(self, symbol: str) -> float:
+        entry = self.journal.get_open_entry_by_symbol(symbol)
+        if entry is not None:
+            try:
+                value = float(entry.get("target_profit_per_share", 0.0) or 0.0)
+                if self._is_crypto_symbol(symbol):
+                    reference_price = float(entry.get("entry_price", 0.0) or 0.0)
+                    crypto_target = self._crypto_target_profit_amount(symbol, reference_price)
+                    return max(value, crypto_target)
+                if value > 0:
+                    return value
+            except (TypeError, ValueError):
+                pass
+        if self._is_crypto_symbol(symbol):
+            return self._crypto_target_profit_amount(symbol, self.market_data.get_last_price(symbol))
+        return float(self.target_profit_per_share)
+
     def _should_auto_sell(self, snapshot: PositionSnapshot, minutes_to_close: int) -> str | None:
         """
         Determine if a position should be automatically closed.
@@ -756,13 +1000,19 @@ class PositionManager:
             if snapshot.unrealized_pl <= 0:
                 return None
         
-        # ===== CRYPTO: Can sell at loss (if configured) =====
-        if is_crypto and not self.settings.crypto_allow_stop_loss:
-            if snapshot.unrealized_pl <= 0:
+        # ===== CRYPTO: Stop loss in percentage terms =====
+        if is_crypto:
+            thresholds = self.settings.get_crypto_thresholds(snapshot.symbol)
+            stop_loss_pct = float(thresholds.get("stop_loss_pct", 0.0) or 0.0) / 100.0
+            crypto_stop_loss_per_share = snapshot.avg_entry_price * stop_loss_pct if snapshot.avg_entry_price > 0 else 0.0
+            if self.settings.crypto_allow_stop_loss and crypto_stop_loss_per_share > 0 and snapshot.pnl_per_share <= -crypto_stop_loss_per_share:
+                return f"crypto_stop_loss_{stop_loss_pct * 100.0:.2f}%"
+            if not self.settings.crypto_allow_stop_loss and snapshot.unrealized_pl <= 0:
                 return None
 
         # ===== TARGET PROFIT (both stocks and crypto) =====
-        if snapshot.pnl_per_share >= self.target_profit_per_share:
+        target_profit_per_share = self.get_target_profit_per_share_for_symbol(snapshot.symbol)
+        if snapshot.pnl_per_share >= target_profit_per_share:
             return "target_profit_per_share"
 
         # ===== STOCKS: Market close logic (stocks only) =====
@@ -802,6 +1052,13 @@ class PositionManager:
 
         return None
 
+    def _crypto_target_profit_amount(self, symbol: str, reference_price: float) -> float:
+        if reference_price <= 0:
+            return float(self.target_profit_per_share)
+        thresholds = self.settings.get_crypto_thresholds(symbol)
+        take_profit_pct = float(thresholds.get("tp1_pct", 0.5) or 0.5) / 100.0
+        return round(reference_price * take_profit_pct, 6)
+
     def _build_snapshot(self, position: dict[str, Any]) -> PositionSnapshot:
         symbol = str(position.get("symbol", "")).upper()
         qty = float(position.get("qty", 0.0) or 0.0)
@@ -828,8 +1085,9 @@ class PositionManager:
         )
 
     def _find_open_position(self, symbol: str) -> dict[str, Any] | None:
+        target = self._symbol_key(symbol)
         for position in self.get_open_positions():
-            if str(position.get("symbol", "")).upper() == symbol.upper():
+            if self._symbol_key(str(position.get("symbol", ""))) == target:
                 return position
         return None
 

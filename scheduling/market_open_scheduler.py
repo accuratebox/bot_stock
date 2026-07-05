@@ -223,12 +223,12 @@ class MarketOpenScheduler:
                     )
                     continue
 
-                self.position_manager.set_target_profit_per_share(schedule.target_profit_per_share)
                 result = self.position_manager.open_position(
                     symbol=schedule.symbol,
                     qty=qty,
                     reason=f"scheduled_at_open: {signal.reason}",
                     spread_pct=float(quote.get("spread_pct", 0.0) or 0.0),
+                    target_profit_per_share=float(schedule.target_profit_per_share),
                 )
                 schedule.status = "executed"
                 schedule.executed_at = self._now_iso()
