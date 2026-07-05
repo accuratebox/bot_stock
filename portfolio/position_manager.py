@@ -350,6 +350,7 @@ class PositionManager:
         reason: str,
         spread_pct: float = 0.0,
         target_profit_per_share: float | None = None,
+        target_profit_total: float | None = None,
     ) -> dict[str, Any]:
         symbol = symbol.upper()
         
@@ -375,13 +376,10 @@ class PositionManager:
 
         current_price = self.market_data.get_last_price(symbol)
         quote = self.market_data.get_latest_quote(symbol)
-        if self._is_crypto_symbol(symbol):
-            crypto_target_profit = self._crypto_target_profit_amount(symbol, current_price)
-            effective_target_profit_per_share = max(float(target_profit_per_share or 0.0), crypto_target_profit)
-        else:
-            effective_target_profit_per_share = float(target_profit_per_share or self.target_profit_per_share)
-        if effective_target_profit_per_share <= 0:
-            raise ValueError("El target de ganancia por accion debe ser mayor que cero")
+        configured_target_total = max(float(target_profit_total or 0.0), 0.0)
+        configured_target_profit_per_share = float(target_profit_per_share or self.target_profit_per_share)
+        if configured_target_profit_per_share <= 0:
+            raise ValueError("El target de ganancia debe ser mayor que cero")
         entry_tif = "gtc"
         if self._is_crypto_symbol(symbol):
             configured_tif = str(getattr(self.settings, "crypto_entry_time_in_force", "ioc") or "ioc").lower().strip()
@@ -430,6 +428,11 @@ class PositionManager:
             or current_price
         )
         entry_cost = filled_price * filled_qty
+        if self._is_crypto_symbol(symbol) and configured_target_profit_per_share <= 0.0:
+            crypto_target_profit = self._crypto_target_profit_amount(symbol, filled_price)
+            effective_target_profit_per_share = max(configured_target_profit_per_share, crypto_target_profit)
+        else:
+            effective_target_profit_per_share = configured_target_profit_per_share
         trade_id = str(uuid.uuid4())
         slippage = abs(filled_price - current_price)
         self.journal.record(
@@ -520,8 +523,6 @@ class PositionManager:
             }
 
         effective_target = float(target_profit_per_share or self.get_target_profit_per_share_for_symbol(symbol))
-        if self._is_crypto_symbol(symbol):
-            effective_target = max(effective_target, self._crypto_target_profit_amount(symbol, avg_entry_price))
         limit_price = self._suggest_limit_exit_price(
             current_price=current_price,
             avg_entry_price=avg_entry_price,
@@ -962,16 +963,10 @@ class PositionManager:
         if entry is not None:
             try:
                 value = float(entry.get("target_profit_per_share", 0.0) or 0.0)
-                if self._is_crypto_symbol(symbol):
-                    reference_price = float(entry.get("entry_price", 0.0) or 0.0)
-                    crypto_target = self._crypto_target_profit_amount(symbol, reference_price)
-                    return max(value, crypto_target)
                 if value > 0:
                     return value
             except (TypeError, ValueError):
                 pass
-        if self._is_crypto_symbol(symbol):
-            return self._crypto_target_profit_amount(symbol, self.market_data.get_last_price(symbol))
         return float(self.target_profit_per_share)
 
     def _should_auto_sell(self, snapshot: PositionSnapshot, minutes_to_close: int) -> str | None:

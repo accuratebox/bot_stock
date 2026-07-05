@@ -1,3 +1,6 @@
+import faulthandler
+import signal
+
 from ai_trading_brain import AITradingBrainService
 import requests
 from broker.broker_client import AlpacaBrokerClient
@@ -14,6 +17,7 @@ from utils.logger import get_logger
 
 
 def main() -> None:
+    faulthandler.register(signal.SIGUSR1, all_threads=True)
     logger = get_logger("trading_bot")
     logger.info("Iniciando trading bot UI")
     runtime_state = AlpacaRuntimeState()

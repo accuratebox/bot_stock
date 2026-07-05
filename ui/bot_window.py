@@ -1,4 +1,8 @@
 import json
+import os
+import queue
+import subprocess
+import sys
 import threading
 import tkinter as tk
 import time
@@ -50,6 +54,11 @@ class BotControlWindow:
         self.root.title("Trading Bot Control")
         self.root.geometry("1080x720")
         self.root.minsize(1080, 720)
+        self._ui_thread_ident = threading.get_ident()
+        self._root_after_original = self.root.after
+        self._ui_after_queue: queue.PriorityQueue[tuple[float, int, Any, tuple[Any, ...]]] = queue.PriorityQueue()
+        self._ui_after_counter = 0
+        self.root.after = self._thread_safe_after  # type: ignore[method-assign]
 
         self.account_profiles = settings.account_profiles()
 
@@ -92,6 +101,7 @@ class BotControlWindow:
         self._watch_state_path = Path(__file__).resolve().parents[1] / "watch_tabs_state.json"
         self._history_tab_frame: ttk.Frame | None = None
         self._power_inhibitor: PowerInhibitor | None = None
+        self._emergency_close_process: subprocess.Popen[str] | None = None
         self._is_closing = False
         self._startup_restore_done = False
         self._network_degraded = False
@@ -153,6 +163,7 @@ class BotControlWindow:
         self._build_ui()
         self._build_ai_window()
         self._power_inhibitor = start_power_inhibitor(self.logger)
+        self._start_emergency_close_helper()
         self._apply_selected_account(update_status=False, require_credentials=False)
         threading.Thread(target=self._refresh_accounts_header_summary, daemon=True).start()
         self._refresh_ai_views()
@@ -170,6 +181,19 @@ class BotControlWindow:
             font=("TkDefaultFont", 14, "bold"),
         )
         header.pack(side="left", anchor="w")
+        self.force_close_button = tk.Button(
+            header_row,
+            text="Forzar cierre",
+            command=self._force_close,
+            fg="white",
+            bg="#8a1c1c",
+            activebackground="#6b1414",
+            relief="raised",
+            bd=1,
+            padx=10,
+            pady=3,
+        )
+        self.force_close_button.pack(side="right", padx=(10, 0))
         ttk.Label(
             header_row,
             textvariable=self.accounts_overview_var,
@@ -269,7 +293,7 @@ class BotControlWindow:
             sticky="w",
         )
 
-        ttk.Label(config_row, text="Target $/acc").grid(row=0, column=4, sticky="w")
+        ttk.Label(config_row, text="Target USD total").grid(row=0, column=4, sticky="w")
         ttk.Entry(config_row, textvariable=self.target_profit_var, width=12).grid(
             row=1,
             column=4,
@@ -991,6 +1015,7 @@ class BotControlWindow:
 
     def run(self) -> None:
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
+        self._root_after_original(50, self._drain_ui_after_queue)
         self.root.after(250, self._initial_restore_startup)
         self.root.after(1000, self._monitor_positions_loop)
         self.root.after(1000, lambda: self._run_async(self._refresh_stock_selector))
@@ -1025,16 +1050,75 @@ class BotControlWindow:
         if self._power_inhibitor is not None:
             self._power_inhibitor.stop()
             self._power_inhibitor = None
+        if self._emergency_close_process is not None:
+            try:
+                self._emergency_close_process.terminate()
+            except Exception:
+                pass
+            self._emergency_close_process = None
         if self.ai_window is not None and self.ai_window.winfo_exists():
             self.ai_window.destroy()
             self.ai_window = None
         self.root.destroy()
 
+    def _force_close(self) -> None:
+        self.logger.warning("Forzando cierre de la aplicacion por solicitud del usuario.")
+        try:
+            self._on_close()
+        except Exception:
+            pass
+        os._exit(0)
+
+    def _start_emergency_close_helper(self) -> None:
+        helper_path = Path(__file__).resolve().parents[1] / "runtime" / "emergency_close_helper.py"
+        if not helper_path.exists():
+            return
+        try:
+            self._emergency_close_process = subprocess.Popen(
+                [sys.executable, str(helper_path), str(os.getpid())],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                text=True,
+            )
+        except Exception as ex:
+            self.logger.warning("No se pudo iniciar helper de cierre de emergencia: %s", ex)
+
+    def _drain_ui_after_queue(self) -> None:
+        if self._is_closing:
+            return
+        now = time.monotonic()
+        deferred: list[tuple[float, int, Any, tuple[Any, ...]]] = []
+        while True:
+            try:
+                run_at, order, callback, args = self._ui_after_queue.get_nowait()
+            except queue.Empty:
+                break
+            if run_at > now:
+                deferred.append((run_at, order, callback, args))
+                continue
+            try:
+                callback(*args)
+            except Exception as ex:
+                self.logger.warning("UI callback error: %s", ex)
+        for item in deferred:
+            self._ui_after_queue.put(item)
+        self._root_after_original(50, self._drain_ui_after_queue)
+
+    def _thread_safe_after(self, delay_ms: int, callback: Any, *args: Any) -> None:
+        if self._is_closing:
+            return
+        if threading.get_ident() == self._ui_thread_ident:
+            self._root_after_original(delay_ms, callback, *args)
+            return
+        self._ui_after_counter += 1
+        run_at = time.monotonic() + max(float(delay_ms), 0.0) / 1000.0
+        self._ui_after_queue.put((run_at, self._ui_after_counter, callback, args))
+
     def _safe_after(self, delay_ms: int, callback: Any, *args: Any) -> None:
         if self._is_closing:
             return
         try:
-            self.root.after(delay_ms, callback, *args)
+            self._thread_safe_after(delay_ms, callback, *args)
         except (RuntimeError, tk.TclError):
             return
 
@@ -1257,7 +1341,7 @@ class BotControlWindow:
             f"ID: {schedule.id}\n"
             f"Activo: {schedule.symbol}\n"
             f"Capital: {schedule.capital:.2f}\n"
-            f"Target por accion: {schedule.target_profit_per_share:.4f}\n"
+            f"Target total USD: {schedule.target_profit_per_share:.4f}\n"
             f"Estado: {schedule.status}\n"
             f"Nota: {schedule.note}"
         )
@@ -1341,7 +1425,7 @@ class BotControlWindow:
             f"ID: {schedule.id}\n"
             f"Activo: {schedule.symbol}\n"
             f"Capital: {schedule.capital:.2f}\n"
-            f"Target por accion: {schedule.target_profit_per_share:.4f}\n"
+            f"Target total USD: {schedule.target_profit_per_share:.4f}\n"
             f"Estado: {schedule.status}\n"
             f"Nota: {schedule.note}\n"
             f"Ultimo error: {schedule.last_error or 'N/A'}\n"
@@ -1628,7 +1712,7 @@ class BotControlWindow:
             lines.append("Sin programaciones canceladas.")
         else:
             sched_header = (
-                f"{'SYMBOL':<12} {'CAPITAL':>12} {'TARGET':>10} {'CREATED_AT':<20} {'NOTA':<24} {'ERROR':<28} {'SCHED_ID':<12}"
+                f"{'SYMBOL':<12} {'CAPITAL':>12} {'TARGET_USD':>10} {'CREATED_AT':<20} {'NOTA':<24} {'ERROR':<28} {'SCHED_ID':<12}"
             )
             lines.append(sched_header)
             lines.append("-" * len(sched_header))
@@ -1854,6 +1938,11 @@ class BotControlWindow:
         entry_price = float(trade_result.get("entry_price", latest_price) or latest_price)
         target_profit_per_share = float(trade_result.get("target_profit_per_share", watch_target_profit) or watch_target_profit)
         target_price = entry_price + target_profit_per_share
+        _, target_details_text = self._format_watch_target_details(
+            configured_target=watch_target_profit,
+            effective_target_per_share=target_profit_per_share,
+            qty=qty,
+        )
         immediate_exit = trade_result.get("immediate_exit") or {}
         actual_limit_price = float(immediate_exit.get("limit_price", 0.0) or 0.0)
 
@@ -1867,7 +1956,7 @@ class BotControlWindow:
             f"Capital usado: {capital_used:.2f}\n"
             f"Qty: {qty}\n"
             f"Entry: {entry_price}\n"
-            f"Target $/acc configurado: {target_profit_per_share:.4f}\n"
+            f"{target_details_text}\n"
             f"Target teorico: {target_price:.4f}\n"
             f"Limit real broker: {(f'{actual_limit_price:.4f}' if actual_limit_price > 0 else 'pendiente / no creado')}\n"
             f"Trade ID: {trade_result.get('trade_id', 'N/A')}"
@@ -1931,15 +2020,15 @@ class BotControlWindow:
         if not self.risk_manager.can_trade(current_daily_pnl=current_daily_pnl):
             return {"action": "wait", "status": "Bloqueado por limite de perdida diaria"}
 
-        effective_target = float(target_profit_per_share or self._safe_target_profit_value())
+        configured_target_delta = float(target_profit_per_share or self._safe_target_profit_value())
         if watch_id is not None:
-            effective_target = self._watch_target_profit_value(watch_id, position_manager=position_manager)
+            configured_target_delta = self._watch_target_profit_value(watch_id, position_manager=position_manager)
         trade_result = position_manager.open_position(
             symbol=symbol,
             qty=qty,
             reason=reason,
             spread_pct=spread_pct,
-            target_profit_per_share=effective_target,
+            target_profit_per_share=configured_target_delta,
         )
         return {
             "action": "buy",
@@ -2106,6 +2195,25 @@ class BotControlWindow:
             if current is not None:
                 current["target_profit_cached"] = value
         return value
+
+    @staticmethod
+    def _format_watch_target_details(
+        *,
+        configured_target: float,
+        effective_target_per_share: float,
+        qty: float,
+    ) -> tuple[str, str]:
+        configured_target = float(configured_target or 0.0)
+        effective_target_per_share = float(effective_target_per_share or 0.0)
+        qty = float(qty or 0.0)
+        effective_total = effective_target_per_share * qty if qty > 0 else 0.0
+
+        short_text = f"target_bruto={configured_target:.4f} | ganancia_total_esperada={effective_total:.4f}"
+        long_text = (
+            f"Target bruto configurado: {configured_target:.4f}\n"
+            f"Ganancia total esperada en el limit: {effective_total:.4f}"
+        )
+        return short_text, long_text
 
     def _planned_rebuy_capital_amount(self, watch_id: str) -> float:
         runtime = self._runtime_for_watch(watch_id)
@@ -2315,6 +2423,11 @@ class BotControlWindow:
             entry_price = float(trade_result.get("entry_price", latest_price) or latest_price)
             target_profit_per_share = float(trade_result.get("target_profit_per_share", watch_target_profit) or watch_target_profit)
             target_price = entry_price + target_profit_per_share
+            _, target_details_text = self._format_watch_target_details(
+                configured_target=watch_target_profit,
+                effective_target_per_share=target_profit_per_share,
+                qty=qty,
+            )
             immediate_exit = trade_result.get("immediate_exit") or {}
             actual_limit_price = float(immediate_exit.get("limit_price", 0.0) or 0.0)
             if actual_limit_price > 0:
@@ -2331,7 +2444,7 @@ class BotControlWindow:
                 f"Capital usado: {capital_used:.2f}\n"
                 f"Qty: {qty}\n"
                 f"Entry: {entry_price}\n"
-                f"Target $/acc configurado: {target_profit_per_share:.4f}\n"
+                f"{target_details_text}\n"
                 f"Target teorico: {target_price:.4f}\n"
                 f"Limit real broker: {(f'{actual_limit_price:.4f}' if actual_limit_price > 0 else 'pendiente / no creado')}\n"
                 f"Trade ID: {trade_result.get('trade_id', 'N/A')}\n"
@@ -2467,7 +2580,7 @@ class BotControlWindow:
             pady=2,
         )
         auto_rebuy_button.pack(side="left", padx=(0, 8))
-        ttk.Label(controls_row, text="Target $/acc").pack(side="left", padx=(0, 4))
+        ttk.Label(controls_row, text="Target USD total").pack(side="left", padx=(0, 4))
         ttk.Entry(controls_row, textvariable=target_profit_var, width=10).pack(side="left", padx=(0, 8))
         ttk.Label(controls_row, text="Capital recompra").pack(side="left", padx=(0, 4))
         ttk.Entry(controls_row, textvariable=rebuy_capital_var, width=10).pack(side="left", padx=(0, 8))
@@ -3076,8 +3189,14 @@ class BotControlWindow:
                 pnl = (current_price - avg_entry_price) * qty
                 pnl_pct = ((current_price / avg_entry_price) - 1.0) * 100.0 if avg_entry_price > 0 else 0.0
                 state = "GANANDO" if pnl > 0 else "PERDIENDO" if pnl < 0 else "EQUILIBRIO"
+                configured_target = self._watch_target_profit_value(watch_id, position_manager=position_manager)
                 target_profit_per_share = float(position_manager.get_target_profit_per_share_for_symbol(symbol))
                 target_price = avg_entry_price + target_profit_per_share
+                target_details_short, _ = self._format_watch_target_details(
+                    configured_target=configured_target,
+                    effective_target_per_share=target_profit_per_share,
+                    qty=qty,
+                )
                 pending_sell_order = None
                 order_lookup_failed = False
                 try:
@@ -3174,6 +3293,7 @@ class BotControlWindow:
                                 avg_entry_price=avg_entry_price,
                                 current_price=current_price,
                                 reason_sell="repair_missing_limit_from_tracking",
+                                target_profit_per_share=configured_target,
                             )
                             repaired_limit = float((repair_result or {}).get("limit_price", 0.0) or 0.0)
                             if repaired_limit > 0:
@@ -3241,7 +3361,7 @@ class BotControlWindow:
 
                 line = (
                     f"PnL en vivo {symbol} | entry={avg_entry_price:.4f} | current={current_price:.4f} | "
-                    f"target_teorico={target_price:.4f} (cfg={target_profit_per_share:.4f}) | "
+                    f"target_teorico={target_price:.4f} ({target_details_short}) | "
                     f"limit_real={(f'{effective_limit:.4f}' if effective_limit > 0 else 'N/A')} | "
                     f"qty={qty:.4f} | pnl={pnl:.4f} ({pnl_pct:.2f}%) | estado={state}"
                 )
