@@ -5,6 +5,7 @@ import sqlite3
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+import threading
 from typing import Any, Iterator
 
 
@@ -12,17 +13,21 @@ class TradingBrainDatabase:
     def __init__(self, db_path: str) -> None:
         self.path = Path(db_path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
+        self._db_lock = threading.RLock()
         self._init_schema()
 
     @contextmanager
     def connect(self) -> Iterator[sqlite3.Connection]:
-        connection = sqlite3.connect(self.path)
-        connection.row_factory = sqlite3.Row
-        try:
-            yield connection
-            connection.commit()
-        finally:
-            connection.close()
+        with self._db_lock:
+            connection = sqlite3.connect(self.path, timeout=5.0)
+            connection.execute("PRAGMA journal_mode=WAL;")
+            connection.execute("PRAGMA busy_timeout=5000;")
+            connection.row_factory = sqlite3.Row
+            try:
+                yield connection
+                connection.commit()
+            finally:
+                connection.close()
 
     def _init_schema(self) -> None:
         statements = [
@@ -208,6 +213,7 @@ class TradingBrainDatabase:
                 kill_switch INTEGER NOT NULL,
                 auto_trade_stocks_enabled INTEGER NOT NULL DEFAULT 1,
                 auto_trade_cryptos_enabled INTEGER NOT NULL DEFAULT 1,
+                scanner_decision_engine TEXT NOT NULL DEFAULT 'heuristic',
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL,
                 FOREIGN KEY(account_id) REFERENCES accounts(id)
@@ -244,6 +250,53 @@ class TradingBrainDatabase:
                 FOREIGN KEY(signal_id) REFERENCES signals(id)
             )
             """,
+            """
+            CREATE TABLE IF NOT EXISTS crypto_global_market_data (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                symbol TEXT NOT NULL,
+                source TEXT NOT NULL,
+                current_price REAL NOT NULL,
+                total_volume REAL NOT NULL,
+                market_cap REAL NOT NULL,
+                price_change_percentage_24h REAL NOT NULL,
+                fetched_at TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                UNIQUE(symbol, source)
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS crypto_volume_records (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                symbol TEXT NOT NULL,
+                normalized_symbol TEXT NOT NULL,
+                price REAL NOT NULL,
+                local_volume_1m REAL NOT NULL,
+                local_volume_5m REAL NOT NULL,
+                local_volume_15m REAL NOT NULL,
+                local_volume_1m_usd REAL NOT NULL DEFAULT 0,
+                local_volume_5m_usd REAL NOT NULL DEFAULT 0,
+                local_volume_15m_usd REAL NOT NULL DEFAULT 0,
+                local_volume_unit TEXT NOT NULL DEFAULT 'UNKNOWN',
+                volume_has_clear_unit INTEGER NOT NULL DEFAULT 0,
+                trade_count_1m INTEGER NOT NULL,
+                trade_count_5m INTEGER NOT NULL,
+                trade_count_15m INTEGER NOT NULL,
+                global_volume_24h_usd REAL NOT NULL,
+                alpaca_24h_volume REAL NOT NULL,
+                volume_source TEXT NOT NULL,
+                global_volume_source TEXT NOT NULL,
+                volume_status TEXT NOT NULL,
+                latest_bar_age_seconds REAL NOT NULL DEFAULT 999999,
+                data_stale INTEGER NOT NULL DEFAULT 1,
+                websocket_stale INTEGER NOT NULL DEFAULT 1,
+                volume_valid_for_live_analysis INTEGER NOT NULL DEFAULT 0,
+                error_message TEXT NOT NULL,
+                last_update TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            )
+            """,
         ]
         with self.connect() as connection:
             for statement in statements:
@@ -265,7 +318,17 @@ class TradingBrainDatabase:
         self._ensure_column_exists(connection, "model_training_runs", "approved_for_paper", "INTEGER NOT NULL DEFAULT 0")
         self._ensure_column_exists(connection, "ai_runtime_settings", "auto_trade_stocks_enabled", "INTEGER NOT NULL DEFAULT 1")
         self._ensure_column_exists(connection, "ai_runtime_settings", "auto_trade_cryptos_enabled", "INTEGER NOT NULL DEFAULT 1")
+        self._ensure_column_exists(connection, "ai_runtime_settings", "scanner_decision_engine", "TEXT NOT NULL DEFAULT 'heuristic'")
         self._ensure_column_exists(connection, "trades", "initiated_by", "TEXT NOT NULL DEFAULT 'unknown'")
+        self._ensure_column_exists(connection, "crypto_volume_records", "local_volume_1m_usd", "REAL NOT NULL DEFAULT 0")
+        self._ensure_column_exists(connection, "crypto_volume_records", "local_volume_5m_usd", "REAL NOT NULL DEFAULT 0")
+        self._ensure_column_exists(connection, "crypto_volume_records", "local_volume_15m_usd", "REAL NOT NULL DEFAULT 0")
+        self._ensure_column_exists(connection, "crypto_volume_records", "local_volume_unit", "TEXT NOT NULL DEFAULT 'UNKNOWN'")
+        self._ensure_column_exists(connection, "crypto_volume_records", "volume_has_clear_unit", "INTEGER NOT NULL DEFAULT 0")
+        self._ensure_column_exists(connection, "crypto_volume_records", "latest_bar_age_seconds", "REAL NOT NULL DEFAULT 999999")
+        self._ensure_column_exists(connection, "crypto_volume_records", "data_stale", "INTEGER NOT NULL DEFAULT 1")
+        self._ensure_column_exists(connection, "crypto_volume_records", "websocket_stale", "INTEGER NOT NULL DEFAULT 1")
+        self._ensure_column_exists(connection, "crypto_volume_records", "volume_valid_for_live_analysis", "INTEGER NOT NULL DEFAULT 0")
 
     def _ensure_column_exists(
         self,
@@ -408,6 +471,7 @@ class TradingBrainDatabase:
         kill_switch: bool,
         auto_trade_stocks_enabled: bool,
         auto_trade_cryptos_enabled: bool,
+        scanner_decision_engine: str = "heuristic",
     ) -> None:
         now = self._now_iso()
         with self.connect() as connection:
@@ -415,6 +479,9 @@ class TradingBrainDatabase:
                 "SELECT id FROM ai_runtime_settings WHERE account_id = ?",
                 (account_id,),
             ).fetchone()
+            engine = str(scanner_decision_engine or "heuristic").strip().lower()
+            if engine not in {"heuristic", "model"}:
+                engine = "heuristic"
             payload = (
                 1 if signal_only_mode else 0,
                 1 if paper_trading else 0,
@@ -423,6 +490,7 @@ class TradingBrainDatabase:
                 1 if kill_switch else 0,
                 1 if auto_trade_stocks_enabled else 0,
                 1 if auto_trade_cryptos_enabled else 0,
+                engine,
                 now,
             )
             if row is None:
@@ -431,8 +499,8 @@ class TradingBrainDatabase:
                     INSERT INTO ai_runtime_settings (
                         account_id, signal_only_mode, paper_trading, live_trading_enabled,
                         manual_approval_required, kill_switch, auto_trade_stocks_enabled,
-                        auto_trade_cryptos_enabled, created_at, updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        auto_trade_cryptos_enabled, scanner_decision_engine, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (account_id, *payload, now),
                 )
@@ -443,7 +511,7 @@ class TradingBrainDatabase:
                 UPDATE ai_runtime_settings
                 SET signal_only_mode = ?, paper_trading = ?, live_trading_enabled = ?,
                     manual_approval_required = ?, kill_switch = ?,
-                    auto_trade_stocks_enabled = ?, auto_trade_cryptos_enabled = ?,
+                    auto_trade_stocks_enabled = ?, auto_trade_cryptos_enabled = ?, scanner_decision_engine = ?,
                     updated_at = ?
                 WHERE account_id = ?
                 """,
@@ -646,6 +714,39 @@ class TradingBrainDatabase:
             ).fetchall()
             return [dict(row) for row in rows]
 
+    def list_trades_enriched(self, account_id: int, limit: int = 200) -> list[dict[str, Any]]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT
+                    t.*,
+                    s.model_version AS signal_model_version,
+                    s.reason AS signal_reason,
+                    s.signal_type AS signal_type_from_signal,
+                    s.confidence_score AS signal_confidence_score
+                FROM trades t
+                LEFT JOIN signals s ON s.id = COALESCE(
+                    t.signal_id,
+                    (
+                        SELECT tb.signal_id
+                        FROM trades tb
+                        WHERE tb.account_id = t.account_id
+                          AND tb.symbol = t.symbol
+                          AND lower(tb.side) = 'buy'
+                          AND tb.signal_id IS NOT NULL
+                          AND tb.timestamp <= t.timestamp
+                        ORDER BY tb.timestamp DESC
+                        LIMIT 1
+                    )
+                )
+                WHERE t.account_id = ?
+                ORDER BY t.timestamp DESC
+                LIMIT ?
+                """,
+                (account_id, limit),
+            ).fetchall()
+            return [dict(row) for row in rows]
+
     def upsert_trade_order(self, payload: dict[str, Any]) -> int:
         with self.connect() as connection:
             row = connection.execute(
@@ -684,8 +785,9 @@ class TradingBrainDatabase:
                 """
                 UPDATE trades
                 SET timestamp = ?, symbol = ?, asset_type = ?, side = ?, order_type = ?,
-                    limit_price = ?, filled_price = ?, fees = ?, status = ?, initiated_by = ?,
-                    signal_id = ?
+                    limit_price = ?, filled_price = ?, fees = ?, status = ?,
+                    initiated_by = COALESCE(NULLIF(?, 'trade_updates'), initiated_by),
+                    signal_id = COALESCE(?, signal_id)
                 WHERE account_id = ? AND broker_order_id = ?
                 """,
                 (
@@ -926,6 +1028,170 @@ class TradingBrainDatabase:
                 (symbol, start_iso, end_iso),
             ).fetchall()
             return [dict(row) for row in rows]
+
+    def upsert_crypto_global_market_data(
+        self,
+        *,
+        symbol: str,
+        source: str,
+        current_price: float,
+        total_volume: float,
+        market_cap: float,
+        price_change_percentage_24h: float,
+        fetched_at: str,
+    ) -> None:
+        now = self._now_iso()
+        symbol_norm = str(symbol or "").upper().replace(" ", "")
+        source_norm = str(source or "unknown").strip().lower()
+        with self.connect() as connection:
+            row = connection.execute(
+                "SELECT id FROM crypto_global_market_data WHERE symbol = ? AND source = ?",
+                (symbol_norm, source_norm),
+            ).fetchone()
+            payload = (
+                float(current_price),
+                float(total_volume),
+                float(market_cap),
+                float(price_change_percentage_24h),
+                str(fetched_at),
+                now,
+            )
+            if row is None:
+                connection.execute(
+                    """
+                    INSERT INTO crypto_global_market_data (
+                        symbol, source, current_price, total_volume, market_cap,
+                        price_change_percentage_24h, fetched_at, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        symbol_norm,
+                        source_norm,
+                        *payload[:-1],
+                        now,
+                        payload[-1],
+                    ),
+                )
+                return
+
+            connection.execute(
+                """
+                UPDATE crypto_global_market_data
+                SET current_price = ?, total_volume = ?, market_cap = ?,
+                    price_change_percentage_24h = ?, fetched_at = ?, updated_at = ?
+                WHERE symbol = ? AND source = ?
+                """,
+                (
+                    *payload,
+                    symbol_norm,
+                    source_norm,
+                ),
+            )
+
+    def insert_crypto_volume_record(self, payload: dict[str, Any]) -> int:
+        now = self._now_iso()
+        with self.connect() as connection:
+            cursor = connection.execute(
+                """
+                INSERT INTO crypto_volume_records (
+                    timestamp, symbol, normalized_symbol, price,
+                    local_volume_1m, local_volume_5m, local_volume_15m,
+                    local_volume_1m_usd, local_volume_5m_usd, local_volume_15m_usd,
+                    local_volume_unit, volume_has_clear_unit,
+                    trade_count_1m, trade_count_5m, trade_count_15m,
+                    global_volume_24h_usd, alpaca_24h_volume,
+                    volume_source, global_volume_source, volume_status,
+                    latest_bar_age_seconds, data_stale, websocket_stale, volume_valid_for_live_analysis,
+                    error_message, last_update, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    str(payload.get("timestamp", now) or now),
+                    str(payload.get("symbol", "") or ""),
+                    str(payload.get("normalized_symbol", "") or ""),
+                    float(payload.get("price", 0.0) or 0.0),
+                    float(payload.get("local_volume_1m", 0.0) or 0.0),
+                    float(payload.get("local_volume_5m", 0.0) or 0.0),
+                    float(payload.get("local_volume_15m", 0.0) or 0.0),
+                    float(payload.get("local_volume_1m_usd", 0.0) or 0.0),
+                    float(payload.get("local_volume_5m_usd", 0.0) or 0.0),
+                    float(payload.get("local_volume_15m_usd", 0.0) or 0.0),
+                    str(payload.get("local_volume_unit", "UNKNOWN") or "UNKNOWN"),
+                    1 if bool(payload.get("volume_has_clear_unit", False)) else 0,
+                    int(payload.get("trade_count_1m", 0) or 0),
+                    int(payload.get("trade_count_5m", 0) or 0),
+                    int(payload.get("trade_count_15m", 0) or 0),
+                    float(payload.get("global_volume_24h_usd", 0.0) or 0.0),
+                    float(payload.get("alpaca_24h_volume", 0.0) or 0.0),
+                    str(payload.get("volume_source", "unknown") or "unknown"),
+                    str(payload.get("global_volume_source", "unknown") or "unknown"),
+                    str(payload.get("volume_status", "UNKNOWN") or "UNKNOWN"),
+                    float(payload.get("latest_bar_age_seconds", 999999.0) or 999999.0),
+                    1 if bool(payload.get("data_stale", True)) else 0,
+                    1 if bool(payload.get("websocket_stale", True)) else 0,
+                    1 if bool(payload.get("volume_valid_for_live_analysis", False)) else 0,
+                    str(payload.get("error_message", "") or ""),
+                    str(payload.get("last_update", payload.get("timestamp", now)) or now),
+                    now,
+                ),
+            )
+            return int(cursor.lastrowid)
+
+    def latest_crypto_volume_record(self, normalized_symbol: str) -> dict[str, Any] | None:
+        symbol = str(normalized_symbol or "").upper().replace(" ", "")
+        if not symbol:
+            return None
+        with self.connect() as connection:
+            row = connection.execute(
+                """
+                SELECT * FROM crypto_volume_records
+                WHERE normalized_symbol = ?
+                ORDER BY timestamp DESC
+                LIMIT 1
+                """,
+                (symbol,),
+            ).fetchone()
+            return dict(row) if row is not None else None
+
+    def get_latest_crypto_global_market_data(
+        self,
+        *,
+        symbol: str,
+        source: str = "coingecko",
+        max_age_seconds: int | None = None,
+    ) -> dict[str, Any] | None:
+        symbol_norm = str(symbol or "").upper().replace(" ", "")
+        source_norm = str(source or "coingecko").strip().lower()
+        with self.connect() as connection:
+            row = connection.execute(
+                """
+                SELECT * FROM crypto_global_market_data
+                WHERE symbol = ? AND source = ?
+                ORDER BY updated_at DESC
+                LIMIT 1
+                """,
+                (symbol_norm, source_norm),
+            ).fetchone()
+            if row is None:
+                return None
+            payload = dict(row)
+
+        if max_age_seconds is None:
+            return payload
+
+        fetched_at = str(payload.get("fetched_at", "") or "")
+        if not fetched_at:
+            return None
+        try:
+            fetched_dt = datetime.fromisoformat(fetched_at)
+        except ValueError:
+            return None
+        if fetched_dt.tzinfo is None:
+            fetched_dt = fetched_dt.replace(tzinfo=timezone.utc)
+        age = (datetime.now(timezone.utc) - fetched_dt).total_seconds()
+        if age > float(max_age_seconds):
+            return None
+        return payload
 
     def upsert_signal_outcome(self, signal_id: int, symbol: str, updates: dict[str, Any]) -> None:
         now = self._now_iso()

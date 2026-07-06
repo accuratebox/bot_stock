@@ -52,12 +52,13 @@ class BotControlWindow:
 
         self.root = tk.Tk()
         self.root.title("Trading Bot Control")
-        self.root.geometry("1080x720")
-        self.root.minsize(1080, 720)
+        self._fit_window_to_screen(self.root, preferred_width=1080, preferred_height=720, min_width=860, min_height=620)
+        self._ui_compact_mode = bool(self.root.winfo_screenheight() < 900)
         self._ui_thread_ident = threading.get_ident()
         self._root_after_original = self.root.after
         self._ui_after_queue: queue.PriorityQueue[tuple[float, int, Any, tuple[Any, ...]]] = queue.PriorityQueue()
         self._ui_after_counter = 0
+        self._ui_max_log_lines = max(int(getattr(settings, "ui_max_log_lines", 1000) or 1000), 200)
         self.root.after = self._thread_safe_after  # type: ignore[method-assign]
 
         self.account_profiles = settings.account_profiles()
@@ -87,6 +88,9 @@ class BotControlWindow:
         self.cancel_order_var = tk.StringVar()
         self.history_delete_var = tk.StringVar()
         self.status_var = tk.StringVar(value="Listo")
+        self.app_health_var = tk.StringVar(value="App status: N/A")
+        self.ws_health_var = tk.StringVar(value="WebSocket: N/A")
+        self.api_health_var = tk.StringVar(value="Alpaca/API: N/A")
         self._order_alias_map: dict[str, str] = {}
 
         self._monitor_in_flight = False
@@ -98,19 +102,55 @@ class BotControlWindow:
         self._account_runtime_states: dict[str, AlpacaRuntimeState] = {}
         self._account_monitor_cooldown_until: dict[str, float] = {}
         self._account_watch_http_cooldown_until: dict[str, float] = {}
+        self._ai_watch_sync_in_flight = False
+        self._ai_watch_last_sync_ts = 0.0
         self._watch_state_path = Path(__file__).resolve().parents[1] / "watch_tabs_state.json"
+        self._ai_ui_state_path = Path(__file__).resolve().parents[1] / "ai_ui_state.json"
+        self._ui_heartbeat_path = Path(__file__).resolve().parents[1] / "runtime" / f"ui_heartbeat_{os.getpid()}.json"
+        self._ui_heartbeat_interval_ms = 2000
+        self._ui_heartbeat_timeout_seconds = 25
         self._history_tab_frame: ttk.Frame | None = None
         self._power_inhibitor: PowerInhibitor | None = None
         self._emergency_close_process: subprocess.Popen[str] | None = None
+        self._emergency_helper_log_path = Path(__file__).resolve().parents[1] / "runtime" / "emergency_helper.log"
+        self._emergency_helper_backoff_until = 0.0
         self._is_closing = False
         self._startup_restore_done = False
         self._network_degraded = False
         self._latest_ai_signal_id: int | None = None
         self.ai_window: tk.Toplevel | None = None
+        self.ai_diagnostics_window: tk.Toplevel | None = None
+        self.ai_history_window: tk.Toplevel | None = None
+        self.ai_history_tree: ttk.Treeview | None = None
+        self.ai_history_account_filter_var = tk.StringVar(value="Todas")
+        self.ai_history_side_filter_var = tk.StringVar(value="Todos")
+        self.ai_history_engine_filter_var = tk.StringVar(value="Todos")
+        self.ai_history_status_filter_var = tk.StringVar(value="Todos")
+        default_diag_market = "Cryptos" if ("/" in str(settings.default_symbol).upper() or str(settings.default_symbol).upper().endswith("USD")) else "Stocks"
+        self.ai_diag_market_kind_var = tk.StringVar(value=default_diag_market)
+        self.ai_diag_symbol_var = tk.StringVar(value=str(settings.default_symbol))
+        self.ai_diag_asset_type_var = tk.StringVar(value="crypto" if default_diag_market == "Cryptos" else "stock")
+        self.ai_diag_account_var = tk.StringVar(value=initial_account)
+        self.ai_diag_max_spread_var = tk.StringVar(value=str(getattr(settings, "ai_max_spread_allowed", 0.05)))
+        self.ai_diag_min_volume_var = tk.StringVar(value=str(getattr(settings, "ai_min_volume_24h_usd", 100000.0)))
+        self.ai_diag_min_confidence_var = tk.StringVar(value=str(getattr(settings, "ai_min_execution_confidence", 60.0)))
+        self.ai_diag_target_profit_var = tk.StringVar(value=str(getattr(settings, "ai_target_profit_per_operation", 0.05)))
+        self.ai_diag_target_profit_stocks_var = tk.StringVar(value=str(getattr(settings, "ai_target_profit_per_operation_stocks", getattr(settings, "ai_target_profit_per_operation", 0.05))))
+        self.ai_diag_target_profit_cryptos_var = tk.StringVar(value=str(getattr(settings, "ai_target_profit_per_operation_cryptos", getattr(settings, "ai_target_profit_per_operation", 0.05))))
+        self.ai_diag_fees_var = tk.StringVar(value=str(getattr(settings, "ai_fees_buffer", 0.02)))
+        self.ai_diag_slippage_var = tk.StringVar(value=str(getattr(settings, "ai_slippage_buffer", 0.03)))
+        self.ai_diag_min_profit_var = tk.StringVar(value=str(getattr(settings, "ai_minimum_profit", 0.05)))
+        self.ai_diag_signal_only_var = tk.IntVar(value=1 if settings.ai_signal_only_mode else 0)
+        self.ai_diag_auto_stocks_var = tk.IntVar(value=1)
+        self.ai_diag_auto_cryptos_var = tk.IntVar(value=1)
+        self.ai_diag_details_text: tk.Text | None = None
+        self.ai_diag_reco_text: tk.Text | None = None
         self.ai_max_capital_var = tk.StringVar(value=str(settings.ai_default_max_capital_assigned))
         self.ai_max_position_var = tk.StringVar(value=str(settings.ai_default_max_position_size))
         self.ai_max_daily_loss_var = tk.StringVar(value=str(settings.ai_default_max_daily_loss))
-        self.ai_target_profit_var = tk.StringVar(value=str(getattr(settings, "ai_target_profit_per_share", 0.05)))
+        self.ai_target_profit_var = tk.StringVar(value=str(getattr(settings, "ai_target_profit_per_operation", 0.05)))
+        self.ai_target_profit_stocks_var = tk.StringVar(value=str(getattr(settings, "ai_target_profit_per_operation_stocks", getattr(settings, "ai_target_profit_per_operation", 0.05))))
+        self.ai_target_profit_cryptos_var = tk.StringVar(value=str(getattr(settings, "ai_target_profit_per_operation_cryptos", getattr(settings, "ai_target_profit_per_operation", 0.05))))
         self.ai_bot_enabled_var = tk.IntVar(value=1)
         self.ai_signal_only_var = tk.IntVar(value=1 if settings.ai_signal_only_mode else 0)
         self.ai_paper_trading_var = tk.IntVar(value=1 if settings.paper_trading else 0)
@@ -119,6 +159,20 @@ class BotControlWindow:
         self.ai_kill_switch_var = tk.IntVar(value=0)
         self.ai_auto_trade_stocks_var = tk.IntVar(value=1)
         self.ai_auto_trade_cryptos_var = tk.IntVar(value=1)
+        self.ai_decision_engine_var = tk.StringVar(value="heuristic")
+        self.ai_pending_status_var = tk.StringVar(value="IA pendiente: --")
+        self.ai_focus_stocks_only_var = tk.IntVar(value=1 if bool(getattr(settings, "ai_focus_stocks_only", False)) else 0)
+        self.ai_focus_cryptos_only_var = tk.IntVar(value=1 if bool(getattr(settings, "ai_focus_cryptos_only", False)) else 0)
+        self.ai_focus_stocks_symbols_var = tk.StringVar(value=str(getattr(settings, "ai_focus_stocks_symbols", "") or ""))
+        self.ai_focus_cryptos_symbols_var = tk.StringVar(value=str(getattr(settings, "ai_focus_cryptos_symbols", "") or ""))
+        self.ai_focus_stock_pick_var = tk.StringVar(value="")
+        self.ai_focus_crypto_pick_var = tk.StringVar(value="")
+        self.ai_focus_stock_values: list[str] = []
+        self.ai_focus_crypto_values: list[str] = []
+        self.ai_focus_stock_selected: list[str] = []
+        self.ai_focus_crypto_selected: list[str] = []
+        self.ai_focus_stocks_selected_var = tk.StringVar(value="(ninguno)")
+        self.ai_focus_cryptos_selected_var = tk.StringVar(value="(ninguno)")
         self.ai_header_stocks_var = tk.StringVar(value="Stocks: --")
         self.ai_header_cryptos_var = tk.StringVar(value="Cryptos: --")
         self.ai_badge_stocks_var = tk.StringVar(value="Ejecucion Stocks: --")
@@ -130,12 +184,19 @@ class BotControlWindow:
         self._ai_model_versions_values: list[str] = []
         self._ai_model_version_map: dict[str, str] = {}
         self._ai_news_autofill_text = ""
+        self.ai_crypto_monitor_text: tk.Text | None = None
 
         # Config panel variables
         self.config_capital_var = tk.StringVar(value=str(settings.default_trade_capital))
         self.config_risk_pct_var = tk.StringVar(value=str(settings.risk_per_trade_pct))
         self.config_max_daily_loss_var = tk.StringVar(value=str(settings.max_daily_loss))
         self.config_max_open_pos_var = tk.StringVar(value=str(settings.max_open_positions))
+        self.config_stock_allow_hold_var = tk.IntVar(value=1 if bool(getattr(settings, "stock_allow_hold", True)) else 0)
+        self.config_stock_allow_stop_loss_var = tk.IntVar(value=1 if bool(getattr(settings, "stock_allow_stop_loss", False)) else 0)
+        self.config_stock_no_auto_sell_below_avg_cost_var = tk.IntVar(
+            value=1 if bool(getattr(settings, "stock_no_auto_sell_below_avg_cost", True)) else 0
+        )
+        self.config_stock_auto_sell_profit_pct_var = tk.StringVar(value=str(getattr(settings, "stock_auto_sell_profit_pct", 0.5)))
         self.config_btc_sl_var = tk.StringVar(value=str(settings.crypto_btc_eth_stop_loss_pct))
         self.config_btc_tp1_var = tk.StringVar(value=str(settings.crypto_btc_eth_tp1_pct))
         self.config_btc_tp2_var = tk.StringVar(value=str(settings.crypto_btc_eth_tp2_pct))
@@ -148,7 +209,9 @@ class BotControlWindow:
         self.config_meme_tp1_var = tk.StringVar(value=str(settings.crypto_meme_tp1_pct))
         self.config_meme_tp2_var = tk.StringVar(value=str(settings.crypto_meme_tp2_pct))
         self.config_meme_max_tp_var = tk.StringVar(value=str(settings.crypto_meme_max_tp_pct))
-        self.config_ai_target_profit_var = tk.StringVar(value=str(getattr(settings, "ai_target_profit_per_share", 0.05)))
+        self.config_ai_target_profit_var = tk.StringVar(value=str(getattr(settings, "ai_target_profit_per_operation", 0.05)))
+        self.config_ai_target_profit_stocks_var = tk.StringVar(value=str(getattr(settings, "ai_target_profit_per_operation_stocks", getattr(settings, "ai_target_profit_per_operation", 0.05))))
+        self.config_ai_target_profit_cryptos_var = tk.StringVar(value=str(getattr(settings, "ai_target_profit_per_operation_cryptos", getattr(settings, "ai_target_profit_per_operation", 0.05))))
         self.config_cp_monthly_limit_var = tk.StringVar(value=str(getattr(settings, "cryptopanic_monthly_limit", 600)))
         self.config_cp_used_baseline_var = tk.StringVar(value=str(getattr(settings, "cryptopanic_used_this_month", 0)))
         self.config_cp_used_var = tk.StringVar(value="0")
@@ -159,6 +222,8 @@ class BotControlWindow:
         self.config_cp_today_active_var = tk.StringVar(value="No")
         self.config_cp_active_days_remaining_var = tk.StringVar(value="0")
         self.config_cp_request_days_vars: dict[int, tk.IntVar] = {idx: tk.IntVar(value=0) for idx in range(7)}
+
+        self._load_ai_ui_state()
 
         self._build_ui()
         self._build_ai_window()
@@ -233,6 +298,7 @@ class BotControlWindow:
             state="readonly",
         )
         self.account_combo.grid(row=1, column=0, padx=(0, 10), sticky="w")
+        self.account_combo.bind("<<ComboboxSelected>>", lambda _event: self._on_main_account_selected())
 
         self.switch_account_button = ttk.Button(
             account_row,
@@ -392,7 +458,7 @@ class BotControlWindow:
 
         self.history_button = ttk.Button(
             action_row,
-            text="Historial",
+            text="Historial Bot normal",
             command=lambda: self._run_async(self._view_history),
         )
         self.history_button.pack(side="left", padx=(8, 0))
@@ -418,8 +484,21 @@ class BotControlWindow:
         )
         self.ai_window_button.pack(side="left", padx=(8, 0))
 
+        safety_row = ttk.Frame(container)
+        safety_row.pack(fill="x", pady=(2, 8))
+        ttk.Button(safety_row, text="Pause Bot", command=lambda: self._run_async(self._pause_bot)).pack(side="left")
+        ttk.Button(safety_row, text="Resume Bot", command=lambda: self._run_async(self._resume_bot)).pack(side="left", padx=(6, 0))
+        ttk.Button(safety_row, text="Emergency Stop", command=lambda: self._run_async(self._emergency_stop)).pack(side="left", padx=(6, 0))
+        ttk.Button(safety_row, text="Reconnect WebSocket", command=lambda: self._run_async(self._reconnect_websocket)).pack(side="left", padx=(6, 0))
+        ttk.Button(safety_row, text="Sync Positions", command=lambda: self._run_async(self._sync_positions_now)).pack(side="left", padx=(6, 0))
+        ttk.Button(safety_row, text="Clear UI Logs", command=self._clear_ui_logs).pack(side="left", padx=(6, 0))
+        ttk.Button(safety_row, text="Export Crash Report", command=lambda: self._run_async(self._export_crash_report)).pack(side="left", padx=(6, 0))
+
         ttk.Separator(container).pack(fill="x", pady=12)
         ttk.Label(container, textvariable=self.status_var, foreground="#555").pack(anchor="w")
+        ttk.Label(container, textvariable=self.app_health_var, foreground="#1f4d7a").pack(anchor="w")
+        ttk.Label(container, textvariable=self.ws_health_var, foreground="#1f4d7a").pack(anchor="w")
+        ttk.Label(container, textvariable=self.api_health_var, foreground="#1f4d7a").pack(anchor="w")
 
         self.log_notebook = ttk.Notebook(container)
         self.log_notebook.pack(fill="both", expand=True, pady=(8, 0))
@@ -434,6 +513,40 @@ class BotControlWindow:
 
         # Config Tab
         self._build_config_tab()
+
+    def _mousewheel_steps(self, event: Any) -> int:
+        delta = int(getattr(event, "delta", 0) or 0)
+        if delta != 0:
+            return int(-delta / 120)
+        num = int(getattr(event, "num", 0) or 0)
+        if num == 4:
+            return -1
+        if num == 5:
+            return 1
+        return 0
+
+    def _scroll_target_under_mouse(self, event: Any) -> Any:
+        target = self.root.winfo_containing(int(getattr(event, "x_root", 0) or 0), int(getattr(event, "y_root", 0) or 0))
+        if target is None:
+            target = getattr(event, "widget", None)
+        while target is not None:
+            if isinstance(target, (tk.Text, tk.Listbox, tk.Canvas)):
+                return target
+            target = getattr(target, "master", None)
+        return None
+
+    def _on_scoped_mousewheel(self, event: Any, *, fallback_canvas: tk.Canvas) -> str | None:
+        steps = self._mousewheel_steps(event)
+        if steps == 0:
+            return None
+        target = self._scroll_target_under_mouse(event)
+        if target is None:
+            target = fallback_canvas
+        try:
+            target.yview_scroll(steps, "units")
+            return "break"
+        except Exception:
+            return None
 
     def _build_config_tab(self) -> None:
         """Construye tab de configuración de riesgo y parámetros de trading"""
@@ -468,8 +581,10 @@ class BotControlWindow:
 
         ttk.Label(general_lf, text="Máx posiciones abiertas").grid(row=3, column=0, sticky="w", padx=4, pady=4)
         ttk.Entry(general_lf, textvariable=self.config_max_open_pos_var, width=15).grid(row=3, column=1, padx=4, pady=4)
-        ttk.Label(general_lf, text="Target IA $/acc").grid(row=3, column=2, sticky="w", padx=4, pady=4)
-        ttk.Entry(general_lf, textvariable=self.config_ai_target_profit_var, width=15).grid(row=3, column=3, padx=4, pady=4, sticky="w")
+        ttk.Label(general_lf, text="Target IA Stocks $/operación").grid(row=3, column=2, sticky="w", padx=4, pady=4)
+        ttk.Entry(general_lf, textvariable=self.config_ai_target_profit_stocks_var, width=12).grid(row=3, column=3, padx=4, pady=4, sticky="w")
+        ttk.Label(general_lf, text="Target IA Cryptos $/operación").grid(row=3, column=4, sticky="w", padx=4, pady=4)
+        ttk.Entry(general_lf, textvariable=self.config_ai_target_profit_cryptos_var, width=12).grid(row=3, column=5, padx=4, pady=4, sticky="w")
 
         ttk.Label(general_lf, text="Cuenta IA (fondos automáticos)").grid(row=4, column=0, sticky="w", padx=4, pady=4)
         self.config_ai_account_combo = ttk.Combobox(
@@ -480,6 +595,7 @@ class BotControlWindow:
             state="readonly",
         )
         self.config_ai_account_combo.grid(row=4, column=1, padx=4, pady=4, sticky="w")
+        self.config_ai_account_combo.bind("<<ComboboxSelected>>", lambda _event: self._on_config_ai_account_selected())
         ttk.Button(
             general_lf,
             text="Aplicar cuenta IA",
@@ -538,7 +654,7 @@ class BotControlWindow:
         ttk.Button(
             quota_lf,
             text="Actualizar cuota",
-            command=self._refresh_cryptopanic_quota_display,
+            command=self._refresh_cryptopanic_quota_display_async,
         ).grid(row=3, column=4, sticky="w", padx=6, pady=4)
 
         ttk.Label(quota_lf, text="Días habilitados API").grid(row=4, column=0, sticky="w", padx=4, pady=4)
@@ -552,6 +668,43 @@ class BotControlWindow:
             text="Reset usado del mes",
             command=self._reset_cryptopanic_month_usage,
         ).grid(row=5, column=4, sticky="w", padx=6, pady=4)
+
+        stock_lf = ttk.LabelFrame(scrollable_frame, text="📈 Configuración Stocks", padding=10)
+        stock_lf.pack(fill="x", padx=8, pady=6)
+
+        ttk.Checkbutton(stock_lf, text="Permitir HOLD en stocks", variable=self.config_stock_allow_hold_var).grid(
+            row=0,
+            column=0,
+            sticky="w",
+            padx=4,
+            pady=4,
+        )
+        ttk.Checkbutton(stock_lf, text="Permitir stop loss automático", variable=self.config_stock_allow_stop_loss_var).grid(
+            row=1,
+            column=0,
+            sticky="w",
+            padx=4,
+            pady=4,
+        )
+        ttk.Checkbutton(
+            stock_lf,
+            text="No vender automático por debajo del average cost",
+            variable=self.config_stock_no_auto_sell_below_avg_cost_var,
+        ).grid(
+            row=2,
+            column=0,
+            sticky="w",
+            padx=4,
+            pady=4,
+        )
+        ttk.Label(stock_lf, text="Take Profit automático stocks (%)").grid(row=3, column=0, sticky="w", padx=4, pady=4)
+        ttk.Entry(stock_lf, textvariable=self.config_stock_auto_sell_profit_pct_var, width=12).grid(
+            row=3,
+            column=1,
+            sticky="w",
+            padx=4,
+            pady=4,
+        )
 
         # TIER 1: BTC/ETH
         tier1_lf = ttk.LabelFrame(scrollable_frame, text="🟡 Tier 1 (BTC/ETH) - Principales", padding=10)
@@ -618,7 +771,7 @@ class BotControlWindow:
         ).pack(side="left", padx=4)
 
         self._apply_request_days_from_text(str(getattr(settings, "cryptopanic_request_days", "mon,tue,wed,thu,fri") or "mon,tue,wed,thu,fri"))
-        self._refresh_cryptopanic_quota_display()
+        self._refresh_cryptopanic_quota_display_async()
 
         # Pack canvas and scrollbar
         canvas.pack(side="left", fill="both", expand=True)
@@ -630,6 +783,12 @@ class BotControlWindow:
         self.config_risk_pct_var.set(str(settings.risk_per_trade_pct))
         self.config_max_daily_loss_var.set(str(settings.max_daily_loss))
         self.config_max_open_pos_var.set(str(settings.max_open_positions))
+        self.config_stock_allow_hold_var.set(1 if bool(getattr(settings, "stock_allow_hold", True)) else 0)
+        self.config_stock_allow_stop_loss_var.set(1 if bool(getattr(settings, "stock_allow_stop_loss", False)) else 0)
+        self.config_stock_no_auto_sell_below_avg_cost_var.set(
+            1 if bool(getattr(settings, "stock_no_auto_sell_below_avg_cost", True)) else 0
+        )
+        self.config_stock_auto_sell_profit_pct_var.set(str(getattr(settings, "stock_auto_sell_profit_pct", 0.5)))
         self.config_btc_sl_var.set(str(settings.crypto_btc_eth_stop_loss_pct))
         self.config_btc_tp1_var.set(str(settings.crypto_btc_eth_tp1_pct))
         self.config_btc_tp2_var.set(str(settings.crypto_btc_eth_tp2_pct))
@@ -642,11 +801,13 @@ class BotControlWindow:
         self.config_meme_tp1_var.set(str(settings.crypto_meme_tp1_pct))
         self.config_meme_tp2_var.set(str(settings.crypto_meme_tp2_pct))
         self.config_meme_max_tp_var.set(str(settings.crypto_meme_max_tp_pct))
-        self.config_ai_target_profit_var.set(str(getattr(settings, "ai_target_profit_per_share", 0.05)))
+        self.config_ai_target_profit_var.set(str(getattr(settings, "ai_target_profit_per_operation", 0.05)))
+        self.config_ai_target_profit_stocks_var.set(str(getattr(settings, "ai_target_profit_per_operation_stocks", getattr(settings, "ai_target_profit_per_operation", 0.05))))
+        self.config_ai_target_profit_cryptos_var.set(str(getattr(settings, "ai_target_profit_per_operation_cryptos", getattr(settings, "ai_target_profit_per_operation", 0.05))))
         self.config_cp_monthly_limit_var.set(str(getattr(settings, "cryptopanic_monthly_limit", 600)))
         self.config_cp_used_baseline_var.set(str(getattr(settings, "cryptopanic_used_this_month", 0)))
         self._apply_request_days_from_text(str(getattr(settings, "cryptopanic_request_days", "mon,tue,wed,thu,fri") or "mon,tue,wed,thu,fri"))
-        self._refresh_cryptopanic_quota_display()
+        self._refresh_cryptopanic_quota_display_async()
         self._set_output("✅ Valores recargados desde configuración actual")
 
     def _apply_request_days_from_text(self, request_days_text: str) -> None:
@@ -705,13 +866,16 @@ class BotControlWindow:
         except Exception as ex:
             self.logger.warning("No se pudo refrescar cuota CryptoPanic: %s", ex)
             return
-        self.config_cp_used_var.set(str(status.get("used_total", 0)))
-        self.config_cp_remaining_var.set(str(status.get("remaining_total", 0)))
-        self.config_cp_today_budget_var.set(str(status.get("today_budget", 0)))
-        self.config_cp_today_used_var.set(str(status.get("today_used", 0)))
-        self.config_cp_days_visible_var.set(str(status.get("request_days", "mon,tue,wed,thu,fri")))
-        self.config_cp_today_active_var.set("Si" if bool(status.get("today_active", False)) else "No")
-        self.config_cp_active_days_remaining_var.set(str(status.get("active_days_remaining", 0)))
+        self._safe_after(0, self.config_cp_used_var.set, str(status.get("used_total", 0)))
+        self._safe_after(0, self.config_cp_remaining_var.set, str(status.get("remaining_total", 0)))
+        self._safe_after(0, self.config_cp_today_budget_var.set, str(status.get("today_budget", 0)))
+        self._safe_after(0, self.config_cp_today_used_var.set, str(status.get("today_used", 0)))
+        self._safe_after(0, self.config_cp_days_visible_var.set, str(status.get("request_days", "mon,tue,wed,thu,fri")))
+        self._safe_after(0, self.config_cp_today_active_var.set, "Si" if bool(status.get("today_active", False)) else "No")
+        self._safe_after(0, self.config_cp_active_days_remaining_var.set, str(status.get("active_days_remaining", 0)))
+
+    def _refresh_cryptopanic_quota_display_async(self) -> None:
+        threading.Thread(target=self._refresh_cryptopanic_quota_display, daemon=True).start()
 
     def _reset_cryptopanic_month_usage(self) -> None:
         if not messagebox.askyesno(
@@ -723,7 +887,7 @@ class BotControlWindow:
             self.config_cp_used_baseline_var.set("0")
             self.ai_trading_brain.reset_cryptopanic_month_usage(used_baseline=0)
             self._save_config()
-            self._refresh_cryptopanic_quota_display()
+            self._refresh_cryptopanic_quota_display_async()
             self._set_output("✅ Uso mensual CryptoPanic reiniciado a 0 y guardado en .env", focus_general=False)
         except Exception as ex:
             self._show_error(f"No se pudo resetear cuota CryptoPanic: {ex}", False)
@@ -735,7 +899,11 @@ class BotControlWindow:
             self.root.after(0, self._show_error, "Selecciona una cuenta para IA.")
             return
 
+        if hasattr(self, "ai_diag_account_var"):
+            self.ai_diag_account_var.set(selected)
+
         self._apply_selected_account(update_status=True, require_credentials=True)
+        self._save_ai_ui_state()
 
         # Load runtime controls for the selected account so IA funds view matches the active account.
         try:
@@ -750,6 +918,16 @@ class BotControlWindow:
             False,
         )
 
+    def _on_main_account_selected(self) -> None:
+        selected = self.account_var.get().strip()
+        if hasattr(self, "ai_diag_account_var") and selected:
+            self.ai_diag_account_var.set(selected)
+        self._save_ai_ui_state()
+
+    def _on_config_ai_account_selected(self) -> None:
+        self._on_main_account_selected()
+        self._run_async(self._apply_config_account_for_ai)
+
     def _save_config(self) -> None:
         """Guarda los cambios en la configuración al archivo .env"""
         from pathlib import Path
@@ -763,6 +941,10 @@ class BotControlWindow:
                 "BOT_RISK_PER_TRADE_PCT": self.config_risk_pct_var.get(),
                 "BOT_MAX_DAILY_LOSS": self.config_max_daily_loss_var.get(),
                 "MAX_OPEN_POSITIONS": self.config_max_open_pos_var.get(),
+                "STOCK_ALLOW_HOLD": "True" if bool(self.config_stock_allow_hold_var.get()) else "False",
+                "STOCK_ALLOW_STOP_LOSS": "True" if bool(self.config_stock_allow_stop_loss_var.get()) else "False",
+                "STOCK_NO_AUTO_SELL_BELOW_AVG_COST": "True" if bool(self.config_stock_no_auto_sell_below_avg_cost_var.get()) else "False",
+                "STOCK_AUTO_SELL_PROFIT_PCT": self.config_stock_auto_sell_profit_pct_var.get(),
                 "CRYPTO_BTC_ETH_STOP_LOSS_PCT": self.config_btc_sl_var.get(),
                 "CRYPTO_BTC_ETH_TP1_PCT": self.config_btc_tp1_var.get(),
                 "CRYPTO_BTC_ETH_TP2_PCT": self.config_btc_tp2_var.get(),
@@ -775,7 +957,9 @@ class BotControlWindow:
                 "CRYPTO_MEME_TP1_PCT": self.config_meme_tp1_var.get(),
                 "CRYPTO_MEME_TP2_PCT": self.config_meme_tp2_var.get(),
                 "CRYPTO_MEME_MAX_TP_PCT": self.config_meme_max_tp_var.get(),
-                "AI_TARGET_PROFIT_PER_SHARE": self.config_ai_target_profit_var.get(),
+                "AI_TARGET_PROFIT_PER_OPERATION": self.config_ai_target_profit_stocks_var.get(),
+                "AI_TARGET_PROFIT_PER_OPERATION_STOCKS": self.config_ai_target_profit_stocks_var.get(),
+                "AI_TARGET_PROFIT_PER_OPERATION_CRYPTOS": self.config_ai_target_profit_cryptos_var.get(),
                 "CRYPTOPANIC_MONTHLY_LIMIT": self.config_cp_monthly_limit_var.get(),
                 "CRYPTOPANIC_USED_THIS_MONTH": self.config_cp_used_baseline_var.get(),
                 "CRYPTOPANIC_REQUEST_DAYS": self._request_days_to_text(),
@@ -787,6 +971,7 @@ class BotControlWindow:
                 "BOT_RISK_PER_TRADE_PCT",
                 "BOT_MAX_DAILY_LOSS",
                 "MAX_OPEN_POSITIONS",
+                "STOCK_AUTO_SELL_PROFIT_PCT",
                 "CRYPTO_BTC_ETH_STOP_LOSS_PCT",
                 "CRYPTO_BTC_ETH_TP1_PCT",
                 "CRYPTO_BTC_ETH_TP2_PCT",
@@ -799,7 +984,9 @@ class BotControlWindow:
                 "CRYPTO_MEME_TP1_PCT",
                 "CRYPTO_MEME_TP2_PCT",
                 "CRYPTO_MEME_MAX_TP_PCT",
-                "AI_TARGET_PROFIT_PER_SHARE",
+                "AI_TARGET_PROFIT_PER_OPERATION",
+                "AI_TARGET_PROFIT_PER_OPERATION_STOCKS",
+                "AI_TARGET_PROFIT_PER_OPERATION_CRYPTOS",
                 "CRYPTOPANIC_MONTHLY_LIMIT",
                 "CRYPTOPANIC_USED_THIS_MONTH",
             }
@@ -836,10 +1023,15 @@ class BotControlWindow:
                 used_baseline=int(float(values.get("CRYPTOPANIC_USED_THIS_MONTH", "0") or 0)),
                 request_days=str(values.get("CRYPTOPANIC_REQUEST_DAYS", "mon,tue,wed,thu,fri")),
             )
-            self.ai_trading_brain.update_ai_target_profit_per_share(
-                float(values.get("AI_TARGET_PROFIT_PER_SHARE", "0.05") or 0.05)
+            target_stock = float(values.get("AI_TARGET_PROFIT_PER_OPERATION_STOCKS", values.get("AI_TARGET_PROFIT_PER_OPERATION", "0.05")) or 0.05)
+            target_crypto = float(values.get("AI_TARGET_PROFIT_PER_OPERATION_CRYPTOS", values.get("AI_TARGET_PROFIT_PER_OPERATION", "0.05")) or 0.05)
+            self.ai_trading_brain.update_ai_target_profit_per_operation_by_asset(
+                stock_value=target_stock,
+                crypto_value=target_crypto,
             )
-            self.ai_target_profit_var.set(str(values.get("AI_TARGET_PROFIT_PER_SHARE", "0.05")))
+            self.ai_target_profit_var.set(str(target_stock))
+            self.ai_target_profit_stocks_var.set(str(target_stock))
+            self.ai_target_profit_cryptos_var.set(str(target_crypto))
             self._refresh_cryptopanic_quota_display()
 
             self.root.after(0, self._show_success, "✅ Configuración guardada correctamente en .env\n⚠️ Reinicia el bot para aplicar cambios")
@@ -852,8 +1044,7 @@ class BotControlWindow:
     def _build_ai_window(self) -> None:
         window = tk.Toplevel(self.root)
         window.title("IA")
-        window.geometry("1220x920")
-        window.minsize(1080, 820)
+        self._fit_window_to_screen(window, preferred_width=1220, preferred_height=920, min_width=920, min_height=680)
 
         header = ttk.Frame(window, padding=(12, 10))
         header.pack(fill="x")
@@ -919,8 +1110,29 @@ class BotControlWindow:
         )
         self.ai_badge_learning_button.pack(side="left")
 
-        body = ttk.Frame(window, padding=(12, 0, 12, 12))
-        body.pack(fill="both", expand=True)
+        scroll_host = ttk.Frame(window)
+        scroll_host.pack(fill="both", expand=True)
+        scroll_canvas = tk.Canvas(scroll_host, highlightthickness=0)
+        scroll_bar = ttk.Scrollbar(scroll_host, orient="vertical", command=scroll_canvas.yview)
+        body = ttk.Frame(scroll_canvas, padding=(12, 0, 12, 12))
+        body_window = scroll_canvas.create_window((0, 0), window=body, anchor="nw")
+
+        def _on_ai_body_configure(_event: Any) -> None:
+            scroll_canvas.configure(scrollregion=scroll_canvas.bbox("all"))
+
+        def _on_ai_canvas_configure(event: Any) -> None:
+            scroll_canvas.itemconfigure(body_window, width=event.width)
+
+        body.bind("<Configure>", _on_ai_body_configure)
+        scroll_canvas.bind("<Configure>", _on_ai_canvas_configure)
+        scroll_canvas.configure(yscrollcommand=scroll_bar.set)
+
+        window.bind("<MouseWheel>", lambda event: self._on_scoped_mousewheel(event, fallback_canvas=scroll_canvas), add="+")
+        window.bind("<Button-4>", lambda event: self._on_scoped_mousewheel(event, fallback_canvas=scroll_canvas), add="+")
+        window.bind("<Button-5>", lambda event: self._on_scoped_mousewheel(event, fallback_canvas=scroll_canvas), add="+")
+
+        scroll_canvas.pack(side="left", fill="both", expand=True)
+        scroll_bar.pack(side="right", fill="y")
 
         mode_row = ttk.LabelFrame(body, text="Control automático")
         mode_row.pack(fill="x", pady=(0, 8))
@@ -935,11 +1147,94 @@ class BotControlWindow:
         ttk.Checkbutton(mode_row, text="Live trading (bloqueado)", variable=self.ai_live_enabled_var, state="disabled").pack(side="left", padx=(0, 8))
         ttk.Checkbutton(mode_row, text="Auto Stocks", variable=self.ai_auto_trade_stocks_var).pack(side="left", padx=(0, 8))
         ttk.Checkbutton(mode_row, text="Auto Cryptos", variable=self.ai_auto_trade_cryptos_var).pack(side="left", padx=(0, 8))
+        ttk.Label(mode_row, text="Decisiones IA:").pack(side="left", padx=(8, 4))
+        ttk.Combobox(
+            mode_row,
+            textvariable=self.ai_decision_engine_var,
+            values=["heuristic", "model"],
+            state="readonly",
+            width=10,
+        ).pack(side="left", padx=(0, 8))
+        ttk.Label(mode_row, textvariable=self.ai_pending_status_var, foreground="#1d5f2a").pack(side="left", padx=(4, 8))
         ttk.Button(mode_row, text="Guardar modo", command=lambda: self._run_async(self._save_ai_runtime_controls)).pack(side="right", padx=(8, 8))
+
+        focus_row = ttk.LabelFrame(body, text="Enfoque de evaluación IA")
+        focus_row.pack(fill="x", pady=(0, 8))
+        ttk.Checkbutton(focus_row, text="Solo stocks seleccionados", variable=self.ai_focus_stocks_only_var).grid(
+            row=0,
+            column=0,
+            sticky="w",
+            padx=8,
+            pady=6,
+        )
+        ttk.Label(focus_row, text="Stock:").grid(row=0, column=1, sticky="w", padx=(8, 4), pady=6)
+        self.ai_focus_stock_combo = ttk.Combobox(
+            focus_row,
+            textvariable=self.ai_focus_stock_pick_var,
+            values=self.ai_focus_stock_values,
+            width=20,
+            state="readonly",
+        )
+        self.ai_focus_stock_combo.grid(row=0, column=2, sticky="w", padx=4, pady=6)
+        ttk.Button(focus_row, text="Agregar", command=self._add_focus_stock).grid(row=0, column=3, sticky="w", padx=4, pady=6)
+        ttk.Button(focus_row, text="Quitar", command=self._remove_focus_stock).grid(row=0, column=4, sticky="w", padx=4, pady=6)
+        ttk.Button(focus_row, text="Limpiar", command=self._clear_focus_stocks).grid(row=0, column=5, sticky="w", padx=4, pady=6)
+        ttk.Button(focus_row, text="Actualizar lista", command=self._refresh_ai_focus_symbol_options_async).grid(row=0, column=6, sticky="w", padx=4, pady=6)
+        ttk.Label(focus_row, text="Seleccionados:").grid(row=1, column=1, sticky="w", padx=(8, 4), pady=(0, 6))
+        ttk.Label(focus_row, textvariable=self.ai_focus_stocks_selected_var, foreground="#1d5f2a").grid(row=1, column=2, columnspan=5, sticky="w", padx=4, pady=(0, 6))
+        ttk.Checkbutton(focus_row, text="Solo cryptos seleccionadas", variable=self.ai_focus_cryptos_only_var).grid(
+            row=2,
+            column=0,
+            sticky="w",
+            padx=8,
+            pady=6,
+        )
+        ttk.Label(focus_row, text="Crypto:").grid(row=2, column=1, sticky="w", padx=(8, 4), pady=6)
+        self.ai_focus_crypto_combo = ttk.Combobox(
+            focus_row,
+            textvariable=self.ai_focus_crypto_pick_var,
+            values=self.ai_focus_crypto_values,
+            width=20,
+            state="readonly",
+        )
+        self.ai_focus_crypto_combo.grid(row=2, column=2, sticky="w", padx=4, pady=6)
+        ttk.Button(focus_row, text="Agregar", command=self._add_focus_crypto).grid(row=2, column=3, sticky="w", padx=4, pady=6)
+        ttk.Button(focus_row, text="Quitar", command=self._remove_focus_crypto).grid(row=2, column=4, sticky="w", padx=4, pady=6)
+        ttk.Button(focus_row, text="Limpiar", command=self._clear_focus_cryptos).grid(row=2, column=5, sticky="w", padx=4, pady=6)
+        ttk.Label(focus_row, text="Seleccionados:").grid(row=3, column=1, sticky="w", padx=(8, 4), pady=(0, 6))
+        ttk.Label(focus_row, textvariable=self.ai_focus_cryptos_selected_var, foreground="#1d5f2a").grid(row=3, column=2, columnspan=5, sticky="w", padx=4, pady=(0, 6))
+        ttk.Button(
+            focus_row,
+            text="Guardar enfoque",
+            command=lambda: self._run_async(self._save_ai_focus_controls),
+        ).grid(row=0, column=7, rowspan=4, sticky="ns", padx=(10, 8), pady=6)
+        ttk.Label(
+            focus_row,
+            text="Usa los menús desplegables y botones para elegir símbolos específicos (sin escribir manual).",
+            foreground="#666",
+        ).grid(row=4, column=0, columnspan=8, sticky="w", padx=8, pady=(0, 6))
 
         signals_body = ttk.LabelFrame(body, text="Top activos y señales IA")
         signals_body.pack(fill="both", expand=False, pady=(0, 8))
         self._build_ai_signals_controls(signals_body)
+
+        crypto_monitor_body = ttk.LabelFrame(body, text="Monitoreo Crypto IA")
+        crypto_monitor_body.pack(fill="both", expand=False, pady=(0, 8))
+        crypto_toolbar = ttk.Frame(crypto_monitor_body)
+        crypto_toolbar.pack(fill="x", pady=(0, 6))
+        ttk.Label(
+            crypto_toolbar,
+            text="Vista rápida por crypto: última señal, bloqueo exacto y ajuste mínimo para pasar de WATCH a BUY.",
+        ).pack(side="left")
+        ttk.Button(
+            crypto_toolbar,
+            text="Refrescar Monitoreo Crypto",
+            command=lambda: self._run_async(self._refresh_ai_crypto_monitor_view),
+        ).pack(side="right")
+        monitor_height = 8 if self._ui_compact_mode else 12
+        self.ai_crypto_monitor_text = tk.Text(crypto_monitor_body, height=monitor_height, wrap="word")
+        self.ai_crypto_monitor_text.pack(fill="both", expand=True)
+        self.ai_crypto_monitor_text.configure(state="disabled")
 
         self.ai_runtime_text = self._build_ai_section(body, "Estado del bot automático", 9)
 
@@ -983,6 +1278,8 @@ class BotControlWindow:
 
         window.protocol("WM_DELETE_WINDOW", self._on_close_ai_window)
         self.ai_window = window
+        self._load_focus_selected_from_vars()
+        self._refresh_ai_focus_symbol_options_async()
         self.root.after(1500, self._ai_runtime_loop)
 
     def _show_ai_window(self) -> None:
@@ -997,13 +1294,706 @@ class BotControlWindow:
         if self.ai_window is not None and self.ai_window.winfo_exists():
             self.ai_window.withdraw()
 
+    def _show_ai_diagnostics_window(self) -> None:
+        if not self.ai_diag_account_var.get().strip():
+            self.ai_diag_account_var.set(self.account_var.get().strip())
+        if self.ai_diagnostics_window is not None and self.ai_diagnostics_window.winfo_exists():
+            self.ai_diagnostics_window.deiconify()
+            self.ai_diagnostics_window.lift()
+            self.ai_diagnostics_window.focus_force()
+            self._refresh_ai_diagnostics_async()
+            return
+
+        window = tk.Toplevel(self.root)
+        window.title("Diagnóstico IA y Control de Riesgo")
+        self._fit_window_to_screen(window, preferred_width=1240, preferred_height=900, min_width=920, min_height=680)
+
+        header = ttk.Frame(window, padding=(12, 10))
+        header.pack(fill="x")
+        ttk.Label(header, text="Diagnóstico IA por símbolo", font=("TkDefaultFont", 12, "bold")).pack(side="left")
+        ttk.Label(header, text=f"Cuenta UI activa: {self.account_var.get().strip()}", foreground="#444").pack(side="right")
+
+        scroll_host = ttk.Frame(window)
+        scroll_host.pack(fill="both", expand=True)
+        scroll_canvas = tk.Canvas(scroll_host, highlightthickness=0)
+        scroll_bar = ttk.Scrollbar(scroll_host, orient="vertical", command=scroll_canvas.yview)
+        content = ttk.Frame(scroll_canvas, padding=(0, 0, 0, 8))
+        content_window = scroll_canvas.create_window((0, 0), window=content, anchor="nw")
+
+        def _on_diag_content_configure(_event: Any) -> None:
+            scroll_canvas.configure(scrollregion=scroll_canvas.bbox("all"))
+
+        def _on_diag_canvas_configure(event: Any) -> None:
+            scroll_canvas.itemconfigure(content_window, width=event.width)
+
+        content.bind("<Configure>", _on_diag_content_configure)
+        scroll_canvas.bind("<Configure>", _on_diag_canvas_configure)
+        scroll_canvas.configure(yscrollcommand=scroll_bar.set)
+
+        window.bind("<MouseWheel>", lambda event: self._on_scoped_mousewheel(event, fallback_canvas=scroll_canvas), add="+")
+        window.bind("<Button-4>", lambda event: self._on_scoped_mousewheel(event, fallback_canvas=scroll_canvas), add="+")
+        window.bind("<Button-5>", lambda event: self._on_scoped_mousewheel(event, fallback_canvas=scroll_canvas), add="+")
+
+        scroll_canvas.pack(side="left", fill="both", expand=True)
+        scroll_bar.pack(side="right", fill="y")
+
+        controls = ttk.LabelFrame(content, text="Entrada y acciones", padding=10)
+        controls.pack(fill="x", padx=12, pady=(0, 8))
+        ttk.Label(controls, text="Cuenta").grid(row=0, column=0, sticky="w", padx=4, pady=4)
+        self.ai_diag_account_combo = ttk.Combobox(
+            controls,
+            textvariable=self.ai_diag_account_var,
+            values=list(self.account_profiles.keys()),
+            state="readonly",
+            width=14,
+        )
+        self.ai_diag_account_combo.grid(row=0, column=1, sticky="w", padx=4, pady=4)
+        self.ai_diag_account_combo.bind(
+            "<<ComboboxSelected>>",
+            lambda _event: self._on_ai_diag_account_selected(),
+        )
+
+        ttk.Label(controls, text="Mercado").grid(row=0, column=2, sticky="w", padx=4, pady=4)
+        self.ai_diag_market_combo = ttk.Combobox(
+            controls,
+            textvariable=self.ai_diag_market_kind_var,
+            values=["Stocks", "Cryptos"],
+            state="readonly",
+            width=12,
+        )
+        self.ai_diag_market_combo.grid(row=0, column=3, sticky="w", padx=4, pady=4)
+        self.ai_diag_market_combo.bind(
+            "<<ComboboxSelected>>",
+            lambda _event: self._on_ai_diag_market_selected(),
+        )
+
+        ttk.Label(controls, text="Símbolo").grid(row=0, column=4, sticky="w", padx=4, pady=4)
+        self.ai_diag_symbol_combo = ttk.Combobox(
+            controls,
+            textvariable=self.ai_diag_symbol_var,
+            values=[],
+            state="readonly",
+            width=18,
+        )
+        self.ai_diag_symbol_combo.grid(row=0, column=5, sticky="w", padx=4, pady=4)
+        self.ai_diag_symbol_combo.bind(
+            "<<ComboboxSelected>>",
+            lambda _event: self._on_ai_diag_symbol_selected(),
+        )
+
+        ttk.Button(controls, text="Actualizar activos", command=self._refresh_ai_diagnostic_symbols_async).grid(row=0, column=6, sticky="w", padx=8, pady=4)
+        ttk.Button(controls, text="Refrescar diagnóstico", command=self._refresh_ai_diagnostics_async).grid(row=0, column=7, sticky="w", padx=8, pady=4)
+        ttk.Button(controls, text="Guardar settings (.env)", command=lambda: self._run_async(self._save_ai_diagnostics_settings)).grid(row=0, column=8, sticky="w", padx=8, pady=4)
+        ttk.Button(controls, text="Aplicar runtime IA", command=lambda: self._run_async(self._apply_ai_diagnostics_runtime_controls)).grid(row=0, column=9, sticky="w", padx=8, pady=4)
+        ttk.Button(controls, text="Guardar + aplicar", command=lambda: self._run_async(self._save_and_apply_ai_diagnostics)).grid(row=0, column=10, sticky="w", padx=8, pady=4)
+
+        settings_frame = ttk.LabelFrame(content, text="Settings IA editables", padding=10)
+        settings_frame.pack(fill="x", padx=12, pady=(0, 8))
+        ttk.Label(settings_frame, text="AI_MAX_SPREAD_ALLOWED").grid(row=0, column=0, sticky="w", padx=4, pady=4)
+        ttk.Entry(settings_frame, textvariable=self.ai_diag_max_spread_var, width=12).grid(row=0, column=1, sticky="w", padx=4, pady=4)
+        ttk.Label(settings_frame, text="AI_MIN_VOLUME_24H_USD").grid(row=0, column=2, sticky="w", padx=4, pady=4)
+        ttk.Entry(settings_frame, textvariable=self.ai_diag_min_volume_var, width=14).grid(row=0, column=3, sticky="w", padx=4, pady=4)
+        ttk.Label(settings_frame, text="AI_MIN_EXECUTION_CONFIDENCE").grid(row=0, column=4, sticky="w", padx=4, pady=4)
+        ttk.Entry(settings_frame, textvariable=self.ai_diag_min_confidence_var, width=12).grid(row=0, column=5, sticky="w", padx=4, pady=4)
+        ttk.Label(settings_frame, text="AI_TARGET_PROFIT_PER_OPERATION_STOCKS").grid(row=1, column=0, sticky="w", padx=4, pady=4)
+        ttk.Entry(settings_frame, textvariable=self.ai_diag_target_profit_stocks_var, width=12).grid(row=1, column=1, sticky="w", padx=4, pady=4)
+        ttk.Label(settings_frame, text="AI_TARGET_PROFIT_PER_OPERATION_CRYPTOS").grid(row=1, column=2, sticky="w", padx=4, pady=4)
+        ttk.Entry(settings_frame, textvariable=self.ai_diag_target_profit_cryptos_var, width=12).grid(row=1, column=3, sticky="w", padx=4, pady=4)
+        ttk.Label(settings_frame, text="AI_FEES_BUFFER").grid(row=1, column=4, sticky="w", padx=4, pady=4)
+        ttk.Entry(settings_frame, textvariable=self.ai_diag_fees_var, width=12).grid(row=1, column=5, sticky="w", padx=4, pady=4)
+        ttk.Label(settings_frame, text="AI_SLIPPAGE_BUFFER").grid(row=1, column=6, sticky="w", padx=4, pady=4)
+        ttk.Entry(settings_frame, textvariable=self.ai_diag_slippage_var, width=12).grid(row=1, column=7, sticky="w", padx=4, pady=4)
+        ttk.Label(settings_frame, text="AI_MINIMUM_PROFIT").grid(row=1, column=8, sticky="w", padx=4, pady=4)
+        ttk.Entry(settings_frame, textvariable=self.ai_diag_min_profit_var, width=12).grid(row=1, column=9, sticky="w", padx=4, pady=4)
+        ttk.Checkbutton(settings_frame, text="signal_only_mode", variable=self.ai_diag_signal_only_var).grid(row=2, column=0, sticky="w", padx=4, pady=4)
+        ttk.Checkbutton(settings_frame, text="auto_trade_stocks_enabled", variable=self.ai_diag_auto_stocks_var).grid(row=2, column=1, sticky="w", padx=4, pady=4)
+        ttk.Checkbutton(settings_frame, text="auto_trade_cryptos_enabled", variable=self.ai_diag_auto_cryptos_var).grid(row=2, column=2, sticky="w", padx=4, pady=4)
+        ttk.Label(
+            settings_frame,
+            text="Nota: cambios en .env requieren reinicio para aplicarse globalmente.",
+            foreground="#555",
+        ).grid(row=3, column=0, columnspan=8, sticky="w", padx=4, pady=(2, 0))
+
+        body = ttk.Frame(content, padding=(12, 0, 12, 12))
+        body.pack(fill="both", expand=True)
+
+        left = ttk.LabelFrame(body, text="Estado actual que ve la IA", padding=8)
+        left.pack(side="left", fill="both", expand=True, padx=(0, 6))
+        right = ttk.LabelFrame(body, text="Recomendaciones de settings y riesgo", padding=8)
+        right.pack(side="left", fill="both", expand=True, padx=(6, 0))
+
+        self.ai_diag_details_text = tk.Text(left, height=30, wrap="word")
+        self.ai_diag_details_text.pack(fill="both", expand=True)
+        self.ai_diag_details_text.configure(state="disabled")
+
+        self.ai_diag_reco_text = tk.Text(right, height=30, wrap="word")
+        self.ai_diag_reco_text.pack(fill="both", expand=True)
+        self.ai_diag_reco_text.configure(state="disabled")
+
+        window.protocol("WM_DELETE_WINDOW", lambda: window.withdraw())
+        self.ai_diagnostics_window = window
+        self._refresh_ai_diagnostic_symbols_async()
+        self._refresh_ai_diagnostics_async()
+
+    def _on_ai_diag_account_selected(self) -> None:
+        self._save_ai_ui_state()
+        self._refresh_ai_diagnostics_async()
+
+    def _on_ai_diag_market_selected(self) -> None:
+        self._save_ai_ui_state()
+        self._refresh_ai_diagnostic_symbols_async()
+
+    def _on_ai_diag_symbol_selected(self) -> None:
+        self._save_ai_ui_state()
+        self._refresh_ai_diagnostics_async()
+
+    def _refresh_ai_diagnostics_async(self) -> None:
+        threading.Thread(target=self._refresh_ai_diagnostics, daemon=True).start()
+
+    def _refresh_ai_diagnostic_symbols_async(self) -> None:
+        threading.Thread(target=self._refresh_ai_diagnostic_symbols, daemon=True).start()
+
+    def _refresh_ai_diagnostic_symbols(self) -> None:
+        selected_market = self.ai_diag_market_kind_var.get().strip() if hasattr(self, "ai_diag_market_kind_var") else "Stocks"
+        try:
+            if selected_market == "Cryptos":
+                assets = self.broker.list_cryptos(status="active", only_tradable=True)
+            else:
+                assets = self.broker.list_stocks(status="active", only_tradable=True)
+            symbols = sorted(
+                {
+                    str(asset.get("symbol", "")).upper()
+                    for asset in assets
+                    if str(asset.get("symbol", "")).strip()
+                }
+            )
+        except Exception as ex:
+            self.logger.warning("No se pudo actualizar activos en diagnostico IA: %s", ex)
+            symbols = []
+
+        if not symbols:
+            current = self.ai_diag_symbol_var.get().strip().upper()
+            if current:
+                symbols = [current]
+
+        self._safe_after(0, self._apply_ai_diagnostic_symbols, selected_market, symbols)
+
+    def _apply_ai_diagnostic_symbols(self, selected_market: str, symbols: list[str]) -> None:
+        self.ai_diag_asset_type_var.set("crypto" if selected_market == "Cryptos" else "stock")
+        combo = getattr(self, "ai_diag_symbol_combo", None)
+        if combo is None:
+            return
+
+        combo.configure(values=symbols)
+        if not symbols:
+            return
+
+        current = self.ai_diag_symbol_var.get().strip().upper()
+        if current in symbols:
+            self.ai_diag_symbol_var.set(current)
+            return
+        self.ai_diag_symbol_var.set(symbols[0])
+
+    def _refresh_ai_diagnostics(self) -> None:
+        symbol = self.ai_diag_symbol_var.get().strip() if hasattr(self, "ai_diag_symbol_var") else ""
+        if not symbol:
+            self._safe_after(0, self._show_error, "Ingresa un símbolo para diagnóstico IA.", False)
+            return
+        account_name = self.ai_diag_account_var.get().strip() if hasattr(self, "ai_diag_account_var") else self.account_var.get().strip()
+        if not account_name:
+            account_name = self.account_var.get().strip()
+        asset_type = "crypto" if self.ai_diag_market_kind_var.get().strip() == "Cryptos" else "stock"
+        try:
+            payload = self.ai_trading_brain.get_symbol_diagnostics(
+                account_name=account_name,
+                symbol=symbol,
+                asset_type=asset_type,
+            )
+            self._safe_after(0, self._render_ai_diagnostics_payload, payload)
+        except Exception as ex:
+            self._safe_after(0, self._show_error, f"No se pudo obtener diagnóstico IA: {ex}", False)
+
+    def _render_ai_diagnostics_payload(self, payload: dict[str, Any]) -> None:
+        if self.ai_diagnostics_window is None or not self.ai_diagnostics_window.winfo_exists():
+            return
+
+        market = payload.get("market", {}) or {}
+        runtime = payload.get("runtime", {}) or {}
+        settings_payload = payload.get("settings", {}) or {}
+        latest_signal = payload.get("latest_signal") or {}
+        latest_decision = payload.get("latest_decision") or {}
+        diagnostic_model_info = payload.get("diagnostic_model_info", {}) or {}
+        checks = payload.get("entry_checks", []) or []
+        blocked_reasons = payload.get("blocked_reasons", []) or []
+        recommendations = payload.get("recommendations", []) or []
+        entry_blockers = payload.get("entry_blockers", []) or []
+
+        volume_15m_value = float(market.get("alpaca_pair_volume_15m_base", market.get("alpaca_pair_volume_15m", 0.0)) or 0.0)
+        symbol_text = str(payload.get("symbol", "") or "").upper().strip()
+        base_unit = symbol_text.split("/", 1)[0] if "/" in symbol_text else "BASE"
+        volume_status_text = str(market.get("volume_data_status", "N/A") or "N/A").upper()
+        market_title = "Mercado (actual):"
+        if volume_status_text == "STALE":
+            market_title = "Mercado: último dato disponible / STALE"
+
+        def _fmt_recent_volume(value: Any, minutes_window: int) -> str:
+            try:
+                parsed = float(value or 0.0)
+            except (TypeError, ValueError):
+                parsed = 0.0
+            if parsed > 0.0:
+                return f"{parsed:.4f}"
+            if minutes_window in {1, 5} and volume_15m_value > 0.0:
+                return f"{parsed:.4f} (sin trades en {minutes_window}m; hubo {volume_15m_value:.4f} en 15m)"
+            return f"{parsed:.4f} (sin trades en {minutes_window}m)"
+
+        # Do not overwrite editable controls on refresh; keep operator manual input intact
+        # until the user explicitly saves/applies settings.
+        _ = runtime
+        _ = settings_payload
+
+        details_lines = [
+            f"Cuenta: {payload.get('account_name', 'N/A')}",
+            f"Símbolo: {payload.get('symbol', 'N/A')} | Tipo: {payload.get('asset_type', 'N/A')}",
+            f"Puede entrar ahora: {'SI' if bool(payload.get('can_enter_now', False)) else 'NO'}",
+            f"Razón exacta: {payload.get('entry_reason', 'N/A')}",
+            "",
+            market_title,
+            f"- Fuente: {market.get('data_source', 'N/A')}",
+            f"- Precio: {float(market.get('price', 0.0) or 0.0):.8f}",
+            f"- Spread: {float(market.get('spread', 0.0) or 0.0):.8f}",
+            f"- Spread %: {float(market.get('spread_pct', 0.0) or 0.0):.4f}%",
+            f"- Volumen Alpaca 1m base: {_fmt_recent_volume(market.get('alpaca_pair_volume_1m_base', market.get('alpaca_pair_volume_1m', 0.0)), 1)} {base_unit}",
+            f"- Volumen Alpaca 1m USD: {float(market.get('alpaca_pair_volume_1m_usd', 0.0) or 0.0):.4f}",
+            f"- Volumen Alpaca 5m base: {_fmt_recent_volume(market.get('alpaca_pair_volume_5m_base', market.get('alpaca_pair_volume_5m', 0.0)), 5)} {base_unit}",
+            f"- Volumen Alpaca 5m USD: {float(market.get('alpaca_pair_volume_5m_usd', 0.0) or 0.0):.4f}",
+            f"- Volumen Alpaca 15m base: {_fmt_recent_volume(market.get('alpaca_pair_volume_15m_base', market.get('alpaca_pair_volume_15m', 0.0)), 15)} {base_unit}",
+            f"- Volumen Alpaca 15m USD: {float(market.get('alpaca_pair_volume_15m_usd', 0.0) or 0.0):.4f}",
+            f"- Minutos usados para 5m/15m: {int(market.get('volume_5m_minutes_used', 0) or 0)}/{int(market.get('volume_15m_minutes_used', 0) or 0)} (disponibles={int(market.get('volume_minutes_available', 0) or 0)})",
+            f"- Volumen trades reales 1m base: {float(market.get('alpaca_trade_volume_1m_base', market.get('alpaca_trade_volume_1m', 0.0)) or 0.0):.4f} {base_unit}",
+            f"- Volumen trades reales 1m USD: {float(market.get('alpaca_trade_volume_1m_usd', 0.0) or 0.0):.4f}",
+            f"- Conteo trades reales 1m: {int(market.get('alpaca_trade_count_1m', 0) or 0)}",
+            f"- Ventana trades reales: {int(market.get('alpaca_trade_window_seconds', 60) or 60)}s",
+            f"- Estado volumen por trades: {market.get('trade_volume_status', 'N/A')}",
+            f"- Error volumen por trades: {market.get('trade_volume_error', '') or 'N/A'}",
+            f"- Volumen 24h USD Alpaca: {float(market.get('alpaca_pair_volume_24h_usd', 0.0) or 0.0):.2f}",
+            f"- Volumen 24h USD Global: {float(market.get('global_volume_24h_usd', 0.0) or 0.0):.2f}",
+            f"- Fuente local Alpaca: {market.get('local_volume_source', market.get('volume_source', 'N/A'))}",
+            f"- Fuente volumen global: {market.get('global_volume_source', 'CoinGecko')}",
+            f"- Estado datos: {market.get('volume_data_status', 'N/A')}",
+            f"- DATA_STALE: {bool(market.get('data_stale', False))}",
+            f"- WebSocket stale: {bool(market.get('websocket_stale', False))}",
+            f"- Latest bar age (s): {float(market.get('latest_bar_age_seconds', 0.0) or 0.0):.2f}",
+            f"- Unidad volumen clara: {bool(market.get('volume_has_clear_unit', False))}",
+            f"- volume_valid_for_live_analysis: {bool(market.get('volume_valid_for_live_analysis', False))}",
+            f"- Validación volumen: {market.get('volume_validation_status', 'N/A')}",
+            f"- Motivo validación: {market.get('volume_validation_reason', '') or 'N/A'}",
+            f"- Fuente validación: {market.get('volume_validation_source', 'N/A')}",
+            f"- Estado volumen global: {market.get('global_volume_status', 'N/A')}",
+            f"- Warning volumen: {market.get('global_volume_warning', '') or 'N/A'}",
+            f"- Snapshot ts: {market.get('snapshot_timestamp', 'N/A') or 'N/A'}",
+            "",
+            "Última señal IA:",
+            f"- Tipo: {latest_signal.get('signal_type', 'SIN DATOS') if latest_signal else 'SIN DATOS'}",
+            f"- Score/confianza: {float(latest_signal.get('confidence_score', 0.0) or 0.0):.2f}" if latest_signal else "- Score/confianza: SIN DATOS",
+            f"- Modelo actual aprobado: {diagnostic_model_info.get('current_approved_model', 'heuristic')}"
+            f"{' (archivo faltante)' if not bool(diagnostic_model_info.get('current_approved_model_available', True)) and str(diagnostic_model_info.get('current_approved_model', '')) not in {'', 'heuristic'} else ''}",
+            f"- Modelo usado por última señal: {diagnostic_model_info.get('latest_signal_model_version', 'N/A')}",
+            f"- Motor real usado: {diagnostic_model_info.get('latest_signal_engine', 'unknown')}",
+            f"- Motor solicitado: {diagnostic_model_info.get('latest_signal_requested_engine', 'unknown')}",
+            f"- Razón: {latest_signal.get('reason', '') or payload.get('latest_signal_text', 'Sin señal registrada para este símbolo')}" if latest_signal else f"- Razón: {payload.get('latest_signal_text', 'Sin señal registrada para este símbolo')}",
+            "",
+            "Última decisión IA:",
+            f"- Decisión: {latest_decision.get('decision', 'SIN DATOS') if latest_decision else 'SIN DATOS'}",
+            f"- Blocked reason: {latest_decision.get('blocked_reason', '') or payload.get('latest_decision_text', 'Sin decisión registrada para este símbolo')}" if latest_decision else f"- Blocked reason: {payload.get('latest_decision_text', 'Sin decisión registrada para este símbolo')}",
+            f"- Razón: {latest_decision.get('reason', '') or payload.get('latest_decision_text', 'Sin decisión registrada para este símbolo')}" if latest_decision else f"- Razón: {payload.get('latest_decision_text', 'Sin decisión registrada para este símbolo')}",
+            "",
+            "Razones bloqueantes (exactas):",
+        ]
+        if entry_blockers:
+            for blocker in entry_blockers:
+                details_lines.append(f"- {blocker}")
+        else:
+            details_lines.append("- Sin bloqueos")
+        details_lines.append("")
+        details_lines.append("Motivos de bloqueo detectados:")
+        if blocked_reasons:
+            for reason in blocked_reasons:
+                details_lines.append(f"- {reason}")
+        else:
+            details_lines.append("- Ninguno")
+
+        reco_lines = ["Recomendaciones de settings (con riesgo):", ""]
+        if not recommendations:
+            reco_lines.append("- No hay recomendaciones automáticas para este símbolo en este momento.")
+        else:
+            for row in recommendations:
+                reco_lines.extend(
+                    [
+                        f"- Setting: {row.get('setting', 'N/A')}",
+                        f"  actual={row.get('current')} | sugerido={row.get('suggested')}",
+                        f"  riesgo={row.get('risk', 'N/A')} | motivo={row.get('reason', 'N/A')}",
+                        "",
+                    ]
+                )
+
+        if self.ai_diag_details_text is not None:
+            self._set_text_widget(self.ai_diag_details_text, "\n".join(details_lines))
+        if self.ai_diag_reco_text is not None:
+            self._set_text_widget(self.ai_diag_reco_text, "\n".join(reco_lines))
+
+    def _save_ai_ui_state(self) -> None:
+        existing: dict[str, Any] = {}
+        if self._ai_ui_state_path.exists():
+            try:
+                raw_existing = json.loads(self._ai_ui_state_path.read_text(encoding="utf-8"))
+                if isinstance(raw_existing, dict):
+                    existing = raw_existing
+            except Exception:
+                existing = {}
+
+        account_name = str(self.account_var.get() or "").strip()
+        focus_by_account = existing.get("ai_focus_by_account", {})
+        if not isinstance(focus_by_account, dict):
+            focus_by_account = {}
+        diag_by_account = existing.get("ai_diag_by_account", {})
+        if not isinstance(diag_by_account, dict):
+            diag_by_account = {}
+        if account_name:
+            focus_by_account[account_name] = {
+                "stocks_only": bool(self.ai_focus_stocks_only_var.get()),
+                "cryptos_only": bool(self.ai_focus_cryptos_only_var.get()),
+                "stocks_symbols": str(self.ai_focus_stocks_symbols_var.get() or "").strip(),
+                "cryptos_symbols": str(self.ai_focus_cryptos_symbols_var.get() or "").strip(),
+            }
+            diag_by_account[account_name] = {
+                "signal_only": bool(self.ai_diag_signal_only_var.get()),
+                "auto_stocks": bool(self.ai_diag_auto_stocks_var.get()),
+                "auto_cryptos": bool(self.ai_diag_auto_cryptos_var.get()),
+            }
+
+        payload = {
+            "account": account_name,
+            "ai_focus": {
+                "stocks_only": bool(self.ai_focus_stocks_only_var.get()),
+                "cryptos_only": bool(self.ai_focus_cryptos_only_var.get()),
+                "stocks_symbols": str(self.ai_focus_stocks_symbols_var.get() or "").strip(),
+                "cryptos_symbols": str(self.ai_focus_cryptos_symbols_var.get() or "").strip(),
+            },
+            "ai_focus_by_account": focus_by_account,
+            "ai_diag_by_account": diag_by_account,
+            "ai_diag": {
+                "account": str(self.ai_diag_account_var.get() or "").strip(),
+                "market": str(self.ai_diag_market_kind_var.get() or "").strip(),
+                "symbol": str(self.ai_diag_symbol_var.get() or "").strip().upper(),
+                "max_spread": str(self.ai_diag_max_spread_var.get() or "").strip(),
+                "min_volume": str(self.ai_diag_min_volume_var.get() or "").strip(),
+                "min_confidence": str(self.ai_diag_min_confidence_var.get() or "").strip(),
+                "target_stocks": str(self.ai_diag_target_profit_stocks_var.get() or "").strip(),
+                "target_cryptos": str(self.ai_diag_target_profit_cryptos_var.get() or "").strip(),
+                "fees": str(self.ai_diag_fees_var.get() or "").strip(),
+                "slippage": str(self.ai_diag_slippage_var.get() or "").strip(),
+                "minimum_profit": str(self.ai_diag_min_profit_var.get() or "").strip(),
+                "signal_only": bool(self.ai_diag_signal_only_var.get()),
+                "auto_stocks": bool(self.ai_diag_auto_stocks_var.get()),
+                "auto_cryptos": bool(self.ai_diag_auto_cryptos_var.get()),
+            },
+        }
+        self._ai_ui_state_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+
+    def _load_ai_ui_state(self) -> None:
+        if not self._ai_ui_state_path.exists():
+            return
+        try:
+            raw = json.loads(self._ai_ui_state_path.read_text(encoding="utf-8"))
+        except Exception:
+            return
+        if not isinstance(raw, dict):
+            return
+
+        self._ai_ui_state_cache = raw
+
+        try:
+            selected_account = str(raw.get("account", "") or "").strip()
+            if selected_account:
+                self.account_var.set(selected_account)
+
+            focus_by_account = raw.get("ai_focus_by_account", {}) if isinstance(raw.get("ai_focus_by_account", {}), dict) else {}
+            focus = focus_by_account.get(selected_account, {}) if selected_account and isinstance(focus_by_account.get(selected_account, {}), dict) else {}
+            if not focus:
+                focus = raw.get("ai_focus", {}) if isinstance(raw.get("ai_focus", {}), dict) else {}
+            self.ai_focus_stocks_only_var.set(1 if bool(focus.get("stocks_only", self.ai_focus_stocks_only_var.get())) else 0)
+            self.ai_focus_cryptos_only_var.set(1 if bool(focus.get("cryptos_only", self.ai_focus_cryptos_only_var.get())) else 0)
+            self.ai_focus_stocks_symbols_var.set(str(focus.get("stocks_symbols", self.ai_focus_stocks_symbols_var.get()) or ""))
+            self.ai_focus_cryptos_symbols_var.set(str(focus.get("cryptos_symbols", self.ai_focus_cryptos_symbols_var.get()) or ""))
+            self.ai_focus_stock_selected = self._parse_symbols_csv(self.ai_focus_stocks_symbols_var.get())
+            self.ai_focus_crypto_selected = self._parse_symbols_csv(self.ai_focus_cryptos_symbols_var.get())
+            self._sync_focus_symbol_vars_from_selected()
+
+            diag = raw.get("ai_diag", {}) if isinstance(raw.get("ai_diag", {}), dict) else {}
+            diag_by_account = raw.get("ai_diag_by_account", {}) if isinstance(raw.get("ai_diag_by_account", {}), dict) else {}
+            selected_diag = diag_by_account.get(selected_account, {}) if selected_account and isinstance(diag_by_account.get(selected_account, {}), dict) else {}
+            self.ai_diag_account_var.set(str(diag.get("account", self.ai_diag_account_var.get()) or self.ai_diag_account_var.get()))
+            self.ai_diag_market_kind_var.set(str(diag.get("market", self.ai_diag_market_kind_var.get()) or self.ai_diag_market_kind_var.get()))
+            self.ai_diag_symbol_var.set(str(diag.get("symbol", self.ai_diag_symbol_var.get()) or self.ai_diag_symbol_var.get()).upper())
+            self.ai_diag_max_spread_var.set(str(diag.get("max_spread", self.ai_diag_max_spread_var.get()) or self.ai_diag_max_spread_var.get()))
+            self.ai_diag_min_volume_var.set(str(diag.get("min_volume", self.ai_diag_min_volume_var.get()) or self.ai_diag_min_volume_var.get()))
+            self.ai_diag_min_confidence_var.set(str(diag.get("min_confidence", self.ai_diag_min_confidence_var.get()) or self.ai_diag_min_confidence_var.get()))
+            self.ai_diag_target_profit_stocks_var.set(str(diag.get("target_stocks", self.ai_diag_target_profit_stocks_var.get()) or self.ai_diag_target_profit_stocks_var.get()))
+            self.ai_diag_target_profit_cryptos_var.set(str(diag.get("target_cryptos", self.ai_diag_target_profit_cryptos_var.get()) or self.ai_diag_target_profit_cryptos_var.get()))
+            self.ai_diag_fees_var.set(str(diag.get("fees", self.ai_diag_fees_var.get()) or self.ai_diag_fees_var.get()))
+            self.ai_diag_slippage_var.set(str(diag.get("slippage", self.ai_diag_slippage_var.get()) or self.ai_diag_slippage_var.get()))
+            self.ai_diag_min_profit_var.set(str(diag.get("minimum_profit", self.ai_diag_min_profit_var.get()) or self.ai_diag_min_profit_var.get()))
+            self.ai_diag_signal_only_var.set(1 if bool(selected_diag.get("signal_only", diag.get("signal_only", self.ai_diag_signal_only_var.get()))) else 0)
+            self.ai_diag_auto_stocks_var.set(1 if bool(selected_diag.get("auto_stocks", diag.get("auto_stocks", self.ai_diag_auto_stocks_var.get()))) else 0)
+            self.ai_diag_auto_cryptos_var.set(1 if bool(selected_diag.get("auto_cryptos", diag.get("auto_cryptos", self.ai_diag_auto_cryptos_var.get()))) else 0)
+        except Exception:
+            return
+
+    def _write_env_values(self, values: dict[str, str]) -> None:
+        import re
+
+        env_path = Path(__file__).resolve().parents[1] / ".env"
+        env_content = env_path.read_text(encoding="utf-8") if env_path.exists() else ""
+        for key, value in values.items():
+            pattern = rf"^{re.escape(key)}=.*$"
+            new_line = f"{key}={value}"
+            if re.search(pattern, env_content, re.MULTILINE):
+                env_content = re.sub(pattern, new_line, env_content, flags=re.MULTILINE)
+            else:
+                if env_content and not env_content.endswith("\n"):
+                    env_content += "\n"
+                env_content += new_line
+        env_path.write_text(env_content, encoding="utf-8")
+
+    def _save_ai_diagnostics_settings(self) -> None:
+        def _safe_assign(obj: Any, name: str, value: Any) -> None:
+            try:
+                setattr(obj, name, value)
+                return
+            except Exception:
+                pass
+            try:
+                object.__setattr__(obj, name, value)
+            except Exception:
+                pass
+
+        values = {
+            "AI_MAX_SPREAD_ALLOWED": self.ai_diag_max_spread_var.get().strip(),
+            "AI_MIN_VOLUME_24H_USD": self.ai_diag_min_volume_var.get().strip(),
+            "AI_MIN_EXECUTION_CONFIDENCE": self.ai_diag_min_confidence_var.get().strip(),
+            "AI_TARGET_PROFIT_PER_OPERATION": self.ai_diag_target_profit_stocks_var.get().strip(),
+            "AI_TARGET_PROFIT_PER_OPERATION_STOCKS": self.ai_diag_target_profit_stocks_var.get().strip(),
+            "AI_TARGET_PROFIT_PER_OPERATION_CRYPTOS": self.ai_diag_target_profit_cryptos_var.get().strip(),
+            "AI_FEES_BUFFER": self.ai_diag_fees_var.get().strip(),
+            "AI_SLIPPAGE_BUFFER": self.ai_diag_slippage_var.get().strip(),
+            "AI_MINIMUM_PROFIT": self.ai_diag_min_profit_var.get().strip(),
+            "AI_SIGNAL_ONLY_MODE": "true" if bool(self.ai_diag_signal_only_var.get()) else "false",
+        }
+
+        numeric_keys = {
+            "AI_MAX_SPREAD_ALLOWED",
+            "AI_MIN_VOLUME_24H_USD",
+            "AI_MIN_EXECUTION_CONFIDENCE",
+            "AI_TARGET_PROFIT_PER_OPERATION",
+            "AI_TARGET_PROFIT_PER_OPERATION_STOCKS",
+            "AI_TARGET_PROFIT_PER_OPERATION_CRYPTOS",
+            "AI_FEES_BUFFER",
+            "AI_SLIPPAGE_BUFFER",
+            "AI_MINIMUM_PROFIT",
+        }
+        for key in numeric_keys:
+            try:
+                float(values[key])
+            except ValueError as ex:
+                raise ValueError(f"{key} debe ser numérico") from ex
+
+        numeric_values = {key: float(values[key]) for key in numeric_keys}
+
+        self._write_env_values(values)
+
+        # Keep runtime diagnostics aligned with the just-saved values without requiring app restart.
+        _safe_assign(settings, "ai_max_spread_allowed", numeric_values["AI_MAX_SPREAD_ALLOWED"])
+        _safe_assign(settings, "ai_min_volume_24h_usd", numeric_values["AI_MIN_VOLUME_24H_USD"])
+        _safe_assign(settings, "ai_min_execution_confidence", numeric_values["AI_MIN_EXECUTION_CONFIDENCE"])
+        _safe_assign(settings, "ai_target_profit_per_operation", numeric_values["AI_TARGET_PROFIT_PER_OPERATION"])
+        _safe_assign(settings, "ai_target_profit_per_operation_stocks", numeric_values["AI_TARGET_PROFIT_PER_OPERATION_STOCKS"])
+        _safe_assign(settings, "ai_target_profit_per_operation_cryptos", numeric_values["AI_TARGET_PROFIT_PER_OPERATION_CRYPTOS"])
+        _safe_assign(settings, "ai_fees_buffer", numeric_values["AI_FEES_BUFFER"])
+        _safe_assign(settings, "ai_slippage_buffer", numeric_values["AI_SLIPPAGE_BUFFER"])
+        _safe_assign(settings, "ai_minimum_profit", numeric_values["AI_MINIMUM_PROFIT"])
+        _safe_assign(settings, "ai_signal_only_mode", bool(self.ai_diag_signal_only_var.get()))
+
+        brain_settings = getattr(self.ai_trading_brain, "settings", None)
+        if brain_settings is not None and brain_settings is not settings:
+            _safe_assign(brain_settings, "ai_max_spread_allowed", numeric_values["AI_MAX_SPREAD_ALLOWED"])
+            _safe_assign(brain_settings, "ai_min_volume_24h_usd", numeric_values["AI_MIN_VOLUME_24H_USD"])
+            _safe_assign(brain_settings, "ai_min_execution_confidence", numeric_values["AI_MIN_EXECUTION_CONFIDENCE"])
+            _safe_assign(brain_settings, "ai_target_profit_per_operation", numeric_values["AI_TARGET_PROFIT_PER_OPERATION"])
+            _safe_assign(brain_settings, "ai_target_profit_per_operation_stocks", numeric_values["AI_TARGET_PROFIT_PER_OPERATION_STOCKS"])
+            _safe_assign(brain_settings, "ai_target_profit_per_operation_cryptos", numeric_values["AI_TARGET_PROFIT_PER_OPERATION_CRYPTOS"])
+            _safe_assign(brain_settings, "ai_fees_buffer", numeric_values["AI_FEES_BUFFER"])
+            _safe_assign(brain_settings, "ai_slippage_buffer", numeric_values["AI_SLIPPAGE_BUFFER"])
+            _safe_assign(brain_settings, "ai_minimum_profit", numeric_values["AI_MINIMUM_PROFIT"])
+            _safe_assign(brain_settings, "ai_signal_only_mode", bool(self.ai_diag_signal_only_var.get()))
+
+        update_spread_fn = getattr(self.ai_trading_brain, "update_ai_max_spread_allowed", None)
+        if callable(update_spread_fn):
+            update_spread_fn(numeric_values["AI_MAX_SPREAD_ALLOWED"])
+
+        target_stock = float(values["AI_TARGET_PROFIT_PER_OPERATION_STOCKS"] or values["AI_TARGET_PROFIT_PER_OPERATION"] or 0.05)
+        target_crypto = float(values["AI_TARGET_PROFIT_PER_OPERATION_CRYPTOS"] or values["AI_TARGET_PROFIT_PER_OPERATION"] or 0.05)
+        self.ai_trading_brain.update_ai_target_profit_per_operation_by_asset(
+            stock_value=target_stock,
+            crypto_value=target_crypto,
+        )
+        self.ai_target_profit_var.set(str(target_stock))
+        self.ai_target_profit_stocks_var.set(str(target_stock))
+        self.ai_target_profit_cryptos_var.set(str(target_crypto))
+        self._save_ai_ui_state()
+        changes_text = (
+            "Settings IA aplicados:\n"
+            f"- AI_MAX_SPREAD_ALLOWED={numeric_values['AI_MAX_SPREAD_ALLOWED']}\n"
+            f"- AI_MIN_VOLUME_24H_USD={numeric_values['AI_MIN_VOLUME_24H_USD']}\n"
+            f"- AI_MIN_EXECUTION_CONFIDENCE={numeric_values['AI_MIN_EXECUTION_CONFIDENCE']}\n"
+            f"- AI_TARGET_PROFIT_PER_OPERATION_STOCKS={target_stock}\n"
+            f"- AI_TARGET_PROFIT_PER_OPERATION_CRYPTOS={target_crypto}\n"
+            f"- AI_FEES_BUFFER={numeric_values['AI_FEES_BUFFER']}\n"
+            f"- AI_SLIPPAGE_BUFFER={numeric_values['AI_SLIPPAGE_BUFFER']}\n"
+            f"- AI_MINIMUM_PROFIT={numeric_values['AI_MINIMUM_PROFIT']}\n"
+            f"- AI_SIGNAL_ONLY_MODE={'true' if bool(self.ai_diag_signal_only_var.get()) else 'false'}"
+        )
+        self._show_success(changes_text, False)
+
+    def _apply_ai_diagnostics_runtime_controls(self) -> None:
+        self.ai_signal_only_var.set(1 if bool(self.ai_diag_signal_only_var.get()) else 0)
+        self.ai_auto_trade_stocks_var.set(1 if bool(self.ai_diag_auto_stocks_var.get()) else 0)
+        self.ai_auto_trade_cryptos_var.set(1 if bool(self.ai_diag_auto_cryptos_var.get()) else 0)
+        self.ai_target_profit_var.set(self.ai_diag_target_profit_stocks_var.get().strip())
+        self.ai_target_profit_stocks_var.set(self.ai_diag_target_profit_stocks_var.get().strip())
+        self.ai_target_profit_cryptos_var.set(self.ai_diag_target_profit_cryptos_var.get().strip())
+        self._save_ai_ui_state()
+        self._persist_ai_runtime_controls(show_message=False)
+        self._show_success("Controles runtime IA aplicados a la cuenta activa.", False)
+
+    def _save_and_apply_ai_diagnostics(self) -> None:
+        self._save_ai_diagnostics_settings()
+        self._apply_ai_diagnostics_runtime_controls()
+        self._refresh_ai_diagnostics_async()
+
     def _ai_runtime_loop(self) -> None:
         if self.ai_window is not None and self.ai_window.winfo_exists() and str(self.ai_window.state()) != "withdrawn":
             account_name = self.account_var.get().strip()
             if account_name:
                 threading.Thread(target=self._ensure_ai_automation_running, args=(account_name,), daemon=True).start()
+                self._sync_ai_watch_tabs_from_recent_trades_async()
             self._refresh_ai_runtime_view()
         self.root.after(5000, self._ai_runtime_loop)
+
+    @staticmethod
+    def _is_ai_trade_origin(initiated_by: str) -> bool:
+        origin = str(initiated_by or "").strip().lower()
+        return origin in {"bot_auto", "ai_auto", "automation"}
+
+    def _sync_ai_watch_tabs_from_recent_trades_async(self) -> None:
+        now = time.monotonic()
+        if self._ai_watch_sync_in_flight:
+            return
+        if (now - float(self._ai_watch_last_sync_ts or 0.0)) < 8.0:
+            return
+        self._ai_watch_sync_in_flight = True
+
+        def worker() -> None:
+            candidates: list[dict[str, Any]] = []
+            try:
+                account_names = list((self.account_profiles or {}).keys())
+                if not account_names:
+                    current = self.account_var.get().strip()
+                    if current:
+                        account_names = [current]
+
+                terminal_statuses = {"canceled", "rejected", "expired"}
+                for account_name in account_names:
+                    if not account_name:
+                        continue
+                    try:
+                        rows = self.ai_trading_brain.list_history(account_name, limit=30)
+                    except Exception:
+                        continue
+                    for row in rows:
+                        side = str(row.get("side", "") or "").strip().lower()
+                        if side != "buy":
+                            continue
+                        initiated_by = str(row.get("initiated_by", "") or "").strip().lower()
+                        if not self._is_ai_trade_origin(initiated_by):
+                            continue
+                        status = str(row.get("status", "") or "").strip().lower()
+                        if status in terminal_statuses:
+                            continue
+                        symbol = str(row.get("symbol", "") or "").strip().upper()
+                        if not symbol:
+                            continue
+                        asset_type = str(row.get("asset_type", "") or "").strip().lower()
+                        if asset_type not in {"stock", "crypto"}:
+                            asset_type = self._asset_type_for_symbol(symbol)
+                        candidates.append(
+                            {
+                                "account": account_name,
+                                "symbol": symbol,
+                                "asset_type": asset_type,
+                                "status": status,
+                            }
+                        )
+                self._safe_after(0, self._apply_ai_trade_watch_candidates, candidates)
+            finally:
+                self._ai_watch_last_sync_ts = time.monotonic()
+                self._ai_watch_sync_in_flight = False
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _apply_ai_trade_watch_candidates(self, candidates: list[dict[str, Any]]) -> None:
+        if self._is_closing:
+            return
+        unique_keys: set[tuple[str, str]] = set()
+        for item in candidates:
+            symbol = str(item.get("symbol", "") or "").strip().upper()
+            account = str(item.get("account", "") or "").strip()
+            asset_type = str(item.get("asset_type", "stock") or "stock").strip().lower()
+            if not symbol or not account:
+                continue
+            unique_key = (self._symbol_key(symbol), account)
+            if unique_key in unique_keys:
+                continue
+            unique_keys.add(unique_key)
+
+            if self._watch_tab_exists_for_symbol(symbol=symbol, account=account, bot_actor="ia"):
+                continue
+
+            try:
+                runtime = self._get_account_runtime(account)
+                broker = runtime.get("broker")
+                position_manager = runtime.get("position_manager")
+                has_position = self._find_open_position_by_symbol(symbol, broker=broker) is not None
+                has_pending_buy = bool(position_manager._has_pending_buy_order(symbol)) if position_manager is not None else False
+            except Exception:
+                has_position = False
+                has_pending_buy = False
+
+            if not has_position and not has_pending_buy:
+                continue
+
+            watch_id = self._create_watch_tab(
+                symbol=symbol,
+                asset_type=asset_type,
+                start_mode="tracking",
+                account_name=account,
+                bot_actor="ia",
+            )
+            self._watch_log(
+                watch_id,
+                f"Pestaña IA creada automáticamente para {symbol}. Estado broker: {'posicion abierta' if has_position else 'orden BUY pendiente'}.",
+            )
+            self._start_position_tracking(watch_id=watch_id, symbol=symbol, entry_price_hint=0.0)
 
     def _ensure_ai_automation_running(self, account_name: str) -> None:
         if not account_name:
@@ -1016,6 +2006,9 @@ class BotControlWindow:
     def run(self) -> None:
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
         self._root_after_original(50, self._drain_ui_after_queue)
+        self._root_after_original(4000, self._ensure_emergency_helper_alive)
+        self._write_ui_heartbeat(state="running")
+        self._root_after_original(self._ui_heartbeat_interval_ms, self._ui_heartbeat_loop)
         self.root.after(250, self._initial_restore_startup)
         self.root.after(1000, self._monitor_positions_loop)
         self.root.after(1000, lambda: self._run_async(self._refresh_stock_selector))
@@ -1024,6 +2017,7 @@ class BotControlWindow:
             self.root.after(1400, lambda: threading.Thread(target=self._ensure_ai_automation_running, args=(account_name,), daemon=True).start())
         self.root.after(1200, lambda: threading.Thread(target=self._refresh_nyse_status, daemon=True).start())
         self.root.after(60000, self._nyse_status_loop)
+        self.root.after(5000, self._health_refresh_loop)
         self.root.mainloop()
 
     def _initial_restore_startup(self) -> None:
@@ -1038,6 +2032,8 @@ class BotControlWindow:
 
     def _on_close(self) -> None:
         self._is_closing = True
+        self._save_ai_ui_state()
+        self._write_ui_heartbeat(state="closing")
         with self._watch_lock:
             contexts = list(self._watch_tabs.values())
         for context in contexts:
@@ -1059,6 +2055,13 @@ class BotControlWindow:
         if self.ai_window is not None and self.ai_window.winfo_exists():
             self.ai_window.destroy()
             self.ai_window = None
+        if self.ai_diagnostics_window is not None and self.ai_diagnostics_window.winfo_exists():
+            self.ai_diagnostics_window.destroy()
+            self.ai_diagnostics_window = None
+        try:
+            self._ui_heartbeat_path.unlink(missing_ok=True)
+        except Exception:
+            pass
         self.root.destroy()
 
     def _force_close(self) -> None:
@@ -1070,18 +2073,111 @@ class BotControlWindow:
         os._exit(0)
 
     def _start_emergency_close_helper(self) -> None:
+        if self._is_closing:
+            return
+        if self._emergency_close_process is not None and self._emergency_close_process.poll() is None:
+            return
         helper_path = Path(__file__).resolve().parents[1] / "runtime" / "emergency_close_helper.py"
         if not helper_path.exists():
             return
+        main_path = Path(__file__).resolve().parents[1] / "main.py"
+        python_executable = str(Path(sys.executable).absolute())
+        self._write_ui_heartbeat(state="running")
+        log_handle: Any | None = None
         try:
+            self._emergency_helper_log_path.parent.mkdir(parents=True, exist_ok=True)
+            log_handle = self._emergency_helper_log_path.open("a", encoding="utf-8")
             self._emergency_close_process = subprocess.Popen(
-                [sys.executable, str(helper_path), str(os.getpid())],
+                [
+                    python_executable,
+                    str(helper_path),
+                    str(os.getpid()),
+                    str(self._ui_heartbeat_path),
+                    str(self._ui_heartbeat_timeout_seconds),
+                    python_executable,
+                    str(main_path),
+                    str(main_path.parent),
+                ],
                 stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
+                stderr=log_handle,
                 text=True,
             )
+            self.logger.info("Helper de emergencia iniciado (pid=%s)", self._emergency_close_process.pid)
+            self._emergency_helper_backoff_until = 0.0
         except Exception as ex:
+            self._emergency_helper_backoff_until = time.monotonic() + 8.0
             self.logger.warning("No se pudo iniciar helper de cierre de emergencia: %s", ex)
+        finally:
+            if log_handle is not None:
+                try:
+                    log_handle.close()
+                except Exception:
+                    pass
+
+    def _ensure_emergency_helper_alive(self) -> None:
+        if self._is_closing:
+            return
+        now = time.monotonic()
+        if now < float(self._emergency_helper_backoff_until or 0.0):
+            self._root_after_original(4000, self._ensure_emergency_helper_alive)
+            return
+
+        needs_restart = self._emergency_close_process is None
+        if not needs_restart and self._emergency_close_process is not None:
+            needs_restart = self._emergency_close_process.poll() is not None
+
+        if needs_restart:
+            self.logger.warning("Helper de emergencia inactivo. Relanzando...")
+            self._start_emergency_close_helper()
+
+        self._root_after_original(4000, self._ensure_emergency_helper_alive)
+
+    def _write_ui_heartbeat(self, state: str = "running") -> None:
+        try:
+            self._ui_heartbeat_path.parent.mkdir(parents=True, exist_ok=True)
+            payload = {
+                "pid": os.getpid(),
+                "state": state,
+                "updated_at": time.time(),
+            }
+            self._ui_heartbeat_path.write_text(json.dumps(payload), encoding="utf-8")
+        except Exception:
+            # Heartbeat failure must never block UI execution.
+            return
+
+    def _ui_heartbeat_loop(self) -> None:
+        if self._is_closing:
+            return
+        self._write_ui_heartbeat(state="running")
+        try:
+            self.ai_trading_brain.update_ui_heartbeat(
+                heartbeat_ts=time.time(),
+                queue_size=int(self._ui_after_queue.qsize()),
+            )
+        except Exception:
+            pass
+        self._root_after_original(self._ui_heartbeat_interval_ms, self._ui_heartbeat_loop)
+
+    def _health_refresh_loop(self) -> None:
+        if self._is_closing:
+            return
+        try:
+            health = self.ai_trading_brain.get_health_snapshot()
+            self.app_health_var.set(
+                f"App status: {health.get('app_status', 'N/A')} | memory={float(health.get('memory_mb', 0.0) or 0.0):.1f}MB | ui_queue={int(health.get('ui_queue_size', 0) or 0)} | db_queue={int(health.get('db_queue_size', 0) or 0)}"
+            )
+            ws = health.get("websocket", {}) if isinstance(health.get("websocket", {}), dict) else {}
+            streams = ws.get("streams", []) if isinstance(ws.get("streams", []), list) else []
+            stale_count = sum(1 for row in streams if bool((row or {}).get("stale", False)))
+            self.ws_health_var.set(
+                f"WebSocket: {'OK' if bool(ws.get('connected', False)) else 'DOWN'} | stale_streams={stale_count} | streams={len(streams)}"
+            )
+            self.api_health_var.set(
+                f"Alpaca/API: {'COOLDOWN' if bool(health.get('alpaca_cooldown', False)) else 'OK'} | threads={int(health.get('active_threads', 0) or 0)}"
+            )
+        except Exception as ex:
+            self.logger.warning("No se pudo refrescar health monitor en UI: %s", ex)
+        self.root.after(5000, self._health_refresh_loop)
 
     def _drain_ui_after_queue(self) -> None:
         if self._is_closing:
@@ -1177,6 +2273,40 @@ class BotControlWindow:
         except Exception as ex:
             self.logger.exception("Error en accion de UI")
             self.root.after(0, self._show_error, str(ex))
+
+    def _pause_bot(self) -> None:
+        self.ai_trading_brain.pause_automation()
+        self.ai_trading_brain.set_emergency_mode(True, "Pausa manual del usuario")
+        self.root.after(0, self._show_success, "Bot pausado. Nuevas entradas bloqueadas.", False)
+
+    def _resume_bot(self) -> None:
+        account_name = self.account_var.get().strip()
+        self.ai_trading_brain.set_emergency_mode(False, "")
+        self.ai_trading_brain.ensure_automation_running(account_name)
+        self.root.after(0, self._show_success, "Bot reanudado.", False)
+
+    def _emergency_stop(self) -> None:
+        self.ai_trading_brain.set_emergency_mode(True, "Emergency stop manual")
+        self.ai_trading_brain.pause_automation()
+        self.root.after(0, self._show_error, "EMERGENCY STOP activado. Entradas pausadas.", False)
+
+    def _reconnect_websocket(self) -> None:
+        self.ai_trading_brain.reconnect_websocket()
+        self.root.after(0, self._show_success, "Reconexión de WebSocket solicitada.", False)
+
+    def _sync_positions_now(self) -> None:
+        account_name = self.account_var.get().strip()
+        self.ai_trading_brain.sync_positions(account_name)
+        self.root.after(0, self._show_success, "Sincronización de posiciones completada.", False)
+
+    def _export_crash_report(self) -> None:
+        report_path = self.ai_trading_brain.export_crash_report()
+        self.root.after(0, self._show_success, f"Crash report exportado: {report_path}", False)
+
+    def _clear_ui_logs(self) -> None:
+        self.output.configure(state="normal")
+        self.output.delete("1.0", tk.END)
+        self.output.configure(state="disabled")
 
     def _mark_network_degraded(self, message: str) -> None:
         if not self._network_degraded:
@@ -1289,6 +2419,7 @@ class BotControlWindow:
 
     def _switch_account(self) -> None:
         self._apply_selected_account(update_status=True, require_credentials=True)
+        self._save_ai_ui_state()
         self.root.after(0, self._restore_open_positions_tabs)
         self.root.after(0, lambda: self._run_async(self._view_account))
         self.root.after(0, lambda: threading.Thread(target=self._refresh_accounts_header_summary, daemon=True).start())
@@ -1582,6 +2713,10 @@ class BotControlWindow:
         for trade in display_trades:
             row = ttk.Frame(list_frame)
             row.pack(fill="x", padx=6, pady=4)
+            row_top = ttk.Frame(row)
+            row_top.pack(fill="x")
+            row_bottom = ttk.Frame(row)
+            row_bottom.pack(fill="x", pady=(2, 0))
 
             symbol = str(trade.get("symbol", "N/A"))
             qty = float(trade.get("qty", 0.0) or 0.0)
@@ -1604,17 +2739,22 @@ class BotControlWindow:
                 else ("#41464b", "#e2e3e5")
             )
 
-            info_prefix = (
-                f"{symbol} | entrada={entry_time} | salida={exit_time} | "
+            top_text = f"{symbol} | entrada={entry_time} | salida={exit_time} | qty={qty:.4f} | id={short_id}"
+            bottom_prefix = (
                 f"origen_entrada={entry_origin} | origen_salida={exit_origin} | "
-                f"qty={qty:.4f} | entry={entry:.4f} | exit={exit_price:.4f} | "
-                f"pnl={pnl:.4f} | RESULTADO="
+                f"entry={entry:.4f} | exit={exit_price:.4f} | pnl={pnl:.4f} | RESULTADO="
             )
-            info_suffix = f" | {result} | id={short_id}"
 
-            ttk.Label(row, text=info_prefix).pack(side="left", anchor="w")
+            ttk.Label(row_top, text=top_text).pack(side="left", anchor="w")
+            ttk.Button(
+                row_top,
+                text="Borrar",
+                command=lambda tid=trade_id: self._run_async(lambda: self._delete_trade_by_id(tid)),
+            ).pack(side="right")
+
+            ttk.Label(row_bottom, text=bottom_prefix).pack(side="left", anchor="w")
             tk.Label(
-                row,
+                row_bottom,
                 text=outcome,
                 fg=outcome_fg,
                 bg=outcome_bg,
@@ -1623,12 +2763,7 @@ class BotControlWindow:
                 font=("TkDefaultFont", 9, "bold"),
                 relief="flat",
             ).pack(side="left", padx=(0, 4))
-            ttk.Label(row, text=info_suffix).pack(side="left", anchor="w")
-            ttk.Button(
-                row,
-                text="Borrar",
-                command=lambda tid=trade_id: self._run_async(lambda: self._delete_trade_by_id(tid)),
-            ).pack(side="right")
+            ttk.Label(row_bottom, text=f" | {result}").pack(side="left", anchor="w")
 
     def _view_history(self) -> None:
         schedules = self.scheduler.list_schedules()
@@ -2023,13 +3158,31 @@ class BotControlWindow:
         configured_target_delta = float(target_profit_per_share or self._safe_target_profit_value())
         if watch_id is not None:
             configured_target_delta = self._watch_target_profit_value(watch_id, position_manager=position_manager)
-        trade_result = position_manager.open_position(
-            symbol=symbol,
-            qty=qty,
-            reason=reason,
-            spread_pct=spread_pct,
-            target_profit_per_share=configured_target_delta,
-        )
+        actor = "normal"
+        if watch_id is not None:
+            with self._watch_lock:
+                context = self._watch_tabs.get(watch_id)
+                if context is not None:
+                    actor = str(context.get("bot_actor", "normal") or "normal").strip().lower()
+        try:
+            if watch_id is not None and actor == "ia":
+                trade_result = position_manager.open_position_limit(
+                    symbol=symbol,
+                    qty=qty,
+                    reason=reason,
+                    spread_pct=spread_pct,
+                    target_profit_per_share=configured_target_delta,
+                )
+            else:
+                trade_result = position_manager.open_position(
+                    symbol=symbol,
+                    qty=qty,
+                    reason=reason,
+                    spread_pct=spread_pct,
+                    target_profit_per_share=configured_target_delta,
+                )
+        except ValueError as ex:
+            return {"action": "wait", "status": f"{wait_prefix}: {ex}"}
         return {
             "action": "buy",
             "trade_result": trade_result,
@@ -2163,11 +3316,39 @@ class BotControlWindow:
         try:
             planned = self._planned_rebuy_capital_amount(watch_id)
         except Exception:
-            try:
-                planned = float(self.capital_var.get().strip() or str(settings.default_trade_capital))
-            except ValueError:
-                planned = float(settings.default_trade_capital)
+            planned = float(settings.default_trade_capital)
         return f"capital recompra planificado: {planned:.2f}"
+
+    def _save_watch_trade_config(self, watch_id: str) -> None:
+        with self._watch_lock:
+            context = self._watch_tabs.get(watch_id)
+        if context is None:
+            return
+
+        symbol = str(context.get("symbol", "") or "").strip().upper()
+        actor = str(context.get("bot_actor", "normal") or "normal").strip().lower()
+        if actor != "ia":
+            self._watch_log(watch_id, "Guardar configuracion disponible solo para pestañas de Bot IA.")
+            return
+
+        try:
+            target_value = float(self._watch_target_profit_value(watch_id))
+        except Exception:
+            target_value = float(self._safe_target_profit_value())
+        try:
+            capital_value = float(self._planned_rebuy_capital_amount(watch_id))
+        except Exception:
+            capital_value = float(settings.default_trade_capital)
+
+        self._save_watch_tabs_state()
+        self._watch_log(
+            watch_id,
+            f"Configuración IA guardada para {symbol}: target={target_value:.4f} | capital_siguiente_compra={capital_value:.2f}",
+        )
+        self._set_watch_status(
+            watch_id,
+            f"Configuración IA guardada (target={target_value:.4f}, capital={capital_value:.2f})",
+        )
 
     def _watch_target_profit_value(
         self,
@@ -2182,10 +3363,12 @@ class BotControlWindow:
             target_var = context.get("target_profit_var")
             cached = float(context.get("target_profit_cached", fallback) or fallback)
 
-        try:
-            value = float(target_var.get().strip() if target_var is not None else cached)
-        except (ValueError, RuntimeError, tk.TclError):
-            value = cached
+        value = cached
+        if target_var is not None and threading.get_ident() == self._ui_thread_ident:
+            try:
+                value = float(target_var.get().strip())
+            except (ValueError, RuntimeError, tk.TclError):
+                value = cached
 
         if value <= 0:
             value = fallback
@@ -2224,10 +3407,13 @@ class BotControlWindow:
             rebuy_capital_var = context.get("rebuy_capital_var") if context is not None else None
             cached_cash_ts = float((context or {}).get("cached_cash_ts", 0.0) or 0.0)
             cached_cash = float((context or {}).get("cached_cash", 0.0) or 0.0)
-        try:
-            trade_capital = float(rebuy_capital_var.get().strip() if rebuy_capital_var is not None else str(settings.default_trade_capital))
-        except ValueError:
-            trade_capital = float(settings.default_trade_capital)
+            cached_rebuy_capital = float((context or {}).get("rebuy_capital_cached", settings.default_trade_capital) or settings.default_trade_capital)
+        trade_capital = cached_rebuy_capital
+        if rebuy_capital_var is not None and threading.get_ident() == self._ui_thread_ident:
+            try:
+                trade_capital = float(rebuy_capital_var.get().strip())
+            except ValueError:
+                trade_capital = float(settings.default_trade_capital)
 
         if (now_monotonic - cached_cash_ts) <= 6.0 and cached_cash >= 0.0:
             cash_available = cached_cash
@@ -2249,11 +3435,15 @@ class BotControlWindow:
         capital_var = context.get("auto_rebuy_capital_var")
         if capital_var is None:
             return
+        actor = str(context.get("bot_actor", "normal") or "normal").strip().lower()
+        if actor == "ia":
+            self._safe_after(0, capital_var.set, "Modo IA: análisis continuo")
+            return
         enabled = self._is_auto_rebuy_enabled(watch_id)
         if not enabled:
-            capital_var.set("Recompra: OFF")
+            self._safe_after(0, capital_var.set, "Recompra: OFF")
             return
-        capital_var.set(f"Recompra: {self._planned_rebuy_capital_text(watch_id)}")
+        self._safe_after(0, capital_var.set, f"Recompra: {self._planned_rebuy_capital_text(watch_id)}")
 
     def _set_current_buy_capital_display(self, watch_id: str, capital_used: float) -> None:
         with self._watch_lock:
@@ -2263,7 +3453,7 @@ class BotControlWindow:
         capital_var = context.get("current_buy_capital_var")
         if capital_var is None:
             return
-        capital_var.set(f"Compra actual: {float(capital_used or 0.0):.2f}")
+        self._safe_after(0, capital_var.set, f"Compra actual: {float(capital_used or 0.0):.2f}")
 
     def _is_auto_rebuy_enabled(self, watch_id: str) -> bool:
         with self._watch_lock:
@@ -2272,7 +3462,105 @@ class BotControlWindow:
                 return False
             return bool(context.get("auto_rebuy", False))
 
+    def _pause_ia_watch_tab(self, watch_id: str) -> None:
+        with self._watch_lock:
+            context = self._watch_tabs.get(watch_id)
+            if context is None:
+                return
+            actor = str(context.get("bot_actor", "normal") or "normal").strip().lower()
+            if actor != "ia":
+                return
+            symbol = str(context.get("symbol", "") or "").upper()
+            stop_event = context.get("stop_event")
+            if stop_event is None:
+                stop_event = threading.Event()
+                context["stop_event"] = stop_event
+            stop_event.set()
+            context["active"] = False
+            context["mode"] = "waiting"
+            context["stop_reason"] = "ia_manual_pause"
+
+        self._save_watch_tabs_state()
+        self._refresh_watch_buy_now_state(watch_id)
+        self._refresh_watch_sell_now_state(watch_id)
+        self._watch_log(watch_id, f"IA pausada manualmente para {symbol}.")
+        self._set_watch_status(watch_id, f"IA en pausa para {symbol}. Usa 'Reanudar IA' para continuar.")
+
+    def _resume_ia_watch_tab(self, watch_id: str) -> None:
+        with self._watch_lock:
+            context = self._watch_tabs.get(watch_id)
+            if context is None:
+                return
+            actor = str(context.get("bot_actor", "normal") or "normal").strip().lower()
+            if actor != "ia":
+                return
+            symbol = str(context.get("symbol", "") or "").upper()
+        if not symbol:
+            return
+        self._resume_waiting_entry(watch_id=watch_id, symbol=symbol)
+
+    def _disable_ia_account_from_watch(self, watch_id: str) -> None:
+        with self._watch_lock:
+            context = self._watch_tabs.get(watch_id)
+            if context is None:
+                return
+            account_name = str(context.get("account", "") or "").strip()
+            actor = str(context.get("bot_actor", "normal") or "normal").strip().lower()
+            symbol = str(context.get("symbol", "") or "").upper()
+
+        if actor != "ia":
+            self.root.after(0, self._show_error, "El apagado por cuenta aplica solo a pestañas IA.", False)
+            return
+        if not account_name:
+            self.root.after(0, self._show_error, "No se pudo identificar la cuenta de la pestaña IA.", False)
+            return
+
+        account = self.ai_trading_brain.refresh_account_context(account_name)
+        account_id = int(account["id"])
+        runtime = self.ai_trading_brain.database.get_runtime_settings(account_id) or {}
+        funds = self.ai_trading_brain.database.get_bot_funds(account_id) or {}
+
+        self.ai_trading_brain.update_runtime_controls(
+            account_name=account_name,
+            max_capital_assigned=float(funds.get("max_capital_assigned", 0.0) or 0.0),
+            max_position_size=float(funds.get("max_position_size", 0.0) or 0.0),
+            max_daily_loss=float(funds.get("max_daily_loss", 0.0) or 0.0),
+            enabled=False,
+            signal_only_mode=bool(runtime.get("signal_only_mode", 1)),
+            paper_trading=bool(runtime.get("paper_trading", 1)),
+            live_trading_enabled=bool(runtime.get("live_trading_enabled", 0)),
+            manual_approval_required=bool(runtime.get("manual_approval_required", 1)),
+            kill_switch=True,
+            auto_trade_stocks_enabled=False,
+            auto_trade_cryptos_enabled=False,
+            scanner_decision_engine=str(runtime.get("scanner_decision_engine", "heuristic") or "heuristic"),
+        )
+
+        self._pause_ia_watch_tab(watch_id)
+        if self.account_var.get().strip() == account_name:
+            status = self.ai_trading_brain.get_automation_status(account_name)
+            self._refresh_ai_runtime_view(status=status)
+        self.root.after(
+            0,
+            self._show_success,
+            f"IA apagada solo para la cuenta {account_name} (símbolo {symbol}). Otras cuentas siguen activas.",
+            False,
+        )
+
     def _sell_market_now(self, watch_id: str) -> None:
+        with self._watch_lock:
+            context = self._watch_tabs.get(watch_id)
+            if context is None:
+                return
+            if bool(context.get("sell_now_in_flight", False)):
+                status = "Venta inmediata ya en proceso para esta pestaña."
+                self._watch_log(watch_id, status)
+                self._set_watch_status(watch_id, status)
+                return
+            context["sell_now_in_flight"] = True
+
+        self._set_watch_sell_now_enabled(watch_id, enabled=False)
+        self._set_watch_status(watch_id, "Venta inmediata en proceso...")
         threading.Thread(target=self._sell_market_now_worker, args=(watch_id,), daemon=True).start()
 
     def _cancel_symbol_limits(self, watch_id: str) -> None:
@@ -2347,6 +3635,7 @@ class BotControlWindow:
         broker = runtime["broker"]
 
         symbol = str(context.get("symbol", "")).upper()
+        actor = str(context.get("bot_actor", "normal") or "normal").strip().lower()
         if not symbol:
             return
 
@@ -2364,7 +3653,16 @@ class BotControlWindow:
             self.root.after(0, self._show_success, f"Venta manual ejecutada para {symbol}.", False)
 
             if self._wait_position_closed(symbol=symbol, max_attempts=8, sleep_seconds=0.5, broker=broker):
-                self._resume_waiting_entry(watch_id=watch_id, symbol=symbol)
+                if actor == "ia":
+                    self._resume_waiting_entry(watch_id=watch_id, symbol=symbol)
+                elif self._is_auto_rebuy_enabled(watch_id):
+                    self._resume_waiting_entry(watch_id=watch_id, symbol=symbol)
+                else:
+                    self._pause_watch_after_position_closed(
+                        watch_id=watch_id,
+                        symbol=symbol,
+                        status_message=f"Venta confirmada para {symbol}. Recompra OFF: pestaña en pausa.",
+                    )
             else:
                 self._watch_log(watch_id, f"Venta enviada en {symbol}, aun pendiente de confirmacion en broker.")
                 self._set_watch_status(watch_id, f"Venta enviada en {symbol}; esperando confirmacion...")
@@ -2373,6 +3671,12 @@ class BotControlWindow:
             self._watch_log(watch_id, status)
             self._set_watch_status(watch_id, status)
             self.root.after(0, self._show_error, status, False)
+        finally:
+            with self._watch_lock:
+                current_context = self._watch_tabs.get(watch_id)
+                if current_context is not None:
+                    current_context["sell_now_in_flight"] = False
+            self._refresh_watch_sell_now_state(watch_id)
 
     def _enter_market_now_worker(
         self,
@@ -2523,6 +3827,7 @@ class BotControlWindow:
         account_name: str | None = None,
         rebuy_capital_value: float | None = None,
         target_profit_value: float | None = None,
+        bot_actor: str = "normal",
     ) -> str:
         with self._watch_lock:
             self._watch_counter += 1
@@ -2536,8 +3841,14 @@ class BotControlWindow:
         header = ttk.Frame(frame)
         header.pack(fill="x", pady=(0, 6))
 
-        info_row = ttk.Frame(header)
-        info_row.pack(fill="x")
+        title_row = ttk.Frame(header)
+        title_row.pack(fill="x")
+
+        status_row_top = ttk.Frame(header)
+        status_row_top.pack(fill="x", pady=(2, 0))
+
+        status_row_bottom = ttk.Frame(header)
+        status_row_bottom.pack(fill="x", pady=(2, 0))
 
         controls_row = ttk.Frame(header)
         controls_row.pack(fill="x", pady=(4, 0))
@@ -2547,25 +3858,35 @@ class BotControlWindow:
         if target_profit_value is None:
             target_profit_value = float(self._safe_target_profit_value())
 
+        actor_key = str(bot_actor or "normal").strip().lower()
+        if actor_key not in {"ia", "normal"}:
+            actor_key = "normal"
+        actor_label = "Bot IA" if actor_key == "ia" else "Bot normal"
+
         status_var = tk.StringVar(value="Iniciando...")
-        auto_rebuy_capital_var = tk.StringVar(value="Recompra: OFF")
+        status_detail_var = tk.StringVar(value="")
+        actor_var = tk.StringVar(value=f"Operador: {actor_label}")
+        auto_rebuy_capital_var = tk.StringVar(value=("Modo IA: análisis continuo" if actor_key == "ia" else "Recompra: OFF"))
         current_buy_capital_var = tk.StringVar(value="Compra actual: N/A")
         rebuy_capital_var = tk.StringVar(value=f"{float(rebuy_capital_value):.2f}")
         target_profit_var = tk.StringVar(value=f"{float(target_profit_value):.4f}")
         ttk.Label(
-            info_row,
+            title_row,
             text=f"Cuenta: {account_name} | Mercado: {market_label} | Activo: {symbol}",
             font=("TkDefaultFont", 10, "bold"),
         ).pack(side="left")
-        ttk.Label(info_row, textvariable=status_var, foreground="#444").pack(side="left", padx=(12, 0))
-        ttk.Label(info_row, textvariable=auto_rebuy_capital_var, foreground="#0b5cab").pack(side="left", padx=(12, 0))
-        ttk.Label(info_row, textvariable=current_buy_capital_var, foreground="#8a4d00").pack(side="left", padx=(12, 0))
+        ttk.Label(status_row_top, textvariable=status_var, foreground="#444").pack(side="left", anchor="w")
+        ttk.Label(status_row_bottom, textvariable=status_detail_var, foreground="#444").pack(side="left", padx=(0, 12), anchor="w")
+        ttk.Label(status_row_bottom, textvariable=actor_var, foreground="#1d5f2a").pack(side="left", padx=(0, 12))
+        ttk.Label(status_row_bottom, textvariable=auto_rebuy_capital_var, foreground="#0b5cab").pack(side="left", padx=(0, 12))
+        ttk.Label(status_row_bottom, textvariable=current_buy_capital_var, foreground="#8a4d00").pack(side="left")
         buy_now_button = ttk.Button(
             controls_row,
             text="Comprar ahora",
             command=lambda wid=watch_id: self._enter_market_now(wid),
         )
-        buy_now_button.pack(side="left", padx=(0, 8))
+        if actor_key != "ia":
+            buy_now_button.pack(side="left", padx=(0, 8))
         auto_rebuy_button = tk.Button(
             controls_row,
             text="Recompra inmediata OFF",
@@ -2579,21 +3900,47 @@ class BotControlWindow:
             padx=8,
             pady=2,
         )
-        auto_rebuy_button.pack(side="left", padx=(0, 8))
+        if actor_key != "ia":
+            auto_rebuy_button.pack(side="left", padx=(0, 8))
         ttk.Label(controls_row, text="Target USD total").pack(side="left", padx=(0, 4))
         ttk.Entry(controls_row, textvariable=target_profit_var, width=10).pack(side="left", padx=(0, 8))
-        ttk.Label(controls_row, text="Capital recompra").pack(side="left", padx=(0, 4))
+        capital_label = "Capital a usar" if actor_key == "ia" else "Capital recompra"
+        ttk.Label(controls_row, text=capital_label).pack(side="left", padx=(0, 4))
         ttk.Entry(controls_row, textvariable=rebuy_capital_var, width=10).pack(side="left", padx=(0, 8))
-        ttk.Button(
+        sell_now_button = ttk.Button(
             controls_row,
             text="Vender ahora",
             command=lambda wid=watch_id: self._sell_market_now(wid),
-        ).pack(side="left", padx=(0, 8))
-        ttk.Button(
-            controls_row,
-            text="Cancelar limites",
-            command=lambda wid=watch_id: self._cancel_symbol_limits(wid),
-        ).pack(side="left", padx=(0, 8))
+        )
+        if actor_key != "ia":
+            sell_now_button.pack(side="left", padx=(0, 8))
+            ttk.Button(
+                controls_row,
+                text="Cancelar limites",
+                command=lambda wid=watch_id: self._cancel_symbol_limits(wid),
+            ).pack(side="left", padx=(0, 8))
+        else:
+            sell_now_button.pack(side="left", padx=(0, 8))
+            ttk.Button(
+                controls_row,
+                text="Pausar IA",
+                command=lambda wid=watch_id: self._pause_ia_watch_tab(wid),
+            ).pack(side="left", padx=(0, 8))
+            ttk.Button(
+                controls_row,
+                text="Reanudar IA",
+                command=lambda wid=watch_id: self._resume_ia_watch_tab(wid),
+            ).pack(side="left", padx=(0, 8))
+            ttk.Button(
+                controls_row,
+                text="Apagar IA",
+                command=lambda wid=watch_id: self._run_async(lambda: self._disable_ia_account_from_watch(wid)),
+            ).pack(side="left", padx=(0, 8))
+            ttk.Button(
+                controls_row,
+                text="Guardar",
+                command=lambda wid=watch_id: self._save_watch_trade_config(wid),
+            ).pack(side="left", padx=(0, 8))
         ttk.Button(
             controls_row,
             text="Cerrar",
@@ -2604,7 +3951,7 @@ class BotControlWindow:
         text.pack(fill="both", expand=True)
         text.configure(state="disabled")
 
-        self.log_notebook.add(frame, text=f"{symbol} | {account_name}")
+        self.log_notebook.add(frame, text=f"[{actor_label}] {symbol} | {account_name}")
         self.log_notebook.select(frame)
 
         context = {
@@ -2612,6 +3959,9 @@ class BotControlWindow:
             "frame": frame,
             "text": text,
             "status_var": status_var,
+            "status_detail_var": status_detail_var,
+            "actor_var": actor_var,
+            "bot_actor": actor_key,
             "symbol": symbol,
             "asset_type": asset_type,
             "account": account_name,
@@ -2622,16 +3972,19 @@ class BotControlWindow:
             "tracking_active": False,
             "stop_reason": "",
             "mode": start_mode,
-            "auto_rebuy": False,
-            "buy_now_button": buy_now_button,
-            "auto_rebuy_button": auto_rebuy_button,
+            "auto_rebuy": False if actor_key == "ia" else False,
+            "buy_now_button": (buy_now_button if actor_key != "ia" else None),
+            "sell_now_button": (sell_now_button if actor_key != "ia" else None),
+            "auto_rebuy_button": (auto_rebuy_button if actor_key != "ia" else None),
             "auto_rebuy_capital_var": auto_rebuy_capital_var,
             "rebuy_capital_var": rebuy_capital_var,
+            "rebuy_capital_cached": float(rebuy_capital_value),
             "target_profit_var": target_profit_var,
             "target_profit_cached": float(target_profit_value),
             "current_buy_capital_var": current_buy_capital_var,
             "last_known_limit_price": 0.0,
             "enter_now_in_flight": False,
+            "sell_now_in_flight": False,
             "auto_rebuy_success_count": 0,
             "rebuy_last_http_status": 0,
             "rebuy_retry_after_seconds": 0.0,
@@ -2657,8 +4010,32 @@ class BotControlWindow:
             context["stop_event"].set()
         with self._watch_lock:
             self._watch_tabs[watch_id] = context
-        self._watch_log(watch_id, f"Pestaña creada. Esperando señal para {symbol}...")
+
+        def _on_target_change(*_args: Any) -> None:
+            try:
+                parsed = float(target_profit_var.get().strip())
+            except (TypeError, ValueError, RuntimeError, tk.TclError):
+                return
+            with self._watch_lock:
+                current = self._watch_tabs.get(watch_id)
+                if current is not None and parsed > 0:
+                    current["target_profit_cached"] = parsed
+
+        def _on_rebuy_capital_change(*_args: Any) -> None:
+            try:
+                parsed = float(rebuy_capital_var.get().strip())
+            except (TypeError, ValueError, RuntimeError, tk.TclError):
+                return
+            with self._watch_lock:
+                current = self._watch_tabs.get(watch_id)
+                if current is not None and parsed >= 0:
+                    current["rebuy_capital_cached"] = parsed
+
+        target_profit_var.trace_add("write", _on_target_change)
+        rebuy_capital_var.trace_add("write", _on_rebuy_capital_change)
+        self._watch_log(watch_id, f"Pestaña creada ({actor_label}). Esperando señal para {symbol}...")
         self._set_watch_buy_now_enabled(watch_id, enabled=(start_mode == "waiting"))
+        self._set_watch_sell_now_enabled(watch_id, enabled=False)
         self._refresh_auto_rebuy_capital_display(watch_id)
         self._save_watch_tabs_state()
         return watch_id
@@ -2859,6 +4236,16 @@ class BotControlWindow:
             return
         self._safe_after(0, lambda: button.configure(state=("normal" if enabled else "disabled")))
 
+    def _set_watch_sell_now_enabled(self, watch_id: str, enabled: bool) -> None:
+        with self._watch_lock:
+            context = self._watch_tabs.get(watch_id)
+        if context is None:
+            return
+        button = context.get("sell_now_button")
+        if button is None:
+            return
+        self._safe_after(0, lambda: button.configure(state=("normal" if enabled else "disabled")))
+
     def _refresh_watch_buy_now_state(self, watch_id: str) -> None:
         with self._watch_lock:
             context = self._watch_tabs.get(watch_id)
@@ -2889,6 +4276,55 @@ class BotControlWindow:
 
         self._set_watch_buy_now_enabled(watch_id, enabled=not (has_position or has_pending_buy))
 
+    def _refresh_watch_sell_now_state(self, watch_id: str) -> None:
+        with self._watch_lock:
+            context = self._watch_tabs.get(watch_id)
+        if context is None:
+            return
+
+        if bool(context.get("sell_now_in_flight", False)):
+            self._set_watch_sell_now_enabled(watch_id, enabled=False)
+            return
+
+        symbol = str(context.get("symbol", "")).upper()
+        runtime = context.get("runtime")
+        if not symbol or runtime is None:
+            self._set_watch_sell_now_enabled(watch_id, enabled=False)
+            return
+
+        broker = runtime.get("broker")
+        if broker is None:
+            self._set_watch_sell_now_enabled(watch_id, enabled=False)
+            return
+
+        try:
+            has_position = self._find_open_position_by_symbol(symbol, broker=broker) is not None
+        except Exception:
+            has_position = False
+
+        self._set_watch_sell_now_enabled(watch_id, enabled=has_position)
+
+    def _pause_watch_after_position_closed(self, watch_id: str, symbol: str, status_message: str) -> None:
+        with self._watch_lock:
+            context = self._watch_tabs.get(watch_id)
+            if context is None:
+                return
+
+            stop_event = context.get("stop_event")
+            if stop_event is None:
+                stop_event = threading.Event()
+                context["stop_event"] = stop_event
+            stop_event.set()
+            context["active"] = False
+            context["mode"] = "waiting"
+            context["stop_reason"] = "paused_after_close"
+
+        self._save_watch_tabs_state()
+        self._refresh_watch_buy_now_state(watch_id)
+        self._refresh_watch_sell_now_state(watch_id)
+        self._watch_log(watch_id, f"{symbol} cerrado. Recompra OFF: pestaña en pausa, sin compras automáticas.")
+        self._set_watch_status(watch_id, status_message)
+
     def _watch_log(self, watch_id: str, message: str) -> None:
         now = time.monotonic()
         with self._watch_lock:
@@ -2915,6 +4351,13 @@ class BotControlWindow:
             return
         text_widget.configure(state="normal")
         text_widget.insert(tk.END, line + "\n")
+        try:
+            line_count = int(float(text_widget.index("end-1c").split(".")[0]))
+            extra = line_count - self._ui_max_log_lines
+            if extra > 0:
+                text_widget.delete("1.0", f"{extra + 1}.0")
+        except Exception:
+            pass
         text_widget.see(tk.END)
         text_widget.configure(state="disabled")
 
@@ -2927,8 +4370,25 @@ class BotControlWindow:
         if context is None:
             return
         status_var = context.get("status_var")
+        status_detail_var = context.get("status_detail_var")
+        main_text = str(message or "")
+        detail_text = ""
+
+        if main_text.startswith("PnL en vivo "):
+            parts = main_text.split(" | ")
+            if len(parts) > 4:
+                main_text = " | ".join(parts[:4])
+                detail_text = " | ".join(parts[4:])
+        elif len(main_text) > 110 and " | " in main_text:
+            parts = main_text.split(" | ")
+            midpoint = max(1, len(parts) // 2)
+            main_text = " | ".join(parts[:midpoint])
+            detail_text = " | ".join(parts[midpoint:])
+
         if status_var is not None:
-            status_var.set(message)
+            status_var.set(main_text)
+        if status_detail_var is not None:
+            status_detail_var.set(detail_text)
 
     def _select_watch_tab(self, watch_id: str) -> None:
         with self._watch_lock:
@@ -3153,12 +4613,20 @@ class BotControlWindow:
 
                 if position is None:
                     if had_open_position:
+                        actor = str((context or {}).get("bot_actor", "normal") or "normal").strip().lower()
                         self._watch_log(
                             watch_id,
                             f"Posicion {symbol} ya no esta abierta. Monitoreo sigue activo hasta cierre manual.",
                         )
                         if not reentry_started:
                             reentry_started = True
+                            if actor == "ia":
+                                self._watch_log(
+                                    watch_id,
+                                    f"Posición IA cerrada para {symbol}. Reanudando análisis de nueva entrada.",
+                                )
+                                self._resume_waiting_entry(watch_id=watch_id, symbol=symbol)
+                                return
                             if self._is_auto_rebuy_enabled(watch_id):
                                 self._watch_log(
                                     watch_id,
@@ -3173,9 +4641,14 @@ class BotControlWindow:
                                     time.sleep(fast_poll_seconds)
                                     continue
                             else:
-                                self._resume_waiting_entry(watch_id=watch_id, symbol=symbol)
+                                self._pause_watch_after_position_closed(
+                                    watch_id=watch_id,
+                                    symbol=symbol,
+                                    status_message=f"Sin posición abierta en {symbol}. Recompra OFF: pestaña en pausa.",
+                                )
                             return
                     self._refresh_watch_buy_now_state(watch_id)
+                    self._refresh_watch_sell_now_state(watch_id)
                     self._set_watch_status(watch_id, f"Sin posicion abierta en {symbol}.")
                     had_open_position = False
                     time.sleep(fast_poll_seconds)
@@ -3378,6 +4851,7 @@ class BotControlWindow:
                     self._watch_log(watch_id, line)
                     self._set_watch_status(watch_id, line)
                 self._refresh_watch_buy_now_state(watch_id)
+                self._refresh_watch_sell_now_state(watch_id)
                 had_open_position = True
                 reentry_started = False
                 time.sleep(fast_poll_seconds)
@@ -3405,10 +4879,11 @@ class BotControlWindow:
                         "symbol": symbol,
                         "asset_type": str(context.get("asset_type", "stock")),
                         "account": account,
+                        "bot_actor": str(context.get("bot_actor", "normal") or "normal"),
                         "mode": str(context.get("mode", "waiting")),
                         "auto_rebuy": bool(context.get("auto_rebuy", False)),
-                        "rebuy_capital": str((context.get("rebuy_capital_var").get() if context.get("rebuy_capital_var") is not None else settings.default_trade_capital)),
-                        "target_profit_per_share": str((context.get("target_profit_var").get() if context.get("target_profit_var") is not None else self._safe_target_profit_value())),
+                        "rebuy_capital": str(float(context.get("rebuy_capital_cached", settings.default_trade_capital) or settings.default_trade_capital)),
+                        "target_profit_per_share": str(float(context.get("target_profit_cached", self._safe_target_profit_value()) or self._safe_target_profit_value())),
                     }
                 )
 
@@ -3448,7 +4923,6 @@ class BotControlWindow:
             unique_key = (self._symbol_key(symbol), account)
             if unique_key in merged_keys:
                 continue
-            merged_keys.add(unique_key)
             merged_payload.append(item)
 
         self._watch_state_path.write_text(
@@ -3479,6 +4953,7 @@ class BotControlWindow:
             asset_type = str(item.get("asset_type", "stock")).strip().lower()
             account = str(item.get("account", "")).strip()
             mode = str(item.get("mode", "waiting")).strip().lower()
+            bot_actor = str(item.get("bot_actor", "normal") or "normal").strip().lower()
             auto_rebuy = bool(item.get("auto_rebuy", False))
             rebuy_capital = float(item.get("rebuy_capital", settings.default_trade_capital) or settings.default_trade_capital)
             target_profit_per_share = float(item.get("target_profit_per_share", self._safe_target_profit_value()) or self._safe_target_profit_value())
@@ -3509,14 +4984,15 @@ class BotControlWindow:
                 )
                 continue
 
-            if self._watch_tab_exists_for_symbol(symbol=symbol, account=account):
+            if self._watch_tab_exists_for_symbol(symbol=symbol, account=account, bot_actor=bot_actor):
                 cleaned_payload.append(
                     {
                         "symbol": symbol,
                         "asset_type": asset_type,
                         "account": account,
+                        "bot_actor": bot_actor,
                         "mode": mode,
-                        "auto_rebuy": auto_rebuy,
+                        "auto_rebuy": (False if bot_actor == "ia" else auto_rebuy),
                         "rebuy_capital": rebuy_capital,
                         "target_profit_per_share": target_profit_per_share,
                     }
@@ -3530,14 +5006,16 @@ class BotControlWindow:
                 account_name=account,
                 rebuy_capital_value=rebuy_capital,
                 target_profit_value=target_profit_per_share,
+                bot_actor=bot_actor,
             )
             cleaned_payload.append(
                 {
                     "symbol": symbol,
                     "asset_type": asset_type,
                     "account": account,
+                    "bot_actor": bot_actor,
                     "mode": mode,
-                    "auto_rebuy": auto_rebuy,
+                    "auto_rebuy": (False if bot_actor == "ia" else auto_rebuy),
                     "rebuy_capital": rebuy_capital,
                     "target_profit_per_share": target_profit_per_share,
                 }
@@ -3545,8 +5023,8 @@ class BotControlWindow:
             with self._watch_lock:
                 context = self._watch_tabs.get(watch_id)
                 if context is not None:
-                    context["auto_rebuy"] = auto_rebuy
-            self._apply_auto_rebuy_button_state(watch_id, auto_rebuy)
+                    context["auto_rebuy"] = (False if bot_actor == "ia" else auto_rebuy)
+            self._apply_auto_rebuy_button_state(watch_id, (False if bot_actor == "ia" else auto_rebuy))
 
             has_open_position = False
             try:
@@ -3676,23 +5154,31 @@ class BotControlWindow:
         except (TypeError, ValueError):
             return 0.0
 
-    def _find_watch_id_for_symbol(self, symbol: str, account: str) -> str | None:
+    def _find_watch_id_for_symbol(self, symbol: str, account: str, bot_actor: str | None = None) -> str | None:
         target = self._symbol_key(symbol)
+        actor_filter = str(bot_actor or "").strip().lower()
         with self._watch_lock:
             for watch_id, context in self._watch_tabs.items():
                 current_symbol = self._symbol_key(str(context.get("symbol", "")))
                 current_account = str(context.get("account", "")).strip()
+                current_actor = str(context.get("bot_actor", "normal") or "normal").strip().lower()
                 if current_symbol == target and current_account == account:
+                    if actor_filter and current_actor != actor_filter:
+                        continue
                     return str(watch_id)
         return None
 
-    def _watch_tab_exists_for_symbol(self, symbol: str, account: str) -> bool:
+    def _watch_tab_exists_for_symbol(self, symbol: str, account: str, bot_actor: str | None = None) -> bool:
         target = self._symbol_key(symbol)
+        actor_filter = str(bot_actor or "").strip().lower()
         with self._watch_lock:
             for context in self._watch_tabs.values():
                 current_symbol = self._symbol_key(str(context.get("symbol", "")))
                 current_account = str(context.get("account", "")).strip()
+                current_actor = str(context.get("bot_actor", "normal") or "normal").strip().lower()
                 if current_symbol == target and current_account == account:
+                    if actor_filter and current_actor != actor_filter:
+                        continue
                     return True
         return False
 
@@ -4039,10 +5525,29 @@ class BotControlWindow:
         ttk.Button(model_toolbar_row2, text="Volver al anterior", command=lambda: self._run_async(self._rollback_ai_model)).pack(side="left")
         self.ai_security_text = self._build_ai_section(frame, "Seguridad", 7)
 
+        monitor_container = ttk.LabelFrame(frame, text="Monitoreo Crypto IA")
+        monitor_container.pack(fill="both", expand=False, pady=(0, 8))
+        monitor_toolbar = ttk.Frame(monitor_container)
+        monitor_toolbar.pack(fill="x", pady=(0, 6))
+        ttk.Label(
+            monitor_toolbar,
+            text="Vista rápida por crypto: última señal, bloqueo exacto y ajuste mínimo para pasar de WATCH a BUY.",
+        ).pack(side="left")
+        ttk.Button(
+            monitor_toolbar,
+            text="Refrescar Monitoreo Crypto",
+            command=lambda: self._run_async(self._refresh_ai_crypto_monitor_view),
+        ).pack(side="right")
+        monitor_height = 8 if self._ui_compact_mode else 12
+        self.ai_crypto_monitor_text = tk.Text(monitor_container, height=monitor_height, wrap="word")
+        self.ai_crypto_monitor_text.pack(fill="both", expand=True)
+        self.ai_crypto_monitor_text.configure(state="disabled")
+
     def _build_ai_section(self, parent: Any, title: str, height: int) -> tk.Text:
         container = ttk.LabelFrame(parent, text=title)
         container.pack(fill="both", expand=False, pady=(0, 8))
-        widget = tk.Text(container, height=height, wrap="word")
+        effective_height = max(5, int(height * 0.65)) if self._ui_compact_mode else height
+        widget = tk.Text(container, height=effective_height, wrap="word")
         widget.pack(fill="both", expand=True)
         widget.configure(state="disabled")
         return widget
@@ -4054,26 +5559,30 @@ class BotControlWindow:
         ttk.Entry(parent, textvariable=self.ai_max_position_var, width=12).grid(row=1, column=1, padx=(0, 8), sticky="w")
         ttk.Label(parent, text="Perdida diaria").grid(row=0, column=2, sticky="w")
         ttk.Entry(parent, textvariable=self.ai_max_daily_loss_var, width=12).grid(row=1, column=2, padx=(0, 8), sticky="w")
-        ttk.Label(parent, text="Target IA $/acc").grid(row=0, column=3, sticky="w")
-        ttk.Entry(parent, textvariable=self.ai_target_profit_var, width=12).grid(row=1, column=3, padx=(0, 8), sticky="w")
-        ttk.Checkbutton(parent, text="Bot activo", variable=self.ai_bot_enabled_var).grid(row=0, column=4, sticky="w")
-        ttk.Checkbutton(parent, text="Solo señales", variable=self.ai_signal_only_var).grid(row=1, column=4, sticky="w")
-        ttk.Checkbutton(parent, text="Paper trading", variable=self.ai_paper_trading_var).grid(row=0, column=5, sticky="w")
-        ttk.Checkbutton(parent, text="Live habilitado", variable=self.ai_live_enabled_var).grid(row=1, column=5, sticky="w")
-        ttk.Checkbutton(parent, text="Aprobacion manual", variable=self.ai_manual_approval_var).grid(row=0, column=6, sticky="w")
-        ttk.Checkbutton(parent, text="Kill switch", variable=self.ai_kill_switch_var).grid(row=1, column=6, sticky="w")
-        ttk.Button(parent, text="Guardar fondos", command=lambda: self._run_async(self._save_ai_runtime_controls)).grid(row=1, column=7, padx=(8, 0), sticky="w")
+        ttk.Label(parent, text="Target IA Stocks $/operación").grid(row=0, column=3, sticky="w")
+        ttk.Entry(parent, textvariable=self.ai_target_profit_stocks_var, width=12).grid(row=1, column=3, padx=(0, 8), sticky="w")
+        ttk.Label(parent, text="Target IA Cryptos $/operación").grid(row=0, column=4, sticky="w")
+        ttk.Entry(parent, textvariable=self.ai_target_profit_cryptos_var, width=12).grid(row=1, column=4, padx=(0, 8), sticky="w")
+        ttk.Checkbutton(parent, text="Bot activo", variable=self.ai_bot_enabled_var).grid(row=0, column=5, sticky="w")
+        ttk.Checkbutton(parent, text="Solo señales", variable=self.ai_signal_only_var).grid(row=1, column=5, sticky="w")
+        ttk.Checkbutton(parent, text="Paper trading", variable=self.ai_paper_trading_var).grid(row=0, column=6, sticky="w")
+        ttk.Checkbutton(parent, text="Live habilitado", variable=self.ai_live_enabled_var).grid(row=1, column=6, sticky="w")
+        ttk.Checkbutton(parent, text="Aprobacion manual", variable=self.ai_manual_approval_var).grid(row=0, column=7, sticky="w")
+        ttk.Checkbutton(parent, text="Kill switch", variable=self.ai_kill_switch_var).grid(row=1, column=7, sticky="w")
+        ttk.Button(parent, text="Guardar fondos", command=lambda: self._run_async(self._save_ai_runtime_controls)).grid(row=1, column=8, padx=(8, 0), sticky="w")
 
     def _build_ai_signals_controls(self, parent: Any) -> None:
         toolbar = ttk.Frame(parent)
         toolbar.pack(fill="x", pady=(0, 6))
         ttk.Label(toolbar, text="Las señales y el análisis de texto se generan automáticamente en segundo plano.").pack(side="left")
+        ttk.Button(toolbar, text="Diagnóstico IA", command=self._show_ai_diagnostics_window).pack(side="left", padx=(8, 0))
         ttk.Button(toolbar, text="Generar señal IA", command=lambda: self._run_async(self._generate_ai_signal)).pack(side="left", padx=(8, 0))
         ttk.Button(toolbar, text="Analizar texto", command=lambda: self._run_async(self._analyze_ai_text)).pack(side="left", padx=(8, 0))
         ttk.Button(toolbar, text="Comprar limit", command=lambda: self._run_async(self._execute_ai_limit_buy)).pack(side="left", padx=(8, 0))
         ttk.Button(toolbar, text="Evaluar venta", command=lambda: self._run_async(self._execute_ai_sell_check)).pack(side="left", padx=(8, 0))
         ttk.Button(toolbar, text="Historial", command=lambda: self._run_async(self._show_ai_signal_history)).pack(side="left", padx=(8, 0))
-        self.ai_signal_text = tk.Text(parent, height=10, wrap="word")
+        signal_height = 7 if self._ui_compact_mode else 10
+        self.ai_signal_text = tk.Text(parent, height=signal_height, wrap="word")
         self.ai_signal_text.pack(fill="both", expand=True)
         self.ai_signal_text.configure(state="disabled")
         ttk.Label(parent, text="Texto/noticia para OpenAI Analyzer").pack(anchor="w", pady=(6, 0))
@@ -4098,6 +5607,8 @@ class BotControlWindow:
             self._refresh_ai_model_view()
         if hasattr(self, "ai_signal_text"):
             self._refresh_ai_signals_view()
+        if getattr(self, "ai_crypto_monitor_text", None) is not None:
+            self._refresh_ai_crypto_monitor_view()
 
     def _start_ai_automation(self) -> None:
         account_name = self.account_var.get().strip()
@@ -4125,6 +5636,7 @@ class BotControlWindow:
 
         candidates_payload = self.ai_trading_brain.list_model_candidates(limit=20)
         approved = str(candidates_payload.get("approved", "") or "")
+        approved_valid = bool(candidates_payload.get("approved_valid", False))
         latest = str(candidates_payload.get("latest", "") or "")
         frozen = str(candidates_payload.get("frozen", "") or "")
         candidate_rows = list(candidates_payload.get("rows", []))
@@ -4194,13 +5706,157 @@ class BotControlWindow:
             kill_switch=bool(self.ai_kill_switch_var.get()),
             auto_trade_stocks_enabled=bool(self.ai_auto_trade_stocks_var.get()),
             auto_trade_cryptos_enabled=bool(self.ai_auto_trade_cryptos_var.get()),
+            scanner_decision_engine=str(self.ai_decision_engine_var.get() or "heuristic"),
         )
-        self.ai_trading_brain.update_ai_target_profit_per_share(
-            float(self.ai_target_profit_var.get().strip() or 0.0)
+        target_stock = float(self.ai_target_profit_stocks_var.get().strip() or self.ai_target_profit_var.get().strip() or 0.0)
+        target_crypto = float(self.ai_target_profit_cryptos_var.get().strip() or self.ai_target_profit_var.get().strip() or 0.0)
+        self.ai_trading_brain.update_ai_target_profit_per_operation_by_asset(
+            stock_value=target_stock,
+            crypto_value=target_crypto,
         )
+        self.ai_target_profit_var.set(str(target_stock))
         self._refresh_ai_views()
         if show_message:
             self.root.after(0, self._show_success, "AI Trading Brain actualizado.", False)
+
+    def _persist_ai_focus_controls(self, show_message: bool = True) -> None:
+        account_name = self.account_var.get().strip()
+        self._sync_focus_symbol_vars_from_selected()
+        self.ai_trading_brain.update_focus_symbols(
+            account_name=account_name,
+            focus_stocks_only=bool(self.ai_focus_stocks_only_var.get()),
+            focus_cryptos_only=bool(self.ai_focus_cryptos_only_var.get()),
+            focus_stocks_symbols=self.ai_focus_stocks_symbols_var.get().strip(),
+            focus_cryptos_symbols=self.ai_focus_cryptos_symbols_var.get().strip(),
+        )
+        self._write_env_values(
+            {
+                "AI_FOCUS_STOCKS_ONLY": "true" if bool(self.ai_focus_stocks_only_var.get()) else "false",
+                "AI_FOCUS_CRYPTOS_ONLY": "true" if bool(self.ai_focus_cryptos_only_var.get()) else "false",
+                "AI_FOCUS_STOCKS_SYMBOLS": self.ai_focus_stocks_symbols_var.get().strip(),
+                "AI_FOCUS_CRYPTOS_SYMBOLS": self.ai_focus_cryptos_symbols_var.get().strip(),
+            }
+        )
+        self._save_ai_ui_state()
+        if show_message:
+            self.root.after(0, self._show_success, f"Enfoque IA guardado y aplicado para cuenta: {account_name}", False)
+
+    def _save_ai_focus_controls(self) -> None:
+        self._persist_ai_focus_controls(show_message=True)
+
+    @staticmethod
+    def _parse_symbols_csv(raw: str) -> list[str]:
+        symbols = [
+            str(token).upper().replace(" ", "")
+            for token in str(raw or "").replace(";", ",").split(",")
+            if str(token).strip()
+        ]
+        unique: list[str] = []
+        for symbol in symbols:
+            if symbol not in unique:
+                unique.append(symbol)
+        return unique
+
+    def _sync_focus_symbol_vars_from_selected(self) -> None:
+        self.ai_focus_stocks_symbols_var.set(",".join(self.ai_focus_stock_selected))
+        self.ai_focus_cryptos_symbols_var.set(",".join(self.ai_focus_crypto_selected))
+        self.ai_focus_stocks_selected_var.set(", ".join(self.ai_focus_stock_selected) if self.ai_focus_stock_selected else "(ninguno)")
+        self.ai_focus_cryptos_selected_var.set(", ".join(self.ai_focus_crypto_selected) if self.ai_focus_crypto_selected else "(ninguno)")
+
+    def _load_focus_selected_from_vars(self) -> None:
+        self.ai_focus_stock_selected = self._parse_symbols_csv(self.ai_focus_stocks_symbols_var.get())
+        self.ai_focus_crypto_selected = self._parse_symbols_csv(self.ai_focus_cryptos_symbols_var.get())
+        self._sync_focus_symbol_vars_from_selected()
+
+    def _refresh_ai_focus_symbol_options_async(self) -> None:
+        threading.Thread(target=self._refresh_ai_focus_symbol_options, daemon=True).start()
+
+    def _refresh_ai_focus_symbol_options(self) -> None:
+        try:
+            stock_assets = self.broker.list_stocks(status="active", only_tradable=True)
+            stock_values = sorted(
+                {
+                    str(asset.get("symbol", "")).upper()
+                    for asset in stock_assets
+                    if str(asset.get("symbol", "")).strip()
+                }
+            )
+        except Exception as ex:
+            self.logger.warning("No se pudo refrescar lista de stocks para enfoque IA: %s", ex)
+            stock_values = []
+
+        try:
+            crypto_assets = self.broker.list_cryptos(status="active", only_tradable=True)
+            crypto_values = sorted(
+                {
+                    str(asset.get("symbol", "")).upper()
+                    for asset in crypto_assets
+                    if str(asset.get("symbol", "")).strip()
+                }
+            )
+        except Exception as ex:
+            self.logger.warning("No se pudo refrescar lista de cryptos para enfoque IA: %s", ex)
+            crypto_values = []
+
+        self._safe_after(0, self._apply_ai_focus_symbol_options, stock_values, crypto_values)
+
+    def _apply_ai_focus_symbol_options(self, stock_values: list[str], crypto_values: list[str]) -> None:
+        self.ai_focus_stock_values = stock_values
+        self.ai_focus_crypto_values = crypto_values
+
+        stock_combo = getattr(self, "ai_focus_stock_combo", None)
+        if stock_combo is not None:
+            stock_combo.configure(values=self.ai_focus_stock_values)
+            if self.ai_focus_stock_values and self.ai_focus_stock_pick_var.get().strip().upper() not in self.ai_focus_stock_values:
+                self.ai_focus_stock_pick_var.set(self.ai_focus_stock_values[0])
+
+        crypto_combo = getattr(self, "ai_focus_crypto_combo", None)
+        if crypto_combo is not None:
+            crypto_combo.configure(values=self.ai_focus_crypto_values)
+            if self.ai_focus_crypto_values and self.ai_focus_crypto_pick_var.get().strip().upper() not in self.ai_focus_crypto_values:
+                self.ai_focus_crypto_pick_var.set(self.ai_focus_crypto_values[0])
+
+    def _add_focus_stock(self) -> None:
+        symbol = self.ai_focus_stock_pick_var.get().strip().upper()
+        if not symbol:
+            return
+        if symbol not in self.ai_focus_stock_selected:
+            self.ai_focus_stock_selected.append(symbol)
+        self._sync_focus_symbol_vars_from_selected()
+        self._persist_ai_focus_controls(show_message=False)
+
+    def _remove_focus_stock(self) -> None:
+        symbol = self.ai_focus_stock_pick_var.get().strip().upper()
+        if symbol in self.ai_focus_stock_selected:
+            self.ai_focus_stock_selected.remove(symbol)
+        self._sync_focus_symbol_vars_from_selected()
+        self._persist_ai_focus_controls(show_message=False)
+
+    def _clear_focus_stocks(self) -> None:
+        self.ai_focus_stock_selected = []
+        self._sync_focus_symbol_vars_from_selected()
+        self._persist_ai_focus_controls(show_message=False)
+
+    def _add_focus_crypto(self) -> None:
+        symbol = self.ai_focus_crypto_pick_var.get().strip().upper()
+        if not symbol:
+            return
+        if symbol not in self.ai_focus_crypto_selected:
+            self.ai_focus_crypto_selected.append(symbol)
+        self._sync_focus_symbol_vars_from_selected()
+        self._persist_ai_focus_controls(show_message=False)
+
+    def _remove_focus_crypto(self) -> None:
+        symbol = self.ai_focus_crypto_pick_var.get().strip().upper()
+        if symbol in self.ai_focus_crypto_selected:
+            self.ai_focus_crypto_selected.remove(symbol)
+        self._sync_focus_symbol_vars_from_selected()
+        self._persist_ai_focus_controls(show_message=False)
+
+    def _clear_focus_cryptos(self) -> None:
+        self.ai_focus_crypto_selected = []
+        self._sync_focus_symbol_vars_from_selected()
+        self._persist_ai_focus_controls(show_message=False)
 
     def _toggle_ai_stocks_execution(self) -> None:
         current = bool(self.ai_auto_trade_stocks_var.get())
@@ -4295,7 +5951,14 @@ class BotControlWindow:
             color = "#1f5f2a" if learning_running else "#9a6700"
             self.ai_badge_learning_button.configure(bg=color, activebackground=color)
 
+        scanner_state = str(status.get("scanner", "Stopped") or "Stopped")
+        data_tick = _fmt_runtime_time(status.get("last_data_update", "N/A"))
+        self.ai_pending_status_var.set(f"IA pendiente: {'SI' if scanner_state == 'Running' else 'NO'} | tick={data_tick}")
+
         lines = [
+            f"Cuenta scanner IA activa: {status.get('active_worker_account', 'N/A') or 'N/A'}",
+            f"Motor de decisión scanner: {status.get('scanner_decision_engine', 'heuristic')}",
+            f"Actor decisiones: {status.get('decision_actor', 'Heurística')}",
             f"Estado del DataCollector: {status.get('collector', 'Stopped')}",
             f"Estado del SignalScanner: {status.get('scanner', 'Stopped')}",
             f"Estado del OutcomeLabeler: {status.get('labeler', 'Stopped')}",
@@ -4331,7 +5994,11 @@ class BotControlWindow:
         self.ai_max_capital_var.set(str(funds.get("max_capital_assigned", settings.ai_default_max_capital_assigned)))
         self.ai_max_position_var.set(str(funds.get("max_position_size", settings.ai_default_max_position_size)))
         self.ai_max_daily_loss_var.set(str(funds.get("max_daily_loss", settings.ai_default_max_daily_loss)))
-        self.ai_target_profit_var.set(str(getattr(self.ai_trading_brain, "_ai_target_profit_per_share", getattr(settings, "ai_target_profit_per_share", 0.05))))
+        stock_target = float(getattr(self.ai_trading_brain, "_ai_target_profit_per_operation_stocks", getattr(settings, "ai_target_profit_per_operation_stocks", getattr(settings, "ai_target_profit_per_operation", 0.05))))
+        crypto_target = float(getattr(self.ai_trading_brain, "_ai_target_profit_per_operation_cryptos", getattr(settings, "ai_target_profit_per_operation_cryptos", getattr(settings, "ai_target_profit_per_operation", 0.05))))
+        self.ai_target_profit_var.set(str(stock_target))
+        self.ai_target_profit_stocks_var.set(str(stock_target))
+        self.ai_target_profit_cryptos_var.set(str(crypto_target))
         self.ai_bot_enabled_var.set(1 if bool(funds.get("enabled", 1)) else 0)
         self.ai_signal_only_var.set(1 if bool(runtime.get("signal_only_mode", settings.ai_signal_only_mode)) else 0)
         self.ai_paper_trading_var.set(1 if bool(runtime.get("paper_trading", settings.paper_trading)) else 0)
@@ -4340,6 +6007,33 @@ class BotControlWindow:
         self.ai_kill_switch_var.set(1 if bool(runtime.get("kill_switch", 0)) else 0)
         self.ai_auto_trade_stocks_var.set(1 if bool(runtime.get("auto_trade_stocks_enabled", 1)) else 0)
         self.ai_auto_trade_cryptos_var.set(1 if bool(runtime.get("auto_trade_cryptos_enabled", 1)) else 0)
+        self.ai_diag_signal_only_var.set(self.ai_signal_only_var.get())
+        self.ai_diag_auto_stocks_var.set(self.ai_auto_trade_stocks_var.get())
+        self.ai_diag_auto_cryptos_var.set(self.ai_auto_trade_cryptos_var.get())
+        engine = str(runtime.get("scanner_decision_engine", "heuristic") or "heuristic").strip().lower()
+        self.ai_decision_engine_var.set(engine if engine in {"heuristic", "model"} else "heuristic")
+        focus = self.ai_trading_brain.get_focus_symbols(account_name)
+        self.ai_focus_stocks_only_var.set(1 if bool(focus.get("stocks_only", False)) else 0)
+        self.ai_focus_cryptos_only_var.set(1 if bool(focus.get("cryptos_only", False)) else 0)
+        self.ai_focus_stocks_symbols_var.set(str(focus.get("stocks_symbols_raw", "") or ""))
+        self.ai_focus_cryptos_symbols_var.set(str(focus.get("cryptos_symbols_raw", "") or ""))
+
+        persisted_focus: dict[str, Any] = {}
+        cached_state = getattr(self, "_ai_ui_state_cache", {})
+        if isinstance(cached_state, dict):
+            by_account = cached_state.get("ai_focus_by_account", {})
+            if isinstance(by_account, dict):
+                candidate = by_account.get(account_name, {})
+                if isinstance(candidate, dict):
+                    persisted_focus = candidate
+        if persisted_focus:
+            self.ai_focus_stocks_only_var.set(1 if bool(persisted_focus.get("stocks_only", self.ai_focus_stocks_only_var.get())) else 0)
+            self.ai_focus_cryptos_only_var.set(1 if bool(persisted_focus.get("cryptos_only", self.ai_focus_cryptos_only_var.get())) else 0)
+            self.ai_focus_stocks_symbols_var.set(str(persisted_focus.get("stocks_symbols", self.ai_focus_stocks_symbols_var.get()) or ""))
+            self.ai_focus_cryptos_symbols_var.set(str(persisted_focus.get("cryptos_symbols", self.ai_focus_cryptos_symbols_var.get()) or ""))
+
+        self._load_focus_selected_from_vars()
+        self._refresh_ai_focus_symbol_options_async()
 
     def _save_ai_runtime_controls(self) -> None:
         self._persist_ai_runtime_controls(show_message=True)
@@ -4504,7 +6198,245 @@ class BotControlWindow:
         self.ai_news_input.insert("1.0", autofill_text)
         self._ai_news_autofill_text = autofill_text
 
+    def _refresh_ai_crypto_monitor_view(self) -> None:
+        widget = getattr(self, "ai_crypto_monitor_text", None)
+        if widget is None:
+            return
+
+        account_name = self.account_var.get().strip()
+        if not account_name:
+            self._set_text_widget(widget, "Selecciona una cuenta para ver el monitoreo crypto IA.")
+            return
+
+        try:
+            watchlist = self.ai_trading_brain.database.list_watchlist_assets(active_only=True)
+        except Exception as ex:
+            self._set_text_widget(widget, f"No se pudo leer watchlist crypto: {ex}")
+            return
+
+        crypto_symbols = sorted(
+            {
+                str(row.get("symbol", "")).upper()
+                for row in watchlist
+                if str(row.get("symbol", "")).strip() and str(row.get("asset_type", "")).lower() == "crypto"
+            }
+        )
+
+        if not crypto_symbols:
+            self._set_text_widget(widget, "No hay cryptos activas en la watchlist para monitoreo IA.")
+            return
+
+        lines: list[str] = []
+        lines.append(f"Cuenta: {account_name}")
+        lines.append(f"Cryptos monitoreadas: {', '.join(crypto_symbols)}")
+        lines.append("")
+
+        for index, symbol in enumerate(crypto_symbols, start=1):
+            try:
+                payload = self.ai_trading_brain.get_symbol_diagnostics(
+                    account_name=account_name,
+                    symbol=symbol,
+                    asset_type="crypto",
+                )
+            except Exception as ex:
+                lines.append(f"{index}. {symbol}")
+                lines.append("1. Ultima señal: N/A")
+                lines.append(f"2. Ultimo bloqueo exacto: error_diagnostico:{ex}")
+                lines.append("3. Ajuste minimo para pasar de WATCH a BUY: No disponible por error de diagnostico")
+                lines.append("")
+                continue
+
+            latest_signal = payload.get("latest_signal") or {}
+            signal_type = str(latest_signal.get("signal_type", "N/A") or "N/A")
+            confidence = float(latest_signal.get("confidence_score", 0.0) or 0.0)
+            signal_reason = str(latest_signal.get("reason", "") or payload.get("latest_signal_text", "Sin señal"))
+            signal_reason = signal_reason.replace("\n", " ").strip()
+
+            latest_decision = payload.get("latest_decision") or {}
+            exact_block = str(latest_decision.get("blocked_reason", "") or "").strip()
+            if not exact_block:
+                blockers = payload.get("entry_blockers", []) or []
+                exact_block = str(blockers[0]) if blockers else "Sin bloqueo activo"
+
+            can_enter_now = bool(payload.get("can_enter_now", False))
+            recommendations = payload.get("recommendations", []) or []
+            if can_enter_now and signal_type in {"BUY", "BUY_SMALL"}:
+                min_adjustment = "Ninguno: ya puede entrar a operar."
+            elif recommendations:
+                first = recommendations[0]
+                setting = str(first.get("setting", "N/A") or "N/A")
+                current = first.get("current", "N/A")
+                suggested = first.get("suggested", "N/A")
+                min_adjustment = f"{setting}: {current} -> {suggested}"
+            else:
+                min_adjustment = "Sin ajuste sugerido automatico; revisar spread, volumen y bloqueos actuales."
+
+            lines.append(f"{index}. {symbol}")
+            lines.append(f"1. Ultima señal: {signal_type} | confianza={confidence:.2f} | razon={signal_reason[:180]}")
+            lines.append(f"2. Ultimo bloqueo exacto: {exact_block}")
+            lines.append(f"3. Ajuste minimo para pasar de WATCH a BUY: {min_adjustment}")
+            lines.append("")
+
+        self._set_text_widget(widget, "\n".join(lines).strip())
+
     def _show_ai_signal_history(self) -> None:
+        if self.ai_history_window is not None and self.ai_history_window.winfo_exists():
+            self.ai_history_window.deiconify()
+            self.ai_history_window.lift()
+            self.ai_history_window.focus_force()
+            self._refresh_ai_history_window()
+            return
+
+        window = tk.Toplevel(self.root)
+        window.title("Historial de operaciones IA")
+        self._fit_window_to_screen(window, preferred_width=1280, preferred_height=760, min_width=980, min_height=620)
+
+        container = ttk.Frame(window, padding=12)
+        container.pack(fill="both", expand=True)
+
+        filters = ttk.LabelFrame(container, text="Filtros")
+        filters.pack(fill="x", pady=(0, 8))
+        ttk.Label(filters, text="Cuenta").pack(side="left", padx=(8, 4), pady=8)
+        account_combo = ttk.Combobox(filters, textvariable=self.ai_history_account_filter_var, state="readonly", width=18)
+        account_combo.pack(side="left", padx=(0, 8), pady=8)
+        ttk.Label(filters, text="Lado").pack(side="left", padx=(8, 4), pady=8)
+        side_combo = ttk.Combobox(filters, textvariable=self.ai_history_side_filter_var, state="readonly", width=10)
+        side_combo.pack(side="left", padx=(0, 8), pady=8)
+        ttk.Label(filters, text="Motor").pack(side="left", padx=(8, 4), pady=8)
+        engine_combo = ttk.Combobox(filters, textvariable=self.ai_history_engine_filter_var, state="readonly", width=12)
+        engine_combo.pack(side="left", padx=(0, 8), pady=8)
+        ttk.Label(filters, text="Status").pack(side="left", padx=(8, 4), pady=8)
+        status_combo = ttk.Combobox(filters, textvariable=self.ai_history_status_filter_var, state="readonly", width=14)
+        status_combo.pack(side="left", padx=(0, 8), pady=8)
+        ttk.Button(filters, text="Refrescar", command=lambda: self._run_async(self._refresh_ai_history_window)).pack(side="right", padx=(8, 8), pady=8)
+
+        columns = ("timestamp", "account", "symbol", "side", "status", "engine", "model", "qty", "filled", "order")
+        tree = ttk.Treeview(container, columns=columns, show="headings", height=22)
+        headings = {
+            "timestamp": "Fecha",
+            "account": "Cuenta",
+            "symbol": "Símbolo",
+            "side": "Lado",
+            "status": "Status",
+            "engine": "Motor",
+            "model": "Modelo",
+            "qty": "Qty",
+            "filled": "Filled",
+            "order": "Order ID",
+        }
+        widths = {
+            "timestamp": 150,
+            "account": 120,
+            "symbol": 90,
+            "side": 70,
+            "status": 100,
+            "engine": 90,
+            "model": 170,
+            "qty": 90,
+            "filled": 90,
+            "order": 210,
+        }
+        for column in columns:
+            tree.heading(column, text=headings[column])
+            tree.column(column, width=widths[column], anchor="w")
+
+        scrollbar = ttk.Scrollbar(container, orient="vertical", command=tree.yview)
+        tree.configure(yscrollcommand=scrollbar.set)
+        tree.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        account_combo.bind("<<ComboboxSelected>>", lambda _event: self._refresh_ai_history_window())
+        side_combo.bind("<<ComboboxSelected>>", lambda _event: self._refresh_ai_history_window())
+        engine_combo.bind("<<ComboboxSelected>>", lambda _event: self._refresh_ai_history_window())
+        status_combo.bind("<<ComboboxSelected>>", lambda _event: self._refresh_ai_history_window())
+
+        self.ai_history_window = window
+        self.ai_history_tree = tree
+        window.protocol("WM_DELETE_WINDOW", self._on_close_ai_history_window)
+        self._refresh_ai_history_window()
+        return
+
+    def _on_close_ai_history_window(self) -> None:
+        if self.ai_history_window is not None and self.ai_history_window.winfo_exists():
+            self.ai_history_window.withdraw()
+
+    def _refresh_ai_history_window(self) -> None:
+        tree = self.ai_history_tree
+        if tree is None:
+            return
+
+        account_names = list((self.account_profiles or {}).keys())
+        selected_account = str(self.ai_history_account_filter_var.get() or "Todas")
+        selected_side = str(self.ai_history_side_filter_var.get() or "Todos")
+        selected_engine = str(self.ai_history_engine_filter_var.get() or "Todos")
+        selected_status = str(self.ai_history_status_filter_var.get() or "Todos")
+
+        operations: list[dict[str, Any]] = []
+        for account_name in account_names:
+            try:
+                rows = self.ai_trading_brain.list_history(account_name, limit=300, actor_filter="ia")
+            except Exception:
+                continue
+            for row in rows:
+                payload = dict(row)
+                payload["account_name"] = account_name
+                operations.append(payload)
+
+        account_values = ["Todas"] + sorted({str(item.get("account_name", "")) for item in operations if str(item.get("account_name", ""))})
+        side_values = ["Todos"] + sorted({str(item.get("side", "")) for item in operations if str(item.get("side", ""))})
+        engine_values = ["Todos"] + sorted({str(item.get("decision_engine", "unknown") or "unknown") for item in operations})
+        status_values = ["Todos"] + sorted({str(item.get("status", "")) for item in operations if str(item.get("status", ""))})
+
+        for widget, values, current in (
+            (self.ai_history_window.winfo_children()[0].winfo_children()[0].winfo_children()[1], account_values, selected_account),
+            (self.ai_history_window.winfo_children()[0].winfo_children()[0].winfo_children()[3], side_values, selected_side),
+            (self.ai_history_window.winfo_children()[0].winfo_children()[0].winfo_children()[5], engine_values, selected_engine),
+            (self.ai_history_window.winfo_children()[0].winfo_children()[0].winfo_children()[7], status_values, selected_status),
+        ):
+            widget.configure(values=values)
+            if current not in values:
+                if widget is self.ai_history_window.winfo_children()[0].winfo_children()[0].winfo_children()[1]:
+                    self.ai_history_account_filter_var.set("Todas")
+                elif widget is self.ai_history_window.winfo_children()[0].winfo_children()[0].winfo_children()[3]:
+                    self.ai_history_side_filter_var.set("Todos")
+                elif widget is self.ai_history_window.winfo_children()[0].winfo_children()[0].winfo_children()[5]:
+                    self.ai_history_engine_filter_var.set("Todos")
+                else:
+                    self.ai_history_status_filter_var.set("Todos")
+
+        filtered = []
+        for item in operations:
+            if self.ai_history_account_filter_var.get() != "Todas" and str(item.get("account_name", "")) != self.ai_history_account_filter_var.get():
+                continue
+            if self.ai_history_side_filter_var.get() != "Todos" and str(item.get("side", "")) != self.ai_history_side_filter_var.get():
+                continue
+            if self.ai_history_engine_filter_var.get() != "Todos" and str(item.get("decision_engine", "unknown") or "unknown") != self.ai_history_engine_filter_var.get():
+                continue
+            if self.ai_history_status_filter_var.get() != "Todos" and str(item.get("status", "")) != self.ai_history_status_filter_var.get():
+                continue
+            filtered.append(item)
+
+        for item_id in tree.get_children():
+            tree.delete(item_id)
+
+        for item in filtered:
+            tree.insert(
+                "",
+                tk.END,
+                values=(
+                    str(item.get("timestamp", "N/A")),
+                    str(item.get("account_name", "N/A")),
+                    str(item.get("symbol", "N/A")),
+                    str(item.get("side", "N/A")).upper(),
+                    str(item.get("status", "N/A")),
+                    str(item.get("decision_engine", "unknown") or "unknown"),
+                    str(item.get("model_version_display", "") or "N/A"),
+                    f"{float(item.get('qty', 0.0) or 0.0):.6f}",
+                    f"{float(item.get('filled_price', 0.0) or 0.0):.6f}",
+                    str(item.get("broker_order_id", "N/A")),
+                ),
+            )
+
         def _fmt_ts(value: Any) -> str:
             raw = str(value or "")
             if not raw:
@@ -4517,21 +6449,47 @@ class BotControlWindow:
 
         operations: list[dict[str, Any]] = []
         account_profiles = self.account_profiles or {}
+
+        generic_names = {"paper", "real", "cuenta actual"}
+        canonical_by_fingerprint: dict[tuple[str, str, str], str] = {}
+        for profile_name, profile_payload in account_profiles.items():
+            fingerprint = (
+                str(profile_payload.get("endpoint", "") or "").strip(),
+                str(profile_payload.get("key", "") or "").strip(),
+                str(profile_payload.get("secret", "") or "").strip(),
+            )
+            if not all(fingerprint):
+                continue
+            current = canonical_by_fingerprint.get(fingerprint)
+            if current is None:
+                canonical_by_fingerprint[fingerprint] = profile_name
+                continue
+            current_is_generic = str(current).strip().lower() in generic_names
+            candidate_is_generic = str(profile_name).strip().lower() in generic_names
+            if current_is_generic and not candidate_is_generic:
+                canonical_by_fingerprint[fingerprint] = profile_name
+
         for account_name in account_profiles.keys():
             try:
-                rows = self.ai_trading_brain.list_history(account_name, limit=80)
+                rows = self.ai_trading_brain.list_history(account_name, limit=80, actor_filter="ia")
             except Exception:
                 continue
 
             profile = account_profiles.get(account_name, {})
             mode = str(profile.get("mode", "N/A"))
+            fingerprint = (
+                str(profile.get("endpoint", "") or "").strip(),
+                str(profile.get("key", "") or "").strip(),
+                str(profile.get("secret", "") or "").strip(),
+            )
+            display_account_name = canonical_by_fingerprint.get(fingerprint, account_name)
             for row in rows:
                 side = str(row.get("side", "")).lower().strip()
                 if side not in {"buy", "sell"}:
                     continue
                 operations.append(
                     {
-                        "account_name": account_name,
+                        "account_name": display_account_name,
                         "mode": mode,
                         "timestamp": str(row.get("timestamp", "")),
                         "symbol": str(row.get("symbol", "N/A")),
@@ -4542,6 +6500,8 @@ class BotControlWindow:
                         "filled_price": float(row.get("filled_price", 0.0) or 0.0),
                         "status": str(row.get("status", "N/A")),
                         "initiated_by": str(row.get("initiated_by", "unknown") or "unknown"),
+                        "decision_engine": str(row.get("decision_engine", "unknown") or "unknown"),
+                        "model_version_display": str(row.get("model_version_display", "") or ""),
                         "broker_order_id": str(row.get("broker_order_id", "") or "N/A"),
                         "signal_id": row.get("signal_id", "N/A"),
                     }
@@ -4570,7 +6530,7 @@ class BotControlWindow:
                 f"{_fmt_ts(item.get('timestamp'))} | cuenta={item.get('account_name', 'N/A')} ({item.get('mode', 'N/A')}) | "
                 f"{item.get('symbol', 'N/A')} ({item.get('asset_type', 'N/A')}) | side={item.get('side', 'N/A')} | "
                 f"qty={float(item.get('qty', 0.0) or 0.0):.6f} | status={item.get('status', 'N/A')} | "
-                f"origen={item.get('initiated_by', 'unknown')}"
+                f"origen={item.get('initiated_by', 'unknown')} | motor={item.get('decision_engine', 'unknown')} | modelo={item.get('model_version_display', 'N/A') or 'N/A'}"
             )
             lines.append(
                 f"  limit={float(item.get('limit_price', 0.0) or 0.0):.6f} | "
@@ -4582,14 +6542,17 @@ class BotControlWindow:
         self._set_text_widget(self.ai_signal_text, "\n".join(lines))
 
     def _refresh_ai_history_view(self) -> None:
-        history = self.ai_trading_brain.list_history(self.account_var.get().strip(), limit=40)
+        history = self.ai_trading_brain.list_history(self.account_var.get().strip(), limit=40, actor_filter="ia")
         if not history:
             self._set_text_widget(self.ai_history_text, "Sin trades IA registrados.")
             return
         lines = []
         for item in history:
+            engine = str(item.get('decision_engine', 'unknown') or 'unknown')
+            model_version = str(item.get('model_version_display', '') or '')
+            model_text = model_version if model_version else 'N/A'
             lines.append(
-                f"{item.get('timestamp', 'N/A')} | {item.get('symbol', 'N/A')} | {item.get('side', 'N/A')} | qty={float(item.get('qty', 0.0) or 0.0):.6f} | filled={float(item.get('filled_price', 0.0) or 0.0):.6f} | status={item.get('status', 'N/A')} | signal={item.get('signal_id', 'N/A')} | origen={item.get('initiated_by', 'unknown')}"
+                f"{item.get('timestamp', 'N/A')} | {item.get('symbol', 'N/A')} | {item.get('side', 'N/A')} | qty={float(item.get('qty', 0.0) or 0.0):.6f} | filled={float(item.get('filled_price', 0.0) or 0.0):.6f} | status={item.get('status', 'N/A')} | motor={engine} | modelo={model_text} | origen={item.get('initiated_by', 'unknown')}"
             )
         self._set_text_widget(self.ai_history_text, "\n".join(lines))
 
@@ -4613,6 +6576,7 @@ class BotControlWindow:
 
         candidates_payload = self.ai_trading_brain.list_model_candidates(limit=20)
         approved = str(candidates_payload.get("approved", "") or "")
+        approved_valid = bool(candidates_payload.get("approved_valid", False))
         latest = str(candidates_payload.get("latest", "") or "")
         frozen = str(candidates_payload.get("frozen", "") or "")
         candidate_rows = list(candidates_payload.get("rows", []))
@@ -4643,10 +6607,12 @@ class BotControlWindow:
 
         approved_run = self._training_run_by_version(approved) if approved else None
         pending_run = self._training_run_by_version(pending_version) if pending_candidate else None
+        evaluation_row = pending_run or selected_row or training
+        evaluation_version = str((evaluation_row or {}).get("model_version", "") or selected_version or pending_version or "N/A")
         recommendation = self._build_model_approval_recommendation(
-            latest_run=selected_row or pending_run or training,
+            latest_run=evaluation_row,
             approved_run=approved_run,
-            has_pending=bool(selected_version and selected_version != approved),
+            has_pending=bool(evaluation_version and evaluation_version != approved and evaluation_version != "N/A"),
         )
         governance_event = self._latest_model_governance_event()
         ranked_candidates = sorted(
@@ -4655,8 +6621,23 @@ class BotControlWindow:
             reverse=True,
         )
         best_candidate = self._best_approvable_candidate(ranked_candidates, approved_run)
+        if best_candidate is not None:
+            best_version = str(best_candidate.get("model_version", "") or "")
+            if best_version and evaluation_version and best_version != evaluation_version:
+                rec_action = str(recommendation.get("action", "esperar")).lower()
+                if rec_action == "aprobar":
+                    recommendation = {
+                        "action": "evaluar",
+                        "reason": (
+                            f"Existe un candidato mejor ({best_version}) que el evaluado ({evaluation_version}); "
+                            "revisar y aprobar solo el mejor."
+                        ),
+                        "comparison": recommendation.get("comparison", "N/A"),
+                    }
         selected_score = self._score_model_candidate(selected_row or training)
         approved_score = self._score_model_candidate(approved_run) if approved_run is not None else 0.0
+        approved_reference_exists = bool(approved)
+        approved_baseline_missing = approved_reference_exists and approved_run is None
         selected_better_than_approved = False
         if approved_run is None:
             selected_better_than_approved = True
@@ -4666,7 +6647,7 @@ class BotControlWindow:
             selected_better_than_approved = selected_score > approved_score
 
         recommended_action = str(recommendation.get("action", "esperar")).lower()
-        if selected_version and selected_version == approved:
+        if selected_version and selected_version == approved and approved_valid:
             recommendation_line = "RECOMENDACION: MODELO APROBADO ACTUAL"
             self._apply_model_recommendation_semaphore("VERDE", "#1f7a1f")
         elif recommended_action == "aprobar":
@@ -4679,14 +6660,23 @@ class BotControlWindow:
             recommendation_line = "RECOMENDACION: ESPERAR siguiente ciclo"
             self._apply_model_recommendation_semaphore("ROJO", "#8a1c1c")
 
-        current_version = approved or latest or "heuristic"
-        selected_state = "APROBADO" if selected_version == approved else ("CONGELADO" if selected_version == frozen else ("LATEST" if selected_version == latest else "CANDIDATO"))
+        current_version = approved if approved_valid else (latest or "sin_aprobado_valido")
+        selected_state = (
+            "APROBADO"
+            if selected_version == approved and approved_valid
+            else ("APROBADO INVALIDO" if selected_version == approved and not approved_valid else ("CONGELADO" if selected_version == frozen else ("LATEST" if selected_version == latest else "CANDIDATO")))
+        )
         selected_alias = str((selected_row or {}).get("alias", "") or "").strip()
         self.ai_model_alias_var.set(selected_alias)
         cycle_text = self._format_duration_hhmmss(training_cycle_seconds)
         elapsed_text = self._format_duration_hhmmss(training_elapsed_seconds)
         remaining_text = self._format_duration_hhmmss(training_remaining_seconds)
         selected_training_status = "FINALIZADO" if selected_version else "N/A"
+        approved_score_text = f"{approved_score:.3f}" if approved_run is not None else "N/A (sin baseline histórico)"
+        approved_pf_text = f"{float((approved_run or {}).get('profit_factor', 0.0) or 0.0):.4f}" if approved_run is not None else "N/A"
+        approved_dd_text = f"{float((approved_run or {}).get('max_drawdown', 0.0) or 0.0):.4f}" if approved_run is not None else "N/A"
+        approved_recall_text = f"{float((approved_run or {}).get('recall', 0.0) or 0.0):.4f}" if approved_run is not None else "N/A"
+        approved_precision_text = f"{float((approved_run or {}).get('precision', 0.0) or 0.0):.4f}" if approved_run is not None else "N/A"
         lines = [
             f"Version actual: {current_version}",
             f"Version seleccionada: {selected_version or 'N/A'}",
@@ -4714,18 +6704,23 @@ class BotControlWindow:
             "",
             recommendation_line,
             f"Motivo: {recommendation.get('reason', 'sin recomendacion')}",
+            f"Candidato evaluado para recomendacion: {evaluation_version}",
             f"¿Es mejor que el aprobado actual?: {'SI' if selected_better_than_approved else 'NO'}",
-            f"Score seleccionado vs aprobado: {selected_score:.3f} vs {approved_score:.3f}",
-            f"Profit factor seleccionado vs aprobado: {float((selected_row or training).get('profit_factor', 0.0) or 0.0):.4f} vs {float((approved_run or {}).get('profit_factor', 0.0) or 0.0):.4f}",
-            f"Drawdown seleccionado vs aprobado: {float((selected_row or training).get('max_drawdown', 0.0) or 0.0):.4f} vs {float((approved_run or {}).get('max_drawdown', 0.0) or 0.0):.4f}",
-            f"Recall seleccionado vs aprobado: {float((selected_row or training).get('recall', 0.0) or 0.0):.4f} vs {float((approved_run or {}).get('recall', 0.0) or 0.0):.4f}",
-            f"Precision seleccionado vs aprobado: {float((selected_row or training).get('precision', 0.0) or 0.0):.4f} vs {float((approved_run or {}).get('precision', 0.0) or 0.0):.4f}",
+            f"Score seleccionado vs aprobado: {selected_score:.3f} vs {approved_score_text}",
+            f"Profit factor seleccionado vs aprobado: {float((selected_row or training).get('profit_factor', 0.0) or 0.0):.4f} vs {approved_pf_text}",
+            f"Drawdown seleccionado vs aprobado: {float((selected_row or training).get('max_drawdown', 0.0) or 0.0):.4f} vs {approved_dd_text}",
+            f"Recall seleccionado vs aprobado: {float((selected_row or training).get('recall', 0.0) or 0.0):.4f} vs {approved_recall_text}",
+            f"Precision seleccionado vs aprobado: {float((selected_row or training).get('precision', 0.0) or 0.0):.4f} vs {approved_precision_text}",
             f"Comparativa vs aprobado: {recommendation.get('comparison', 'N/A')}",
             f"Ultimo evento de aprobacion/rollback: {governance_event}",
             f"Mejor candidato actual: {self._describe_best_candidate(best_candidate)}",
             "",
             "Candidatos recientes (fecha | version | estado | semaforo | score | sugerencia):",
         ]
+        if approved_baseline_missing:
+            lines.insert(1, "Advertencia: la versión aprobada no tiene baseline histórico en la base de entrenamiento.")
+        if approved and not approved_valid:
+            lines.insert(1, f"Advertencia: la versión aprobada referenciada ({approved}) es inválida para comparar o usar.")
 
         for row in candidate_rows[:10]:
             version = str(row.get("model_version", "") or "")
@@ -4734,6 +6729,7 @@ class BotControlWindow:
             is_approved = bool(row.get("is_approved", False))
             is_frozen = bool(row.get("is_frozen", False))
             is_selected = version == selected_version
+            guidance = self._candidate_keep_delete_guidance(row=row, approved_version=approved, best_candidate=best_candidate)
             if is_approved:
                 state = "APROBADO"
                 sem = "VERDE"
@@ -4745,9 +6741,10 @@ class BotControlWindow:
                 )
                 action = str(rec.get("action", "esperar")).lower()
                 sem = "VERDE" if action == "aprobar" else ("AMARILLO" if action == "evaluar" else "ROJO")
+                if guidance.startswith("ELIMINAR"):
+                    sem = "ROJO"
                 state = "CONGELADO" if is_frozen else "CANDIDATO"
             score = self._score_model_candidate(row)
-            guidance = self._candidate_keep_delete_guidance(row=row, approved_version=approved, best_candidate=best_candidate)
             prefix = ">" if is_selected else "-"
             label = f"{version} ({alias})" if alias else version
             lines.append(f"{prefix} {ts} | {label} | {state} | {sem} | {score:.3f} | {guidance}")
@@ -5255,8 +7252,15 @@ class BotControlWindow:
         if focus_general:
             self._focus_general_tab()
         self.output.configure(state="normal")
-        self.output.delete("1.0", tk.END)
-        self.output.insert(tk.END, message)
+        self.output.insert(tk.END, str(message).strip() + "\n")
+        try:
+            line_count = int(float(self.output.index("end-1c").split(".")[0]))
+            extra = line_count - self._ui_max_log_lines
+            if extra > 0:
+                self.output.delete("1.0", f"{extra + 1}.0")
+        except Exception:
+            pass
+        self.output.see(tk.END)
         self.output.configure(state="disabled")
 
     def _set_buttons_state(self, state: str) -> None:
@@ -5276,6 +7280,39 @@ class BotControlWindow:
         self.refresh_stocks_button.configure(state=state)
         self.cancel_entry_watch_button.configure(state=state)
         self.nyse_refresh_button.configure(state=state)
+
+    @staticmethod
+    def _fit_window_to_screen(
+        window: tk.Misc,
+        *,
+        preferred_width: int,
+        preferred_height: int,
+        min_width: int,
+        min_height: int,
+    ) -> None:
+        screen_w = max(int(window.winfo_screenwidth() or preferred_width), preferred_width)
+        screen_h = max(int(window.winfo_screenheight() or preferred_height), preferred_height)
+
+        usable_w = max(720, screen_w - 80)
+        usable_h = max(560, screen_h - 120)
+
+        width = min(int(preferred_width), usable_w)
+        height = min(int(preferred_height), usable_h)
+
+        min_w = max(640, min(int(min_width), width))
+        min_h = max(520, min(int(min_height), height))
+
+        try:
+            window.minsize(min_w, min_h)
+        except Exception:
+            pass
+
+        x = max((screen_w - width) // 2, 0)
+        y = max((screen_h - height) // 2, 0)
+        try:
+            window.geometry(f"{width}x{height}+{x}+{y}")
+        except Exception:
+            window.geometry(f"{width}x{height}")
 
     def _apply_selected_account(self, update_status: bool, require_credentials: bool) -> None:
         selected = self.account_var.get().strip()
@@ -5431,6 +7468,7 @@ class BotControlWindow:
     def _on_monitor_result(self, message: str) -> None:
         if message:
             self.status_var.set(message)
+        self._sync_ai_watch_tabs_from_recent_trades_async()
         threading.Thread(target=self._refresh_accounts_header_summary, daemon=True).start()
         threading.Thread(target=lambda: self._refresh_dashboard(show_output=False), daemon=True).start()
 

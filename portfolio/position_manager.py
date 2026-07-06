@@ -496,6 +496,160 @@ class PositionManager:
             "immediate_exit": immediate_exit,
         }
 
+    def open_position_limit(
+        self,
+        symbol: str,
+        qty: float,
+        reason: str,
+        spread_pct: float = 0.0,
+        target_profit_per_share: float | None = None,
+        target_profit_total: float | None = None,
+    ) -> dict[str, Any]:
+        symbol = symbol.upper()
+
+        can_open, reason_text = self.can_open_new_trade(symbol)
+        if not can_open:
+            raise ValueError(reason_text)
+
+        requested_qty = float(qty)
+        if requested_qty <= 0:
+            raise ValueError("La cantidad de compra debe ser mayor que cero")
+
+        current_price = self.market_data.get_last_price(symbol)
+        quote = self.market_data.get_latest_quote(symbol)
+        _ = max(float(target_profit_total or 0.0), 0.0)
+        configured_target_profit_per_share = float(target_profit_per_share or self.target_profit_per_share)
+        if configured_target_profit_per_share <= 0:
+            raise ValueError("El target de ganancia debe ser mayor que cero")
+
+        entry_tif = "gtc"
+        if self._is_crypto_symbol(symbol):
+            configured_tif = str(getattr(self.settings, "crypto_entry_time_in_force", "gtc") or "gtc").lower().strip()
+            entry_tif = configured_tif or "gtc"
+
+        limit_price = self._suggest_limit_entry_price(symbol=symbol, current_price=current_price, quote=quote)
+        buy_submitted_at = time.monotonic()
+        order = self.order_manager.create_limit_order(
+            symbol=symbol,
+            qty=requested_qty,
+            side="buy",
+            limit_price=limit_price,
+            time_in_force=entry_tif,
+        )
+
+        resolved_order = self._wait_order_fill(
+            order,
+            requested_qty=requested_qty,
+            max_attempts=6,
+            sleep_seconds=0.35,
+            stop_on_any_fill=True,
+        )
+        order_status = str(resolved_order.get("status", "") or "").lower().strip()
+        filled_qty = float(resolved_order.get("filled_qty", 0.0) or 0.0)
+
+        if filled_qty <= 1e-8:
+            order_id = str(resolved_order.get("id", order.get("id", "")) or "").strip()
+            if order_id and order_status not in {"filled", "canceled", "rejected", "expired"}:
+                try:
+                    self.order_manager.cancel_order(order_id)
+                    order_status = "canceled"
+                except Exception:
+                    pass
+            raise ValueError(
+                (
+                    f"Orden limit IA no llenó a tiempo (status={order_status or 'unknown'}, "
+                    f"limit={limit_price:.8f}). Se reintentará en el siguiente ciclo."
+                )
+            )
+
+        if order_status != "filled" or filled_qty < (requested_qty - 1e-8):
+            self.logger.warning(
+                "Entrada limit parcial %s status=%s filled_qty=%.8f requested_qty=%.8f limit=%.8f",
+                symbol,
+                order_status,
+                filled_qty,
+                requested_qty,
+                limit_price,
+            )
+
+        filled_price = float(
+            resolved_order.get("filled_avg_price")
+            or resolved_order.get("avg_entry_price")
+            or order.get("filled_avg_price")
+            or order.get("avg_entry_price")
+            or limit_price
+        )
+        entry_cost = filled_price * filled_qty
+        if self._is_crypto_symbol(symbol) and configured_target_profit_per_share <= 0.0:
+            crypto_target_profit = self._crypto_target_profit_amount(symbol, filled_price)
+            effective_target_profit_per_share = max(configured_target_profit_per_share, crypto_target_profit)
+        else:
+            effective_target_profit_per_share = configured_target_profit_per_share
+        trade_id = str(uuid.uuid4())
+        slippage = abs(filled_price - current_price)
+        self.journal.record(
+            {
+                "record_type": "entry",
+                "trade_id": trade_id,
+                "symbol": symbol,
+                "entry_time": self._now_iso(),
+                "entry_price": filled_price,
+                "qty": filled_qty,
+                "entry_cost": entry_cost,
+                "current_price": current_price,
+                "floating_pnl": 0.0,
+                "state": "OPEN",
+                "reason_buy": reason,
+                "reason_sell": "",
+                "duration_seconds": 0,
+                "order_type": "limit",
+                "target_profit_per_share": effective_target_profit_per_share,
+                "slippage_estimated": slippage,
+                "spread_at_entry": quote.get("spread", 0.0),
+                "spread_pct_at_entry": quote.get("spread_pct", spread_pct),
+                "status": "OPEN",
+            }
+        )
+
+        self.logger.info(
+            "Entrada limit IA registrada %s qty=%.8f entry=%.8f limit=%.8f cost=%.8f",
+            symbol,
+            filled_qty,
+            filled_price,
+            limit_price,
+            entry_cost,
+        )
+
+        immediate_exit: dict[str, Any] | None = None
+        try:
+            immediate_exit = self._place_immediate_target_exit(
+                symbol=symbol,
+                qty=filled_qty,
+                avg_entry_price=filled_price,
+                current_price=current_price,
+                reason_sell="target_immediate_after_buy",
+                target_profit_per_share=effective_target_profit_per_share,
+            )
+            elapsed_ms = (time.monotonic() - buy_submitted_at) * 1000.0
+            self.logger.info("Latency buy-limit->limit %s %.0fms", symbol, elapsed_ms)
+        except Exception as ex:
+            self.logger.warning("No se pudo crear salida inmediata para %s: %s", symbol, ex)
+
+        return {
+            "trade_id": trade_id,
+            "order": resolved_order,
+            "entry_price": filled_price,
+            "filled_qty": filled_qty,
+            "requested_qty": requested_qty,
+            "partial_fill": filled_qty < (requested_qty - 1e-8),
+            "entry_cost": entry_cost,
+            "current_price": current_price,
+            "target_profit_per_share": effective_target_profit_per_share,
+            "spread_pct": quote.get("spread_pct", spread_pct),
+            "immediate_exit": immediate_exit,
+            "requested_limit_price": limit_price,
+        }
+
     def _place_immediate_target_exit(
         self,
         symbol: str,
@@ -689,6 +843,25 @@ class PositionManager:
 
     def get_pending_sell_order(self, symbol: str, *, suppress_errors: bool = True) -> dict[str, Any] | None:
         return self._find_pending_sell_order(symbol, suppress_errors=suppress_errors)
+
+    def _suggest_limit_entry_price(self, symbol: str, current_price: float, quote: dict[str, Any] | None) -> float:
+        ask_price = 0.0
+        spread = 0.0
+        if quote is not None:
+            ask_price = float(quote.get("ask", 0.0) or 0.0)
+            spread = float(quote.get("spread", 0.0) or 0.0)
+
+        reference_price = max(float(current_price or 0.0), ask_price)
+        if reference_price <= 0:
+            raise ValueError("No se pudo determinar precio de referencia para limit buy IA")
+
+        if self._is_crypto_symbol(symbol):
+            buffer_pct = 0.0015
+        else:
+            buffer_pct = 0.0008
+
+        buffer_abs = max(reference_price * buffer_pct, spread * 1.25, 0.01)
+        return round(reference_price + buffer_abs, 6)
 
     @staticmethod
     def _suggest_limit_exit_price(current_price: float, avg_entry_price: float, target_profit_per_share: float) -> float:

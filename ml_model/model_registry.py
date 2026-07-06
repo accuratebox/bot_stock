@@ -126,6 +126,13 @@ class ModelRegistry:
     def approved_version(self) -> str:
         return str(self._load_state().get("approved", ""))
 
+    def approved_model_available(self) -> bool:
+        version = self.approved_version()
+        if not version:
+            return False
+        model_path = self.path / f"{version}.pkl"
+        return model_path.exists()
+
     def prune_old_versions(self, keep_last: int) -> None:
         versions = self.available_versions()
         for version in versions[keep_last:]:

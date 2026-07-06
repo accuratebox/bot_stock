@@ -6,6 +6,7 @@ from urllib.parse import quote, urlsplit, urlunsplit
 
 import requests
 
+from config import settings
 from runtime.alpaca_state import AlpacaRuntimeState
 
 
@@ -47,7 +48,8 @@ class AlpacaBrokerClient:
 
     def _request(self, method: str, url: str, **kwargs: Any) -> requests.Response:
         self.runtime_state.acquire(self.account_name)
-        response = self._session.request(method=method, url=url, headers=self._headers(), timeout=15, **kwargs)
+        timeout = kwargs.pop("timeout", int(getattr(settings, "http_timeout_alpaca_seconds", 10) or 10))
+        response = self._session.request(method=method, url=url, headers=self._headers(), timeout=timeout, **kwargs)
         self.runtime_state.record_response(self.account_name, response)
         return response
 

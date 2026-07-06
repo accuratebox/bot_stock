@@ -5,6 +5,8 @@ import time
 from dataclasses import dataclass
 from typing import Any, Callable
 
+from runtime.thread_manager import ThreadManager
+
 
 @dataclass
 class AutoTradingController:
@@ -28,11 +30,15 @@ class _LoopWorker:
         loop_fn: Callable[[], None],
         sleep_seconds_fn: Callable[[], float],
         logger: Any,
+        thread_manager: ThreadManager | None = None,
+        role: str = "worker",
     ) -> None:
         self.name = name
         self._loop_fn = loop_fn
         self._sleep_seconds_fn = sleep_seconds_fn
         self.logger = logger
+        self.thread_manager = thread_manager
+        self.role = role
         self._thread: threading.Thread | None = None
         self._stop_event = threading.Event()
         self.running = False
@@ -46,11 +52,15 @@ class _LoopWorker:
             return
         self._stop_event.clear()
         self.started_at = time.time()
+        if self.thread_manager is not None:
+            self.thread_manager.register(self.name, self.role)
         self._thread = threading.Thread(target=self._run, daemon=True, name=self.name)
         self._thread.start()
 
     def stop(self) -> None:
         self._stop_event.set()
+        if self.thread_manager is not None:
+            self.thread_manager.set_stopped(self.name)
 
     def _run(self) -> None:
         self.running = True
@@ -60,8 +70,12 @@ class _LoopWorker:
                 self._loop_fn()
                 self.last_run_at = time.time()
                 self.last_error = ""
+                if self.thread_manager is not None:
+                    self.thread_manager.heartbeat(self.name)
             except Exception as ex:
                 self.last_error = str(ex)
+                if self.thread_manager is not None:
+                    self.thread_manager.set_error(self.name, str(ex))
                 try:
                     self.logger.warning("Worker %s error: %s", self.name, ex)
                 except Exception:
@@ -69,6 +83,8 @@ class _LoopWorker:
             sleep_seconds = max(float(self._sleep_seconds_fn()), 1.0)
             self._stop_event.wait(timeout=sleep_seconds)
         self.running = False
+        if self.thread_manager is not None:
+            self.thread_manager.set_stopped(self.name)
 
 
 class DataCollectorWorker(_LoopWorker):

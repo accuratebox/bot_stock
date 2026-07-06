@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import threading
 from typing import Any
 
 from ml_model.feature_builder import build_feature_vector
@@ -12,11 +13,32 @@ class SignalPredictor:
     def __init__(self, registry: ModelRegistry, logger: Any) -> None:
         self.registry = registry
         self.logger = logger
+        self._cache_lock = threading.Lock()
+        self._cached_approved_version = ""
+        self._cached_bundle: dict[str, Any] | None = None
+
+    def _approved_bundle_cached(self) -> dict[str, Any] | None:
+        approved_version = str(self.registry.approved_version() or "")
+        with self._cache_lock:
+            if not approved_version:
+                self._cached_approved_version = ""
+                self._cached_bundle = None
+                return None
+            if self._cached_bundle is not None and self._cached_approved_version == approved_version:
+                return self._cached_bundle
+
+            bundle = self.registry.load_approved_bundle()
+            self._cached_approved_version = approved_version if bundle is not None else ""
+            self._cached_bundle = bundle
+            return bundle
 
     def predict_signal(self, features: dict[str, Any]) -> dict[str, Any]:
-        bundle = self.registry.load_approved_bundle()
+        bundle = self._approved_bundle_cached()
         if bundle is None:
-            return self._heuristic_prediction(features)
+            payload = self._heuristic_prediction(features)
+            payload["decision_engine"] = "heuristic_fallback"
+            payload["reason"] = f"Heuristic fallback without approved model | {payload.get('reason', '')}"
+            return payload
 
         model = bundle.get("model")
         metadata = bundle.get("metadata", {})
@@ -37,6 +59,7 @@ class SignalPredictor:
             "risk_score": round(risk_score, 2),
             "reason": f"Model {metadata.get('model_version', 'general_model')} probability={probability:.2f}",
             "model_version": str(metadata.get("model_version", "general_model_heuristic")),
+            "decision_engine": "model",
         }
 
     def _heuristic_prediction(self, features: dict[str, Any]) -> dict[str, Any]:
@@ -62,6 +85,7 @@ class SignalPredictor:
             "risk_score": round(max(0.0, 100.0 - score), 2),
             "reason": f"Heuristic composite score {score:.2f}",
             "model_version": "general_model_heuristic",
+            "decision_engine": "heuristic",
         }
 
     @staticmethod

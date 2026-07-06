@@ -5,6 +5,8 @@ from typing import Any
 
 import requests
 
+from config import settings
+
 
 class OpenAIAnalyzer:
     def __init__(self, api_key: str, logger: Any, model: str = "gpt-4.1-mini") -> None:
@@ -59,7 +61,7 @@ class OpenAIAnalyzer:
                     ],
                     "response_format": {"type": "json_object"},
                 },
-                timeout=45,
+                timeout=int(getattr(settings, "http_timeout_openai_seconds", 25) or 25),
             )
             response.raise_for_status()
             payload = response.json()

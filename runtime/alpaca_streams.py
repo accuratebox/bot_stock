@@ -7,6 +7,8 @@ from typing import Any, Callable
 
 import websocket
 
+from runtime.thread_manager import ThreadManager
+
 
 SymbolProvider = Callable[[str], dict[str, list[str]]]
 EventCallback = Callable[[str, dict[str, Any]], None]
@@ -25,6 +27,9 @@ class AlpacaStreamManager:
         news_event_callback: EventCallback,
         trade_update_callback: EventCallback,
         paper_trading: bool,
+        thread_manager: ThreadManager | None = None,
+        stale_seconds: float = 45.0,
+        max_backoff_seconds: float = 30.0,
     ) -> None:
         self.alpaca_endpoint = alpaca_endpoint.rstrip("/")
         self.api_key = api_key
@@ -35,11 +40,19 @@ class AlpacaStreamManager:
         self.news_event_callback = news_event_callback
         self.trade_update_callback = trade_update_callback
         self.paper_trading = bool(paper_trading)
+        self.thread_manager = thread_manager
+        self.stale_seconds = max(float(stale_seconds or 45.0), 20.0)
+        self.max_backoff_seconds = max(float(max_backoff_seconds or 30.0), 5.0)
 
         self._stop_event = threading.Event()
         self._threads: list[threading.Thread] = []
         self._running_lock = threading.Lock()
         self._connected_streams: set[str] = set()
+        self._stream_last_message_at: dict[str, float] = {}
+        self._stream_reconnect_attempts: dict[str, int] = {}
+        self._stream_last_error: dict[str, str] = {}
+        self._live_sockets: dict[str, websocket.WebSocketApp] = {}
+        self._watchdog_thread: threading.Thread | None = None
         self._running = False
 
     @property
@@ -66,9 +79,15 @@ class AlpacaStreamManager:
         with self._running_lock:
             self._threads = threads
             self._connected_streams.clear()
+            self._stream_last_message_at.clear()
+            self._stream_reconnect_attempts.clear()
+            self._stream_last_error.clear()
+            self._live_sockets.clear()
             self._running = True
         for thread in threads:
             thread.start()
+        self._watchdog_thread = threading.Thread(target=self._run_watchdog, daemon=True, name=f"alpaca-watchdog-{account_name}")
+        self._watchdog_thread.start()
 
     def stop(self) -> None:
         self._stop_event.set()
@@ -76,11 +95,83 @@ class AlpacaStreamManager:
             threads = list(self._threads)
             self._threads = []
             self._connected_streams.clear()
+            live_sockets = dict(self._live_sockets)
+            self._live_sockets.clear()
             self._running = False
+
+        for ws in live_sockets.values():
+            try:
+                ws.close()
+            except Exception:
+                pass
 
         for thread in threads:
             if thread.is_alive():
                 thread.join(timeout=2.0)
+
+        if self._watchdog_thread is not None and self._watchdog_thread.is_alive():
+            self._watchdog_thread.join(timeout=2.0)
+        self._watchdog_thread = None
+
+    def status_snapshot(self) -> dict[str, Any]:
+        with self._running_lock:
+            now = time.time()
+            stream_rows = []
+            for stream_name in sorted(set(self._stream_last_message_at.keys()) | set(self._stream_reconnect_attempts.keys())):
+                last_message_at = float(self._stream_last_message_at.get(stream_name, 0.0) or 0.0)
+                age = (now - last_message_at) if last_message_at > 0 else float("inf")
+                stream_rows.append(
+                    {
+                        "stream": stream_name,
+                        "connected": stream_name in self._connected_streams,
+                        "last_message_age_seconds": age,
+                        "reconnect_attempts": int(self._stream_reconnect_attempts.get(stream_name, 0) or 0),
+                        "last_error": str(self._stream_last_error.get(stream_name, "") or ""),
+                        "stale": bool(age > self.stale_seconds),
+                    }
+                )
+        return {
+            "running": self.running,
+            "connected": self.connected,
+            "streams": stream_rows,
+        }
+
+    def reconnect_now(self) -> None:
+        with self._running_lock:
+            live_sockets = dict(self._live_sockets)
+        for ws in live_sockets.values():
+            try:
+                ws.close()
+            except Exception:
+                pass
+
+    def _run_watchdog(self) -> None:
+        watchdog_name = "WebSocketWatchdog"
+        if self.thread_manager is not None:
+            self.thread_manager.register(watchdog_name, "websocket")
+        while not self._stop_event.is_set():
+            now = time.time()
+            with self._running_lock:
+                stream_names = list(self._live_sockets.keys())
+                stale_streams = [
+                    stream_name
+                    for stream_name in stream_names
+                    if (now - float(self._stream_last_message_at.get(stream_name, 0.0) or 0.0)) > self.stale_seconds
+                ]
+                sockets = {name: self._live_sockets.get(name) for name in stale_streams}
+            for stream_name, ws in sockets.items():
+                if ws is None:
+                    continue
+                try:
+                    self.logger.warning("WebSocket stale detectado (%s). Forzando reconexion controlada.", stream_name)
+                    ws.close()
+                except Exception:
+                    pass
+            if self.thread_manager is not None:
+                self.thread_manager.heartbeat(watchdog_name)
+            self._stop_event.wait(timeout=5.0)
+        if self.thread_manager is not None:
+            self.thread_manager.set_stopped(watchdog_name)
 
     def _market_stream_url(self, asset_type: str) -> str:
         if asset_type == "crypto":
@@ -178,6 +269,8 @@ class AlpacaStreamManager:
 
         while not self._stop_event.is_set():
             subscribed = False
+            if self.thread_manager is not None:
+                self.thread_manager.register(f"WS-{stream_name}", "websocket")
 
             def on_open(ws: websocket.WebSocketApp) -> None:
                 try:
@@ -187,6 +280,8 @@ class AlpacaStreamManager:
 
             def on_message(ws: websocket.WebSocketApp, message: Any) -> None:
                 nonlocal subscribed, backoff_seconds
+                with self._running_lock:
+                    self._stream_last_message_at[stream_name] = time.time()
                 for payload in self._parse_message(message):
                     if self._is_auth_success(payload):
                         if not subscribed:
@@ -195,6 +290,7 @@ class AlpacaStreamManager:
                                 subscribed = True
                                 with self._running_lock:
                                     self._connected_streams.add(stream_name)
+                                    self._stream_reconnect_attempts[stream_name] = 0
                                 backoff_seconds = 1.0
                             except Exception as ex:
                                 self.logger.warning("Alpaca stream %s subscribe failed: %s", stream_name, ex)
@@ -204,6 +300,8 @@ class AlpacaStreamManager:
                     event_handler(stream_name, payload)
 
             def on_error(_: websocket.WebSocketApp, error: Any) -> None:
+                with self._running_lock:
+                    self._stream_last_error[stream_name] = str(error)
                 if not self._stop_event.is_set():
                     self.logger.warning("Alpaca stream %s error for %s: %s", stream_name, account_name, error)
 
@@ -227,17 +325,35 @@ class AlpacaStreamManager:
                 on_close=on_close,
             )
 
+            with self._running_lock:
+                self._live_sockets[stream_name] = ws
+                self._stream_last_message_at.setdefault(stream_name, time.time())
+
             try:
                 ws.run_forever(ping_interval=30, ping_timeout=10)
             except Exception as ex:
+                with self._running_lock:
+                    self._stream_last_error[stream_name] = str(ex)
                 if not self._stop_event.is_set():
                     self.logger.warning("Alpaca stream %s reconnecting after error for %s: %s", stream_name, account_name, ex)
+                    if self.thread_manager is not None:
+                        self.thread_manager.set_error(f"WS-{stream_name}", str(ex))
+
+            with self._running_lock:
+                self._live_sockets.pop(stream_name, None)
 
             if self._stop_event.is_set():
                 break
 
             time.sleep(backoff_seconds)
-            backoff_seconds = min(backoff_seconds * 2.0, 30.0)
+            backoff_seconds = min(backoff_seconds * 2.0, self.max_backoff_seconds)
+            with self._running_lock:
+                self._stream_reconnect_attempts[stream_name] = int(self._stream_reconnect_attempts.get(stream_name, 0) or 0) + 1
+            if self.thread_manager is not None:
+                self.thread_manager.heartbeat(f"WS-{stream_name}")
+
+        if self.thread_manager is not None:
+            self.thread_manager.set_stopped(f"WS-{stream_name}")
 
     @staticmethod
     def _is_ack_message(payload: dict[str, Any]) -> bool:

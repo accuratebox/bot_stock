@@ -112,7 +112,19 @@ class Settings:
     ai_default_max_capital_assigned: float = float(_env("AI_DEFAULT_MAX_CAPITAL_ASSIGNED", default="1000.0"))
     ai_default_max_position_size: float = float(_env("AI_DEFAULT_MAX_POSITION_SIZE", default="250.0"))
     ai_default_max_daily_loss: float = float(_env("AI_DEFAULT_MAX_DAILY_LOSS", default="100.0"))
-    ai_target_profit_per_share: float = float(_env("AI_TARGET_PROFIT_PER_SHARE", default="0.05"))
+    ai_target_profit_per_operation: float = float(_env("AI_TARGET_PROFIT_PER_OPERATION", default=_env("AI_TARGET_PROFIT_PER_SHARE", default="0.05")))
+    ai_target_profit_per_operation_stocks: float = float(
+        _env(
+            "AI_TARGET_PROFIT_PER_OPERATION_STOCKS",
+            default=_env("AI_TARGET_PROFIT_PER_SHARE_STOCKS", default=_env("AI_TARGET_PROFIT_PER_OPERATION", default=_env("AI_TARGET_PROFIT_PER_SHARE", default="0.05"))),
+        )
+    )
+    ai_target_profit_per_operation_cryptos: float = float(
+        _env(
+            "AI_TARGET_PROFIT_PER_OPERATION_CRYPTOS",
+            default=_env("AI_TARGET_PROFIT_PER_SHARE_CRYPTOS", default=_env("AI_TARGET_PROFIT_PER_OPERATION", default=_env("AI_TARGET_PROFIT_PER_SHARE", default="0.05"))),
+        )
+    )
     ai_fees_buffer: float = float(_env("AI_FEES_BUFFER", default="0.02"))
     ai_slippage_buffer: float = float(_env("AI_SLIPPAGE_BUFFER", default="0.03"))
     ai_minimum_profit: float = float(_env("AI_MINIMUM_PROFIT", default="0.05"))
@@ -135,6 +147,20 @@ class Settings:
     ai_training_label_type: str = _env("AI_TRAINING_LABEL_TYPE", default="result_15m_fallback_30m").lower()
     ai_auto_train_mode: str = _env("AI_AUTO_TRAIN_MODE", default="12h").lower()
     ai_dev_mode: bool = _env_bool("AI_DEV_MODE", default=False)
+    ai_focus_stocks_only: bool = _env_bool("AI_FOCUS_STOCKS_ONLY", default=False)
+    ai_focus_cryptos_only: bool = _env_bool("AI_FOCUS_CRYPTOS_ONLY", default=False)
+    ai_focus_stocks_symbols: str = _env("AI_FOCUS_STOCKS_SYMBOLS", default="")
+    ai_focus_cryptos_symbols: str = _env("AI_FOCUS_CRYPTOS_SYMBOLS", default="")
+
+    # Stability / timeout controls
+    http_timeout_alpaca_seconds: int = int(_env("HTTP_TIMEOUT_ALPACA_SECONDS", default="10"))
+    http_timeout_cryptopanic_seconds: int = int(_env("HTTP_TIMEOUT_CRYPTOPANIC_SECONDS", default="10"))
+    http_timeout_openai_seconds: int = int(_env("HTTP_TIMEOUT_OPENAI_SECONDS", default="25"))
+    http_timeout_news_seconds: int = int(_env("HTTP_TIMEOUT_NEWS_SECONDS", default="10"))
+    websocket_stale_seconds: int = int(_env("WEBSOCKET_STALE_SECONDS", default="45"))
+    websocket_max_reconnect_backoff_seconds: int = int(_env("WEBSOCKET_MAX_RECONNECT_BACKOFF_SECONDS", default="30"))
+    health_monitor_interval_seconds: int = int(_env("HEALTH_MONITOR_INTERVAL_SECONDS", default="30"))
+    ui_max_log_lines: int = int(_env("UI_MAX_LOG_LINES", default="1000"))
 
     # ===== STOCKS CONFIGURATION =====
     stock_allow_hold: bool = _env_bool("STOCK_ALLOW_HOLD", default=True)

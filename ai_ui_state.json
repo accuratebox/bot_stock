@@ -1,0 +1,40 @@
+{
+  "account": "Paper 2",
+  "ai_focus": {
+    "stocks_only": false,
+    "cryptos_only": true,
+    "stocks_symbols": "",
+    "cryptos_symbols": "SOL/USD"
+  },
+  "ai_focus_by_account": {
+    "Paper 2": {
+      "stocks_only": false,
+      "cryptos_only": true,
+      "stocks_symbols": "",
+      "cryptos_symbols": "SOL/USD"
+    }
+  },
+  "ai_diag_by_account": {
+    "Paper 2": {
+      "signal_only": false,
+      "auto_stocks": false,
+      "auto_cryptos": true
+    }
+  },
+  "ai_diag": {
+    "account": "Paper 2",
+    "market": "Cryptos",
+    "symbol": "SOL/USDC",
+    "max_spread": "8",
+    "min_volume": "1000.0",
+    "min_confidence": "60.0",
+    "target_stocks": "1.0",
+    "target_cryptos": "1.0",
+    "fees": "0.02",
+    "slippage": "0.03",
+    "minimum_profit": "0.05",
+    "signal_only": false,
+    "auto_stocks": false,
+    "auto_cryptos": true
+  }
+}

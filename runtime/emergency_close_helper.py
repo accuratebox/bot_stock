@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import json
 import os
 import signal
+import subprocess
 import sys
 import threading
 import time
 import tkinter as tk
+from pathlib import Path
 
 
 def _target_alive(pid: int) -> bool:
@@ -18,8 +21,58 @@ def _target_alive(pid: int) -> bool:
     return True
 
 
+def _kill_target(pid: int) -> None:
+    try:
+        os.kill(pid, signal.SIGUSR1)
+    except Exception:
+        pass
+    time.sleep(0.5)
+    try:
+        os.kill(pid, signal.SIGTERM)
+    except Exception:
+        pass
+    deadline = time.time() + 3.0
+    while _target_alive(pid) and time.time() < deadline:
+        time.sleep(0.2)
+    if _target_alive(pid):
+        try:
+            os.kill(pid, signal.SIGKILL)
+        except Exception:
+            pass
+
+
+def _heartbeat_age_seconds(path: Path) -> float | None:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    timestamp = payload.get("updated_at")
+    if timestamp is None:
+        return None
+    try:
+        ts = float(timestamp)
+    except (TypeError, ValueError):
+        return None
+    return max(time.time() - ts, 0.0)
+
+
+def _launch_bot(python_executable: str, main_path: str, working_dir: str) -> bool:
+    try:
+        subprocess.Popen(
+            [python_executable, main_path],
+            cwd=working_dir,
+            start_new_session=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
+        return True
+    except Exception:
+        return False
+
+
 def main() -> int:
-    if len(sys.argv) < 2:
+    if len(sys.argv) < 7:
         return 2
 
     try:
@@ -27,11 +80,22 @@ def main() -> int:
     except ValueError:
         return 2
 
+    heartbeat_path = Path(sys.argv[2])
+    try:
+        heartbeat_timeout = max(float(sys.argv[3]), 8.0)
+    except ValueError:
+        heartbeat_timeout = 25.0
+    restart_python = sys.argv[4]
+    restart_main = sys.argv[5]
+    restart_cwd = sys.argv[6]
+    allow_restart = (sys.argv[7].strip().lower() != "0") if len(sys.argv) > 7 else True
+    restarting = False
+
     root = tk.Tk()
     root.title("Cierre de emergencia")
     root.attributes("-topmost", True)
     root.resizable(False, False)
-    root.geometry("240x90")
+    root.geometry("280x110")
 
     label = tk.Label(
         root,
@@ -40,7 +104,7 @@ def main() -> int:
     )
     label.pack(pady=(10, 4))
 
-    status_var = tk.StringVar(value="Listo para forzar cierre")
+    status_var = tk.StringVar(value="Watchdog activo")
     tk.Label(root, textvariable=status_var, fg="#444").pack(pady=(0, 6))
 
     def close_if_gone() -> None:
@@ -52,25 +116,17 @@ def main() -> int:
             return
         root.after(1000, close_if_gone)
 
-    def force_kill() -> None:
-        status_var.set("Dumping stacks y cerrando...")
+    def restart_bot(reason: str) -> None:
+        nonlocal restarting
+        if restarting:
+            return
+        restarting = True
+        status_var.set(reason)
 
         def worker() -> None:
-            try:
-                os.kill(target_pid, signal.SIGUSR1)
-            except Exception:
-                pass
-            time.sleep(0.5)
-            try:
-                os.kill(target_pid, signal.SIGTERM)
-            except Exception:
-                pass
-            time.sleep(1.0)
-            if _target_alive(target_pid):
-                try:
-                    os.kill(target_pid, signal.SIGKILL)
-                except Exception:
-                    pass
+            _kill_target(target_pid)
+            if allow_restart:
+                _launch_bot(restart_python, restart_main, restart_cwd)
             try:
                 root.after(0, root.destroy)
             except tk.TclError:
@@ -78,9 +134,32 @@ def main() -> int:
 
         threading.Thread(target=worker, daemon=True).start()
 
+    def force_kill() -> None:
+        restart_bot("Reiniciando bot...")
+
+    def watchdog_loop() -> None:
+        if restarting:
+            return
+        if not _target_alive(target_pid):
+            try:
+                root.destroy()
+            except tk.TclError:
+                pass
+            return
+
+        age = _heartbeat_age_seconds(heartbeat_path)
+        if age is not None:
+            status_var.set(f"Heartbeat: {age:.1f}s")
+            if age >= heartbeat_timeout:
+                restart_bot("Freeze detectado, reiniciando...")
+                return
+        else:
+            status_var.set("Heartbeat no disponible")
+        root.after(1000, watchdog_loop)
+
     button = tk.Button(
         root,
-        text="FORZAR CIERRE",
+        text="FORZAR REINICIO",
         command=force_kill,
         fg="white",
         bg="#8a1c1c",
@@ -93,6 +172,7 @@ def main() -> int:
     button.pack(pady=(0, 10))
 
     root.after(1000, close_if_gone)
+    root.after(1000, watchdog_loop)
     root.mainloop()
     return 0
 

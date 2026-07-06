@@ -1,4 +1,5 @@
 import time
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import requests
@@ -16,6 +17,7 @@ class MarketDataService:
         self._bars_cache: dict[str, tuple[float, list[dict]]] = {}
         self._cache_ttl_seconds = 30.0
         self._max_retries = 3
+        self._http_timeout_seconds = int(getattr(settings, "http_timeout_alpaca_seconds", 10) or 10)
         self.endpoint = settings.alpaca_endpoint
         self.api_key = settings.alpaca_api_key
         self.api_secret = settings.alpaca_api_secret
@@ -123,6 +125,62 @@ class MarketDataService:
             "timestamp": trade.get("t"),
         }
 
+    def get_recent_trade_stats(self, symbol: str, lookback_seconds: int = 60, limit: int = 1000) -> dict[str, Any]:
+        normalized = symbol.upper().replace(" ", "")
+        now_utc = datetime.now(timezone.utc)
+        start_utc = now_utc - timedelta(seconds=max(int(lookback_seconds or 60), 1))
+        start_iso = start_utc.isoformat().replace("+00:00", "Z")
+        end_iso = now_utc.isoformat().replace("+00:00", "Z")
+        request_limit = max(min(int(limit or 1000), 10000), 1)
+
+        if self._is_crypto_symbol(normalized):
+            symbol_for_data = self._to_crypto_data_symbol(normalized)
+            url = "https://data.alpaca.markets/v1beta3/crypto/us/trades"
+            params = {
+                "symbols": symbol_for_data,
+                "start": start_iso,
+                "end": end_iso,
+                "limit": str(request_limit),
+                "sort": "asc",
+            }
+        else:
+            symbol_for_data = normalized
+            url = f"https://data.alpaca.markets/v2/stocks/{normalized}/trades"
+            params = {
+                "start": start_iso,
+                "end": end_iso,
+                "limit": str(request_limit),
+                "feed": "iex",
+                "sort": "asc",
+            }
+
+        payload = self._request_json_with_retry(url=url, params=params, headers=self._auth_headers())
+        if self._is_crypto_symbol(normalized):
+            trades = payload.get("trades", {}).get(symbol_for_data, [])
+        else:
+            trades = payload.get("trades", [])
+        if trades is None:
+            trades = []
+
+        volume = 0.0
+        volume_usd = 0.0
+        for trade in trades:
+            size = float(trade.get("s", 0.0) or 0.0)
+            price = float(trade.get("p", 0.0) or 0.0)
+            volume += size
+            volume_usd += size * price
+
+        return {
+            "symbol": symbol_for_data,
+            "lookback_seconds": max(int(lookback_seconds or 60), 1),
+            "count": len(trades),
+            "volume": volume,
+            "volume_usd": volume_usd,
+            "start": start_iso,
+            "end": end_iso,
+            "source": "alpaca_trades",
+        }
+
     def get_stock_bars(self, symbol: str, interval: str = "1m", limit: int = 100) -> list[dict]:
         normalized = symbol.upper().replace(" ", "")
         cache_key = f"{normalized}:{interval}:{limit}"
@@ -226,7 +284,7 @@ class MarketDataService:
         for attempt in range(self._max_retries):
             try:
                 self.runtime_state.acquire(self.account_name)
-                response = self._session.get(url, params=params, headers=headers, timeout=15)
+                response = self._session.get(url, params=params, headers=headers, timeout=self._http_timeout_seconds)
                 self.runtime_state.record_response(self.account_name, response)
                 if response.status_code == 429 and attempt < (self._max_retries - 1):
                     retry_after = response.headers.get("Retry-After")

@@ -16,6 +16,7 @@ from xml.etree import ElementTree
 import requests
 
 from ai_trading_brain.openai_analyzer import OpenAIAnalyzer
+from ai_trading_brain.crypto_volume_manager import CryptoVolumeManager
 from ai_trading_brain.scoring import compute_composite_score
 from ai_trading_brain.workers import AutoTradingController, DataCollectorWorker, ModelTrainerWorker, NewsSocialCollectorWorker, OutcomeLabelerWorker, SignalScannerWorker
 from database.manager import TradingBrainDatabase
@@ -170,6 +171,15 @@ class AITradingBrainService:
             stale_seconds=float(getattr(settings, "websocket_stale_seconds", 45) or 45),
             max_backoff_seconds=float(getattr(settings, "websocket_max_reconnect_backoff_seconds", 30) or 30),
         )
+        self.volume_manager = CryptoVolumeManager(
+            database=self.database,
+            market_data=self.market_data,
+            logger=self.logger,
+            global_fetcher=self._fetch_global_crypto_market_data,
+            websocket_connected=lambda: bool(self.stream_manager.connected),
+            websocket_reconnect=self.reconnect_websocket,
+            global_cache_seconds=int(getattr(self.settings, "coingecko_global_volume_refresh_seconds", 600) or 600),
+        )
         self._install_database_write_queue()
         self._db_writer.start()
         self.initialize()
@@ -192,6 +202,7 @@ class AITradingBrainService:
             "upsert_signal_outcome",
             "cleanup_old_data",
             "upsert_crypto_global_market_data",
+            "insert_crypto_volume_record",
         }
         for method_name in write_methods:
             method = getattr(self.database, method_name, None)
@@ -384,6 +395,7 @@ class AITradingBrainService:
                 kill_switch=False,
                 auto_trade_stocks_enabled=bool(existing_runtime.get("auto_trade_stocks_enabled", 1)) if existing_runtime else True,
                 auto_trade_cryptos_enabled=bool(existing_runtime.get("auto_trade_cryptos_enabled", 1)) if existing_runtime else True,
+                scanner_decision_engine=str((existing_runtime or {}).get("scanner_decision_engine", "heuristic") or "heuristic"),
             )
         self.database.cleanup_old_data(
             snapshot_minutes_days=int(self.settings.ai_snapshots_1m_days),
@@ -415,6 +427,7 @@ class AITradingBrainService:
         kill_switch: bool,
         auto_trade_stocks_enabled: bool,
         auto_trade_cryptos_enabled: bool,
+        scanner_decision_engine: str = "heuristic",
     ) -> None:
         account = self.refresh_account_context(account_name)
         funds = self.database.get_bot_funds(int(account["id"]))
@@ -438,6 +451,7 @@ class AITradingBrainService:
             kill_switch=kill_switch,
             auto_trade_stocks_enabled=auto_trade_stocks_enabled,
             auto_trade_cryptos_enabled=auto_trade_cryptos_enabled,
+            scanner_decision_engine=str(scanner_decision_engine or "heuristic"),
         )
         self.auto_controller.signal_only_mode = bool(signal_only_mode)
         self.auto_controller.paper_trading = bool(paper_trading)
@@ -472,6 +486,7 @@ class AITradingBrainService:
     def get_automation_status(self, account_name: str) -> dict[str, Any]:
         self._reset_daily_counters_if_needed()
         approved_model = self.registry.approved_version() or ""
+        approved_model_available = bool(self.registry.approved_model_available())
         latest_model = self.registry.latest_version() or ""
         training_cycle_seconds = max(float(self._training_interval_seconds() or 0.0), 0.0)
         now_ts = time.time()
@@ -502,6 +517,9 @@ class AITradingBrainService:
             self.auto_controller.manual_approval_required = bool(runtime.get("manual_approval_required", 1))
         with self._worker_lock:
             active_worker_account = str(self._active_account_for_workers or "").strip()
+        scanner_engine = str((runtime or {}).get("scanner_decision_engine", "heuristic") or "heuristic").strip().lower()
+        if scanner_engine not in {"heuristic", "model"}:
+            scanner_engine = "heuristic"
         return {
             "collector": "Running" if self.data_collector_worker.running else "Stopped",
             "scanner": "Running" if self.signal_scanner_worker.running else "Stopped",
@@ -528,10 +546,14 @@ class AITradingBrainService:
             "training_remaining_seconds": training_remaining_seconds,
             "training_progress_pct": training_progress_pct,
             "training_last_error": str(getattr(self.model_trainer_worker, "last_error", "") or ""),
-            "model_current": approved_model or "heuristic",
+            "model_current": (approved_model if approved_model and approved_model_available else "heuristic"),
             "model_latest_trained": latest_model or "none",
-            "model_approved_paper": approved_model or "manual_pending",
+            "model_approved_paper": (approved_model if approved_model and approved_model_available else "manual_pending"),
+            "model_approved_reference": approved_model or "",
+            "model_approved_available": approved_model_available,
             "model_approved_live": "manual_required",
+            "scanner_decision_engine": scanner_engine,
+            "decision_actor": ("Modelo entrenado" if scanner_engine == "model" else "Heurística"),
             "auto_trade_stocks_enabled": bool(runtime.get("auto_trade_stocks_enabled", 1)) if runtime else True,
             "auto_trade_cryptos_enabled": bool(runtime.get("auto_trade_cryptos_enabled", 1)) if runtime else True,
             "health": self.get_health_snapshot(),
@@ -589,6 +611,9 @@ class AITradingBrainService:
             "openai_key_ok": bool(self.settings.openai_api_key),
             "recent_logs": self.database.latest_decision_logs(limit=15),
         }
+
+    def validate_volume_data(self, symbol: str) -> dict[str, Any]:
+        return self.volume_manager.validate_volume_data(symbol)
 
     @staticmethod
     def _parse_focus_symbols(raw: str) -> set[str]:
@@ -702,6 +727,18 @@ class AITradingBrainService:
             "LTC": "litecoin",
         }
         return mapping.get(str(base_symbol or "").upper().strip())
+
+    @staticmethod
+    def _normalize_global_source_label(source_value: Any) -> str:
+        source = str(source_value or "").strip().lower()
+        mapping = {
+            "coingecko": "CoinGecko",
+            "coinmarketcap": "CoinMarketCap",
+            "coinbase": "Coinbase",
+            "none": "CoinGecko",
+            "": "CoinGecko",
+        }
+        return mapping.get(source, str(source_value or "CoinGecko"))
 
     @staticmethod
     def _parse_iso_timestamp(raw_value: str) -> datetime | None:
@@ -930,6 +967,19 @@ class AITradingBrainService:
         except Exception:
             live_price = 0.0
 
+        snapshot_rows = list(reversed([
+            {
+                "open": float(row.get("open", row.get("close", 0.0)) or 0.0),
+                "high": float(row.get("high", row.get("close", 0.0)) or 0.0),
+                "low": float(row.get("low", row.get("close", 0.0)) or 0.0),
+                "close": float(row.get("close", row.get("price", 0.0)) or 0.0),
+                "volume": float(row.get("volume", 0.0) or 0.0),
+                "timestamp": row.get("timestamp"),
+            }
+            for row in snapshots
+        ]))
+        snapshot_bars_1m = self._aggregate_snapshot_rows_to_minutes(snapshot_rows)
+
         latest_candle_1m = live_candles_1m[-1] if live_candles_1m else {}
         candle_count_1m = len(live_candles_1m)
         price = live_price if live_price > 0.0 else float(latest_snapshot.get("price", 0.0) or 0.0)
@@ -940,21 +990,47 @@ class AITradingBrainService:
         if spread_pct <= 0.0 and price > 0.0:
             spread_pct = (spread / price) * 100.0
 
-        alpaca_pair_volume_1m = float(latest_candle_1m.get("volume", 0.0) or 0.0)
-        alpaca_pair_volume_5m = sum(float(row.get("volume", 0.0) or 0.0) for row in live_candles_1m[-5:])
-        alpaca_pair_volume_15m = sum(float(row.get("volume", 0.0) or 0.0) for row in live_candles_1m[-15:])
+        alpaca_pair_volume_1m_base = 0.0
+        alpaca_pair_volume_5m_base = 0.0
+        alpaca_pair_volume_15m_base = 0.0
+        alpaca_pair_volume_1m_usd = 0.0
+        alpaca_pair_volume_5m_usd = 0.0
+        alpaca_pair_volume_15m_usd = 0.0
+        alpaca_trade_volume_1m_base = 0.0
+        alpaca_trade_volume_1m_usd = 0.0
+        alpaca_trade_count_1m = 0
+        alpaca_trade_window_seconds = 60
+        trade_volume_status = "N/A"
+        trade_volume_error = ""
+
+        try:
+            trades_1m = self.market_data.get_recent_trade_stats(symbol=symbol_norm, lookback_seconds=60, limit=5000)
+            trades_5m = self.market_data.get_recent_trade_stats(symbol=symbol_norm, lookback_seconds=300, limit=5000)
+            trades_15m = self.market_data.get_recent_trade_stats(symbol=symbol_norm, lookback_seconds=900, limit=5000)
+
+            alpaca_trade_volume_1m_base = float(trades_1m.get("volume", 0.0) or 0.0)
+            alpaca_trade_volume_1m_usd = float(trades_1m.get("volume_usd", 0.0) or 0.0)
+            alpaca_trade_count_1m = int(trades_1m.get("count", 0) or 0)
+            alpaca_trade_window_seconds = int(trades_1m.get("lookback_seconds", 60) or 60)
+
+            alpaca_pair_volume_1m_base = alpaca_trade_volume_1m_base
+            alpaca_pair_volume_5m_base = float(trades_5m.get("volume", 0.0) or 0.0)
+            alpaca_pair_volume_15m_base = float(trades_15m.get("volume", 0.0) or 0.0)
+            alpaca_pair_volume_1m_usd = alpaca_trade_volume_1m_usd
+            alpaca_pair_volume_5m_usd = float(trades_5m.get("volume_usd", 0.0) or 0.0)
+            alpaca_pair_volume_15m_usd = float(trades_15m.get("volume_usd", 0.0) or 0.0)
+            trade_volume_status = "OK"
+        except Exception as ex:
+            trade_volume_status = "ERROR"
+            trade_volume_error = str(ex)
 
         now_utc = datetime.now(timezone.utc)
         latest_candle_dt = self._parse_iso_timestamp(str(latest_candle_1m.get("timestamp", "") or ""))
         is_stale = latest_candle_dt is None or (now_utc - latest_candle_dt).total_seconds() > 180.0
 
-        volume_data_status = "OK"
-        if candle_count_1m <= 0 and not snapshots:
-            volume_data_status = "ERROR"
-        elif candle_count_1m < 15:
-            volume_data_status = "INSUFFICIENT_DATA"
-        elif is_stale:
-            volume_data_status = "STALE"
+        use_snapshot_volume_fallback = False
+
+        volume_data_status = "OK" if trade_volume_status == "OK" else "ERROR"
 
         now_iso = self._now_iso()
         day_ago_iso = (now_utc - timedelta(hours=24)).isoformat()
@@ -964,9 +1040,6 @@ class AITradingBrainService:
                 float(row.get("close", 0.0) or 0.0) * float(row.get("volume", 0.0) or 0.0)
                 for row in live_candles_15m
             )
-        elif snapshots:
-            day_rows = self.database.market_snapshots_between(symbol=symbol_norm, start_iso=day_ago_iso, end_iso=now_iso)
-            alpaca_pair_volume_24h_usd = sum(float(row.get("price", 0.0) or 0.0) * float(row.get("volume", 0.0) or 0.0) for row in day_rows)
 
         global_volume_24h_usd = 0.0
         global_volume_source = "none"
@@ -975,17 +1048,73 @@ class AITradingBrainService:
         if inferred_asset_type == "crypto":
             global_row = self._fetch_global_crypto_market_data(symbol_norm)
             global_volume_24h_usd = float(global_row.get("total_volume", 0.0) or 0.0)
-            global_volume_source = str(global_row.get("source", "coingecko") or "coingecko")
+            global_volume_source = self._normalize_global_source_label(global_row.get("source", "coingecko"))
             global_volume_status = str(global_row.get("status", "ERROR") or "ERROR")
             base_symbol = self._crypto_base_symbol(symbol_norm)
             if base_symbol in {"SOL", "BTC", "ETH", "XRP"} and global_volume_24h_usd < 1_000_000.0:
                 global_volume_warning = "Global volume seems incorrect or source is incomplete"
 
-        snapshot_timestamp = str(latest_candle_1m.get("timestamp", "") or latest_snapshot.get("timestamp", "") or "")
-        data_source = "live" if bool(live_candles_1m or live_quote or live_price > 0.0) else "snapshot"
-        volume_source = "alpaca_pair"
+        volume_snapshot: dict[str, Any] | None = None
+        volume_validation: dict[str, Any] | None = None
         if inferred_asset_type == "crypto":
-            volume_source = f"alpaca_pair + global_{global_volume_source}"
+            try:
+                volume_snapshot = self.volume_manager.build_snapshot(
+                    symbol=symbol_norm,
+                    price=price,
+                    alpaca_24h_volume=alpaca_pair_volume_24h_usd,
+                )
+                volume_validation = self.volume_manager.validate_volume_data(symbol_norm)
+                alpaca_pair_volume_1m_base = float(volume_snapshot.get("local_volume_1m_base", volume_snapshot.get("local_volume_1m", alpaca_pair_volume_1m_base)) or 0.0)
+                alpaca_pair_volume_5m_base = float(volume_snapshot.get("local_volume_5m_base", volume_snapshot.get("local_volume_5m", alpaca_pair_volume_5m_base)) or 0.0)
+                alpaca_pair_volume_15m_base = float(volume_snapshot.get("local_volume_15m_base", volume_snapshot.get("local_volume_15m", alpaca_pair_volume_15m_base)) or 0.0)
+                alpaca_pair_volume_1m_usd = float(volume_snapshot.get("local_volume_1m_usd", alpaca_pair_volume_1m_usd) or 0.0)
+                alpaca_pair_volume_5m_usd = float(volume_snapshot.get("local_volume_5m_usd", alpaca_pair_volume_5m_usd) or 0.0)
+                alpaca_pair_volume_15m_usd = float(volume_snapshot.get("local_volume_15m_usd", alpaca_pair_volume_15m_usd) or 0.0)
+                alpaca_trade_volume_1m_base = float(volume_snapshot.get("local_volume_1m_base", alpaca_trade_volume_1m_base) or 0.0)
+                alpaca_trade_volume_1m_usd = float(volume_snapshot.get("local_volume_1m_usd", alpaca_trade_volume_1m_usd) or 0.0)
+                alpaca_trade_count_1m = int(volume_snapshot.get("trade_count_1m", alpaca_trade_count_1m) or 0)
+                alpaca_trade_window_seconds = 60
+                global_volume_24h_usd = float(volume_snapshot.get("global_volume_24h_usd", global_volume_24h_usd) or 0.0)
+                global_volume_source = self._normalize_global_source_label(volume_snapshot.get("global_volume_source", global_volume_source))
+                global_volume_status = str(volume_snapshot.get("global_volume_status", global_volume_status) or global_volume_status)
+                volume_data_status = str(volume_snapshot.get("volume_status", volume_data_status) or volume_data_status)
+                trade_volume_status = str(volume_snapshot.get("volume_status", trade_volume_status) or trade_volume_status)
+                if str(volume_snapshot.get("error_message", "") or "").strip():
+                    trade_volume_error = str(volume_snapshot.get("error_message", "") or "")
+                volume_source = str(volume_snapshot.get("local_volume_source", volume_snapshot.get("volume_source", "alpaca_pair")) or "alpaca_pair")
+                data_source = str(volume_snapshot.get("volume_source", "live_trades") or "live_trades")
+            except Exception as ex:
+                self.logger.warning("CryptoVolumeManager diagnostics failed for %s: %s", symbol_norm, ex)
+
+        snapshot_timestamp = str(latest_candle_1m.get("timestamp", "") or latest_snapshot.get("timestamp", "") or "")
+        if volume_snapshot is None:
+            data_source = "rest_bars+trades fallback" if trade_volume_status == "OK" else "snapshot_fallback"
+            volume_source = "rest_bars+trades fallback" if trade_volume_status == "OK" else "snapshot_fallback"
+            fallback_latest_bar_age_seconds = 999999.0
+            if latest_candle_dt is not None:
+                fallback_latest_bar_age_seconds = max(0.0, (now_utc - latest_candle_dt).total_seconds())
+            fallback_data_stale = bool(inferred_asset_type == "crypto" and fallback_latest_bar_age_seconds > 15.0)
+            fallback_websocket_stale = bool(inferred_asset_type == "crypto")
+            fallback_status = "FALLBACK_USED" if trade_volume_status == "OK" else "STALE"
+            volume_data_status = fallback_status
+            if volume_validation is None:
+                fallback_reason = "CryptoVolumeManager snapshot unavailable"
+                if trade_volume_error:
+                    fallback_reason = f"{fallback_reason}: {trade_volume_error}"
+                volume_validation = {
+                    "is_valid": False,
+                    "volume_valid_for_live_analysis": False,
+                    "status": fallback_status,
+                    "reason": fallback_reason,
+                    "last_update": snapshot_timestamp,
+                    "source": volume_source,
+                    "data_stale": fallback_data_stale,
+                    "websocket_stale": fallback_websocket_stale,
+                    "latest_bar_age_seconds": fallback_latest_bar_age_seconds,
+                    "volume_has_clear_unit": False,
+                }
+            if inferred_asset_type == "crypto":
+                global_volume_source = self._normalize_global_source_label(global_volume_source)
 
         ai_max_spread_allowed = float(getattr(self, "_ai_max_spread_allowed", getattr(self.settings, "ai_max_spread_allowed", 0.05)) or 0.05)
         spread_check_ok = self._is_spread_allowed(asset_type=inferred_asset_type, spread=spread, price=price)
@@ -1039,6 +1168,11 @@ class AITradingBrainService:
 
         signal_type = str((latest_signal or {}).get("signal_type", "") or "").upper().strip()
         confidence = float((latest_signal or {}).get("confidence_score", 0.0) or 0.0)
+        actual_signal_engine = self._trade_decision_engine_from_reason(signal_reason)
+        requested_signal_engine = self._requested_decision_engine_from_reason(signal_reason)
+        latest_signal_model_version = str((latest_signal or {}).get("model_version", "") or "").strip()
+        current_approved_model = str(self.registry.approved_version() or "").strip()
+        current_approved_model_available = bool(self.registry.approved_model_available())
         is_buy_signal = signal_type in {"BUY", "BUY_SMALL"}
         auto_enabled_for_asset = self._is_effective_auto_enabled_for_symbol(
             runtime=runtime,
@@ -1155,7 +1289,13 @@ class AITradingBrainService:
 
         blocked_reasons_for_entry = list(blocked_reasons_unique)
         if not is_buy_signal:
-            blocked_reasons_for_entry = []
+            current_signal = signal_type if signal_type else "NO_SIGNAL"
+            blocked_reasons_for_entry = [f"Señal actual no habilita compra ({current_signal})"]
+            if requested_signal_engine == "model" and actual_signal_engine == "heuristic_fallback":
+                if current_approved_model and not current_approved_model_available:
+                    blocked_reasons_for_entry.append("Modo modelo con referencia aprobada rota: falta el archivo del modelo aprobado, usando heurística de respaldo")
+                else:
+                    blocked_reasons_for_entry.append("Modo modelo sin modelo aprobado activo: usando heurística de respaldo")
 
         recommendations: list[dict[str, Any]] = []
         if not auto_enabled_for_asset:
@@ -1176,6 +1316,29 @@ class AITradingBrainService:
                     "suggested": False,
                     "risk": "alto",
                     "reason": "En modo solo señales no se envian ordenes automaticas.",
+                }
+            )
+        if requested_signal_engine == "model" and actual_signal_engine == "heuristic_fallback":
+            fallback_reason = (
+                "La cuenta está en modo modelo, pero no hay modelo aprobado activo en este momento."
+                if not current_approved_model
+                else (
+                    "La cuenta está en modo modelo, pero la referencia del modelo aprobado no tiene archivo disponible en disco; por eso cayó a heurística de respaldo."
+                    if not current_approved_model_available
+                    else "La cuenta está en modo modelo y sí hay un modelo aprobado activo, pero la última señal parece venir de un ciclo anterior o de respaldo heurístico."
+                )
+            )
+            recommendations.append(
+                {
+                    "setting": "scanner_decision_engine",
+                    "current": "model",
+                    "suggested": (
+                        "aprobar_modelo_o_usar_heuristica"
+                        if not current_approved_model
+                        else ("reaprobar_modelo_existente_o_aprobar_uno_nuevo" if not current_approved_model_available else "forzar_nueva_señal_con_modelo_aprobado")
+                    ),
+                    "risk": "bajo",
+                    "reason": fallback_reason,
                 }
             )
         if is_buy_signal and not spread_check_ok:
@@ -1258,13 +1421,39 @@ class AITradingBrainService:
                 "price": price,
                 "spread": spread,
                 "spread_pct": spread_pct,
-                "alpaca_pair_volume_1m": alpaca_pair_volume_1m,
-                "alpaca_pair_volume_5m": alpaca_pair_volume_5m,
-                "alpaca_pair_volume_15m": alpaca_pair_volume_15m,
+                "alpaca_pair_volume_1m_base": alpaca_pair_volume_1m_base,
+                "alpaca_pair_volume_5m_base": alpaca_pair_volume_5m_base,
+                "alpaca_pair_volume_15m_base": alpaca_pair_volume_15m_base,
+                "alpaca_pair_volume_1m_usd": alpaca_pair_volume_1m_usd,
+                "alpaca_pair_volume_5m_usd": alpaca_pair_volume_5m_usd,
+                "alpaca_pair_volume_15m_usd": alpaca_pair_volume_15m_usd,
+                "alpaca_pair_volume_1m": alpaca_pair_volume_1m_base,
+                "alpaca_pair_volume_5m": alpaca_pair_volume_5m_base,
+                "alpaca_pair_volume_15m": alpaca_pair_volume_15m_base,
+                "volume_5m_minutes_used": min(5, max(candle_count_1m, 0)),
+                "volume_15m_minutes_used": min(15, max(candle_count_1m, 0)),
+                "volume_minutes_available": max(candle_count_1m, 0),
+                "alpaca_trade_volume_1m_base": alpaca_trade_volume_1m_base,
+                "alpaca_trade_volume_1m_usd": alpaca_trade_volume_1m_usd,
+                "alpaca_trade_volume_1m": alpaca_trade_volume_1m_base,
+                "alpaca_trade_count_1m": alpaca_trade_count_1m,
+                "alpaca_trade_window_seconds": alpaca_trade_window_seconds,
+                "trade_volume_status": trade_volume_status,
+                "trade_volume_error": trade_volume_error,
                 "alpaca_pair_volume_24h_usd": alpaca_pair_volume_24h_usd,
                 "global_volume_24h_usd": global_volume_24h_usd,
                 "volume_source": volume_source,
+                "local_volume_source": volume_source,
+                "global_volume_source": global_volume_source,
                 "volume_data_status": volume_data_status,
+                "volume_validation_status": str((volume_validation or {}).get("status", "UNKNOWN") or "UNKNOWN"),
+                "volume_validation_reason": str((volume_validation or {}).get("reason", "") or ""),
+                "volume_validation_source": str((volume_validation or {}).get("source", "unknown") or "unknown"),
+                "volume_valid_for_live_analysis": bool((volume_validation or {}).get("volume_valid_for_live_analysis", False)),
+                "data_stale": bool((volume_validation or {}).get("data_stale", False)),
+                "websocket_stale": bool((volume_validation or {}).get("websocket_stale", False)),
+                "latest_bar_age_seconds": float((volume_validation or {}).get("latest_bar_age_seconds", 999999.0) or 999999.0),
+                "volume_has_clear_unit": bool((volume_validation or {}).get("volume_has_clear_unit", False)),
                 "global_volume_status": global_volume_status,
                 "global_volume_warning": global_volume_warning,
                 "snapshot_timestamp": snapshot_timestamp,
@@ -1292,13 +1481,19 @@ class AITradingBrainService:
             },
             "latest_signal": latest_signal,
             "latest_decision": latest_decision,
+            "diagnostic_model_info": {
+                "current_approved_model": current_approved_model or "heuristic",
+                "current_approved_model_available": current_approved_model_available,
+                "latest_signal_model_version": latest_signal_model_version or "N/A",
+                "latest_signal_engine": actual_signal_engine or "unknown",
+                "latest_signal_requested_engine": requested_signal_engine or "unknown",
+            },
             "blocked_reasons": blocked_reasons_for_entry,
             "entry_checks": checks,
             "can_enter_now": all(
                 bool(item.get("ok", False))
                 for item in checks
-                if item.get("name") != "signal_only_disabled"
-                and str(item.get("state", "APPLIES")) == "APPLIES"
+                if str(item.get("state", "APPLIES")) == "APPLIES"
             ),
             "entry_reason": "; ".join(entry_blockers) if entry_blockers else "Sin bloqueos activos detectados",
             "entry_blockers": entry_blockers,
@@ -1510,10 +1705,43 @@ class AITradingBrainService:
     def list_signals(self, limit: int = 25) -> list[dict[str, Any]]:
         return self.database.latest_signals(limit=limit)
 
-    def list_history(self, account_name: str, limit: int | None = None) -> list[dict[str, Any]]:
+    @staticmethod
+    def _trade_decision_engine_from_reason(reason: Any) -> str:
+        text = str(reason or "")
+        marker = "decision_engine="
+        if marker not in text:
+            return "unknown"
+        tail = text.split(marker, 1)[1]
+        return str(tail.split(";", 1)[0] or "unknown").strip().lower()
+
+    @staticmethod
+    def _requested_decision_engine_from_reason(reason: Any) -> str:
+        text = str(reason or "")
+        marker = "requested_engine="
+        if marker not in text:
+            return "unknown"
+        tail = text.split(marker, 1)[1]
+        return str(tail.split(";", 1)[0] or "unknown").strip().lower()
+
+    def list_history(self, account_name: str, limit: int | None = None, actor_filter: str = "all") -> list[dict[str, Any]]:
         account = self.refresh_account_context(account_name)
         trade_limit = int(limit) if limit is not None else 1000000
-        return self.database.list_trades(int(account["id"]), limit=trade_limit)
+        rows = self.database.list_trades_enriched(int(account["id"]), limit=trade_limit)
+        normalized_filter = str(actor_filter or "all").strip().lower()
+        filtered: list[dict[str, Any]] = []
+        for row in rows:
+            initiated_by = str(row.get("initiated_by", "unknown") or "unknown").strip().lower()
+            is_ai = initiated_by in {"bot_auto", "ai_auto", "automation"}
+            if normalized_filter == "ia" and not is_ai:
+                continue
+            if normalized_filter == "normal" and is_ai:
+                continue
+
+            payload = dict(row)
+            payload["decision_engine"] = self._trade_decision_engine_from_reason(payload.get("signal_reason", ""))
+            payload["model_version_display"] = str(payload.get("signal_model_version", "") or "")
+            filtered.append(payload)
+        return filtered
 
     def get_scalping_board(self, limit_stocks: int = 6, limit_cryptos: int = 3) -> dict[str, list[dict[str, Any]]]:
         actionable = {"WATCH", "BUY_SMALL", "BUY", "SELL_ALLOWED"}
@@ -1644,11 +1872,25 @@ class AITradingBrainService:
             raise ValueError("No hay modelo para aprobar")
         return self.approve_model_version(version)
 
+    def _training_run_by_model_version(self, version: str) -> dict[str, Any] | None:
+        version_text = str(version or "").strip()
+        if not version_text:
+            return None
+        for row in self.database.list_training_runs(limit=1000):
+            if str(row.get("model_version", "") or "").strip() == version_text:
+                return row
+        return None
+
     def approve_model_version(self, version: str) -> str:
         if not version:
             raise ValueError("Version de modelo invalida")
         if version not in self.registry.available_versions():
             raise ValueError(f"Modelo no encontrado: {version}")
+        training_run = self._training_run_by_model_version(version)
+        if training_run is None:
+            raise ValueError(
+                f"No se puede aprobar {version}: no tiene métricas persistidas de entrenamiento para compararlo con modelos futuros"
+            )
         self.registry.approve_model(version)
         self.database.insert_decision_log(
             {
@@ -1732,6 +1974,7 @@ class AITradingBrainService:
 
     def list_model_candidates(self, limit: int = 12) -> dict[str, Any]:
         approved = self.registry.approved_version() or ""
+        approved_available = bool(self.registry.approved_model_available())
         latest = self.registry.latest_version() or ""
         frozen = self.registry.frozen_candidate() or ""
         available_versions = set(self.registry.available_versions())
@@ -1752,6 +1995,7 @@ class AITradingBrainService:
             )
         return {
             "approved": approved,
+            "approved_valid": bool(approved and approved_available and any(str(row.get("model_version", "") or "") == approved for row in rows)),
             "latest": latest,
             "frozen": frozen,
             "rows": rows,
@@ -1822,11 +2066,25 @@ class AITradingBrainService:
         quantity_owned = 0.0
         total_cost_basis = 0.0
         realized_pnl = 0.0
+        executed_statuses = {
+            "filled",
+            "partially_filled",
+            "done_for_day",
+            "calculated",
+        }
         for trade in reversed(trades):
             if self._symbol_key(str(trade.get("symbol", ""))) != symbol_key:
                 continue
+            status = str(trade.get("status", "") or "").strip().lower()
             qty = float(trade.get("qty", 0.0) or 0.0)
-            price = float(trade.get("filled_price", 0.0) or trade.get("limit_price", 0.0) or 0.0)
+            filled_price = float(trade.get("filled_price", 0.0) or 0.0)
+            limit_price = float(trade.get("limit_price", 0.0) or 0.0)
+            # Ignore non-executed orders (pending/new/submitted) so they don't create fake positions.
+            if filled_price <= 0.0 and status and status not in executed_statuses:
+                continue
+            price = filled_price if filled_price > 0.0 else limit_price
+            if price <= 0.0:
+                continue
             fees = float(trade.get("fees", 0.0) or 0.0)
             side = str(trade.get("side", "")).lower()
             if side == "buy":
@@ -2157,12 +2415,56 @@ class AITradingBrainService:
 
         return aggregated
 
+    def _aggregate_snapshot_rows_to_minutes(self, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        aggregated: list[dict[str, Any]] = []
+        current_minute: datetime | None = None
+        current_bar: dict[str, Any] | None = None
+
+        for row in rows:
+            ts = self._parse_iso_timestamp(str(row.get("timestamp", "") or ""))
+            if ts is None:
+                continue
+            minute_key = ts.replace(second=0, microsecond=0)
+
+            close_value = float(row.get("close", row.get("price", 0.0)) or 0.0)
+            open_value = float(row.get("open", close_value) or close_value)
+            high_value = float(row.get("high", close_value) or close_value)
+            low_value = float(row.get("low", close_value) or close_value)
+            volume_value = float(row.get("volume", 0.0) or 0.0)
+
+            if current_minute is None or minute_key != current_minute:
+                if current_bar is not None:
+                    aggregated.append(current_bar)
+                current_minute = minute_key
+                current_bar = {
+                    "open": open_value,
+                    "high": high_value,
+                    "low": low_value,
+                    "close": close_value,
+                    "volume": volume_value,
+                    "timestamp": ts.isoformat(),
+                }
+                continue
+
+            if current_bar is None:
+                continue
+            current_bar["high"] = max(float(current_bar.get("high", high_value) or high_value), high_value)
+            current_bar["low"] = min(float(current_bar.get("low", low_value) or low_value), low_value)
+            current_bar["close"] = close_value
+            current_bar["volume"] = max(float(current_bar.get("volume", 0.0) or 0.0), volume_value)
+            current_bar["timestamp"] = ts.isoformat()
+
+        if current_bar is not None:
+            aggregated.append(current_bar)
+
+        return aggregated
+
     def _stream_market_context(self, symbol: str, account_id: int, asset_type: str) -> dict[str, Any] | None:
         snapshots = self.database.latest_market_snapshots(symbol=symbol, limit=180)
         if not snapshots:
             return None
 
-        bars_1m = list(reversed([
+        snapshot_rows = list(reversed([
             {
                 "open": float(row.get("open", row.get("close", 0.0)) or 0.0),
                 "high": float(row.get("high", row.get("close", 0.0)) or 0.0),
@@ -2173,6 +2475,7 @@ class AITradingBrainService:
             }
             for row in snapshots
         ]))
+        bars_1m = self._aggregate_snapshot_rows_to_minutes(snapshot_rows)
         bars_5m = self._aggregate_stream_bars(bars_1m, 5)
         bars_15m = self._aggregate_stream_bars(bars_1m, 15)
         latest = bars_1m[-1] if bars_1m else {}
@@ -2527,6 +2830,9 @@ class AITradingBrainService:
         account = self.refresh_account_context(account_name)
         account_id = int(account["id"])
         runtime = self.database.get_runtime_settings(account_id) or {}
+        scanner_engine = str(runtime.get("scanner_decision_engine", "heuristic") or "heuristic").strip().lower()
+        if scanner_engine not in {"heuristic", "model"}:
+            scanner_engine = "heuristic"
         focus = self._focus_for_account(account_name)
         focus_stocks_only = bool(focus.get("stocks_only", False))
         focus_cryptos_only = bool(focus.get("cryptos_only", False))
@@ -2578,33 +2884,45 @@ class AITradingBrainService:
                 )
                 continue
 
-            volume_1m_current = float(latest.get("volume", 0.0) or 0.0)
+            volume_1m_current = 0.0
             volume_1m_previous_closed = 0.0
-            for row in snapshots[1:]:
-                candidate = float(row.get("volume", 0.0) or 0.0)
-                if candidate > 0:
-                    volume_1m_previous_closed = candidate
-                    break
 
-            closed_1m = [float(row.get("volume", 0.0) or 0.0) for row in snapshots[1:61]]
+            snapshot_rows = list(reversed([
+                {
+                    "open": float(row.get("open", row.get("close", 0.0)) or 0.0),
+                    "high": float(row.get("high", row.get("close", 0.0)) or 0.0),
+                    "low": float(row.get("low", row.get("close", 0.0)) or 0.0),
+                    "close": float(row.get("close", row.get("price", 0.0)) or 0.0),
+                    "volume": float(row.get("volume", 0.0) or 0.0),
+                    "timestamp": row.get("timestamp"),
+                }
+                for row in snapshots
+            ]))
+            minute_bars = self._aggregate_snapshot_rows_to_minutes(snapshot_rows)
+            minute_bars_desc = list(reversed(minute_bars))
+
+            closed_1m = [float(row.get("volume", 0.0) or 0.0) for row in minute_bars_desc[1:61]]
             volume_5m_sum = sum(closed_1m[:5])
             volume_15m_sum = sum(closed_1m[:15])
             avg_volume_1m_20 = sum(closed_1m[:20]) / max(len(closed_1m[:20]), 1)
 
-            candles_5m = self._aggregate_stream_bars(
-                [
-                    {
-                        "open": float(row.get("open", row.get("close", 0.0)) or 0.0),
-                        "high": float(row.get("high", row.get("close", 0.0)) or 0.0),
-                        "low": float(row.get("low", row.get("close", 0.0)) or 0.0),
-                        "close": float(row.get("close", row.get("price", 0.0)) or 0.0),
-                        "volume": float(row.get("volume", 0.0) or 0.0),
-                        "timestamp": row.get("timestamp"),
-                    }
-                    for row in list(reversed(snapshots[:120]))
-                ],
-                5,
-            )
+            trade_volume_status = "OK"
+            trade_volume_error = ""
+            trade_count_1m = 0
+            try:
+                trades_1m = self.market_data.get_recent_trade_stats(symbol=symbol, lookback_seconds=60, limit=5000)
+                trades_5m = self.market_data.get_recent_trade_stats(symbol=symbol, lookback_seconds=300, limit=5000)
+                trades_15m = self.market_data.get_recent_trade_stats(symbol=symbol, lookback_seconds=900, limit=5000)
+                volume_1m_current = float(trades_1m.get("volume_usd", trades_1m.get("volume", 0.0)) or 0.0)
+                trade_count_1m = int(trades_1m.get("count", 0) or 0)
+                volume_1m_previous_closed = volume_1m_current
+                volume_5m_sum = float(trades_5m.get("volume_usd", trades_5m.get("volume", 0.0)) or 0.0)
+                volume_15m_sum = float(trades_15m.get("volume_usd", trades_15m.get("volume", 0.0)) or 0.0)
+            except Exception as ex:
+                trade_volume_status = "ERROR"
+                trade_volume_error = str(ex)
+
+            candles_5m = self._aggregate_stream_bars(minute_bars, 5)
             candle_5m_volumes = [float(candle.get("volume", 0.0) or 0.0) for candle in candles_5m]
             avg_volume_5m_20 = sum(candle_5m_volumes[-20:]) / max(len(candle_5m_volumes[-20:]), 1)
 
@@ -2631,19 +2949,30 @@ class AITradingBrainService:
                 if base_symbol in {"SOL", "BTC", "ETH", "XRP"} and global_volume_24h_usd < 1_000_000.0:
                     global_volume_warning = "Global volume seems incorrect or source is incomplete"
 
-            if volume_1m_current <= 0 and volume_1m_previous_closed > 0:
-                # If current candle is empty/incomplete, fallback to latest closed candle volume.
-                volume_1m_current = volume_1m_previous_closed
-
-            if volume_1m_current <= 0 and asset_type.lower() == "crypto" and volume_5m_sum > 0:
-                # Crypto fallback: allow using 5m aggregate when 1m is temporarily empty.
-                volume_1m_current = volume_5m_sum / 5.0
+            recent_trade_volume = 0.0
+            recent_trade_count = 0
+            recent_trade_window_seconds = 0
+            recent_trade_error = trade_volume_error
+            if trade_volume_status == "OK":
+                recent_trade_volume = volume_1m_current
+                recent_trade_count = trade_count_1m
+                recent_trade_window_seconds = 60
 
             blocked_reasons: list[str] = []
-            if volume_1m_previous_closed <= 0:
-                blocked_reasons.append("Sin vela cerrada válida")
+            volume_validation = self.volume_manager.validate_volume_data(symbol) if asset_type.lower() == "crypto" else {
+                "is_valid": True,
+                "status": "OK",
+                "reason": "",
+            }
             if volume_1m_current <= 0 and volume_5m_sum <= 0 and volume_15m_sum <= 0:
-                blocked_reasons.append("Volumen inválido")
+                if recent_trade_volume > 0.0 or recent_trade_count > 0:
+                    blocked_reasons.append(f"Volumen barras en cero; trades recientes detectados ({recent_trade_count} trades / {recent_trade_window_seconds}s)")
+                else:
+                    blocked_reasons.append("Volumen real inválido")
+            if trade_volume_status != "OK":
+                blocked_reasons.append("No se pudo consultar volumen real de trades")
+            if not bool(volume_validation.get("is_valid", False)):
+                blocked_reasons.append(f"Volumen no válido: {volume_validation.get('reason', 'sin detalle')}")
 
             min_volume_24h_usd = float(getattr(self.settings, "ai_min_volume_24h_usd", 100000.0) or 100000.0)
             effective_volume_24h_usd = volume_24h_usd
@@ -2666,6 +2995,12 @@ class AITradingBrainService:
                             "volume_1m_previous_closed": volume_1m_previous_closed,
                             "volume_5m_sum": volume_5m_sum,
                             "volume_15m_sum": volume_15m_sum,
+                            "recent_trade_volume": recent_trade_volume,
+                            "recent_trade_count": recent_trade_count,
+                            "recent_trade_window_seconds": recent_trade_window_seconds,
+                            "recent_trade_error": recent_trade_error,
+                            "trade_volume_status": trade_volume_status,
+                            "volume_validation": volume_validation,
                         },
                     }
                 )
@@ -2721,16 +3056,63 @@ class AITradingBrainService:
             if recent_high_15m + reachable_buffer < target_take_profit:
                 blocked_reasons.append("Target IA no alcanzable ahora")
 
-            if final_score < 45:
-                blocked_reasons.append("Score menor al mínimo")
-            if final_score < 45:
-                action = "AVOID"
-            elif final_score < 60:
-                action = "WATCH"
-            elif final_score < 75:
-                action = "BUY_SMALL"
+            model_version = "worker_scanner_v1"
+            actual_decision_engine = scanner_engine
+            if scanner_engine == "model":
+                predictor_features = {
+                    "asset_type": asset_type,
+                    "price": price,
+                    "volume": volume_1m_current,
+                    "vwap": float(latest.get("vwap", price) or price),
+                    "rsi": float(latest.get("rsi", 50.0) or 50.0),
+                    "atr": float(latest.get("atr", 0.0) or 0.0),
+                    "spread": spread,
+                    "percent_change_1m": float(latest.get("percent_change_1m", 0.0) or 0.0),
+                    "percent_change_5m": float(latest.get("percent_change_5m", 0.0) or 0.0),
+                    "percent_change_15m": float(latest.get("percent_change_15m", 0.0) or 0.0),
+                    "price_above_vwap": 1.0 if price >= float(latest.get("vwap", price) or price) else 0.0,
+                    "volume_spike_score": max(relative_volume_1m, relative_volume_5m),
+                    "news_sentiment_score": 0.0,
+                    "news_importance_score": min(news_score / 20.0, 1.0),
+                    "news_risk_score": min(max((100.0 - final_score) / 100.0, 0.0), 1.0),
+                    "market_session": "crypto" if asset_type.lower() == "crypto" else "regular",
+                    "existing_position": False,
+                    "distance_from_average_cost": 0.0,
+                    "liquidity_score": (liquidity_score / 15.0) if liquidity_score > 0 else 0.0,
+                    "composite_score": final_score,
+                }
+                try:
+                    prediction = self.predictor.predict_signal(predictor_features)
+                    action = str(prediction.get("action", "WATCH") or "WATCH")
+                    final_score = float(prediction.get("confidence_score", final_score) or final_score)
+                    model_version = str(prediction.get("model_version", "general_model_heuristic") or "general_model_heuristic")
+                    actual_decision_engine = str(prediction.get("decision_engine", scanner_engine) or scanner_engine).strip().lower()
+                except Exception as ex:
+                    self._record_error("SignalScannerWorker", "predict_signal", ex)
+                    scanner_engine = "heuristic"
+                    actual_decision_engine = "heuristic"
+                    blocked_reasons.append("Fallback a heuristica por error de modelo")
+                    if final_score < 45:
+                        blocked_reasons.append("Score menor al mínimo")
+                    if final_score < 45:
+                        action = "AVOID"
+                    elif final_score < 60:
+                        action = "WATCH"
+                    elif final_score < 75:
+                        action = "BUY_SMALL"
+                    else:
+                        action = "BUY"
             else:
-                action = "BUY"
+                if final_score < 45:
+                    blocked_reasons.append("Score menor al mínimo")
+                if final_score < 45:
+                    action = "AVOID"
+                elif final_score < 60:
+                    action = "WATCH"
+                elif final_score < 75:
+                    action = "BUY_SMALL"
+                else:
+                    action = "BUY"
 
             if action in {"BUY", "BUY_SMALL"} and any("Target IA no alcanzable ahora" == reason for reason in blocked_reasons):
                 action = "WATCH"
@@ -2742,6 +3124,7 @@ class AITradingBrainService:
             reason = (
                 f"price_action={price_action_score:.2f}; volume={volume_score:.2f}; liquidity={liquidity_score:.2f}; "
                 f"news={news_score:.2f}; risk={risk_score:.2f}; final={final_score:.2f}; "
+                f"decision_engine={actual_decision_engine}; requested_engine={scanner_engine}; "
                 f"volume_1m_current={volume_1m_current:.2f}; volume_1m_previous_closed={volume_1m_previous_closed:.2f}; "
                 f"volume_5m_sum={volume_5m_sum:.2f}; volume_15m_sum={volume_15m_sum:.2f}; "
                 f"avg_volume_1m_20={avg_volume_1m_20:.2f}; avg_volume_5m_20={avg_volume_5m_20:.2f}; "
@@ -2826,7 +3209,7 @@ class AITradingBrainService:
                     "asset_type": asset_type,
                     "signal_type": action,
                     "confidence_score": final_score,
-                    "model_version": "worker_scanner_v1",
+                    "model_version": model_version,
                     "reason": reason,
                     "entry_price": price,
                     "suggested_limit_price": price,
@@ -3084,6 +3467,11 @@ class AITradingBrainService:
         return list(symbols.values())
 
     def _handle_stream_market_event(self, message_type: str, payload: dict[str, Any]) -> None:
+        try:
+            self.volume_manager.handle_websocket_event(message_type, payload)
+        except Exception as ex:
+            self.logger.warning("Volume manager WS update failed: %s", ex)
+
         symbol = str(payload.get("S", "")).upper().strip()
         if not symbol:
             return
