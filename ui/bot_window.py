@@ -63,11 +63,8 @@ class BotControlWindow:
 
         self.account_profiles = settings.account_profiles()
 
-        default_account = "Paper" if "paper" in settings.alpaca_endpoint.lower() else "Real"
-        if default_account in self.account_profiles:
-            initial_account = default_account
-        else:
-            initial_account = next(iter(self.account_profiles.keys()), "Paper")
+        default_account = next(iter(self.account_profiles.keys()), "Demo")
+        initial_account = default_account if default_account in self.account_profiles else next(iter(self.account_profiles.keys()), "Demo")
 
         self.account_var = tk.StringVar(value=initial_account)
         self.market_kind_var = tk.StringVar(value="Stocks")
@@ -90,7 +87,8 @@ class BotControlWindow:
         self.status_var = tk.StringVar(value="Listo")
         self.app_health_var = tk.StringVar(value="App status: N/A")
         self.ws_health_var = tk.StringVar(value="WebSocket: N/A")
-        self.api_health_var = tk.StringVar(value="Alpaca/API: N/A")
+        self.api_health_var = tk.StringVar(value="Broker/API: N/A")
+        self.vpn_badge_var = tk.StringVar(value="VPN: esperando conexión...")
         self._order_alias_map: dict[str, str] = {}
 
         self._monitor_in_flight = False
@@ -109,6 +107,7 @@ class BotControlWindow:
         self._ui_heartbeat_path = Path(__file__).resolve().parents[1] / "runtime" / f"ui_heartbeat_{os.getpid()}.json"
         self._ui_heartbeat_interval_ms = 2000
         self._ui_heartbeat_timeout_seconds = 25
+        self._emergency_helper_enabled = str(os.getenv("ENABLE_EMERGENCY_HELPER", "false") or "false").strip().lower() == "true"
         self._history_tab_frame: ttk.Frame | None = None
         self._power_inhibitor: PowerInhibitor | None = None
         self._emergency_close_process: subprocess.Popen[str] | None = None
@@ -117,6 +116,12 @@ class BotControlWindow:
         self._is_closing = False
         self._startup_restore_done = False
         self._network_degraded = False
+        self._vpn_ever_ready = False
+        self._vpn_forced_pause_active = False
+        self._vpn_bootstrap_in_flight = False
+        self._vpn_guard_in_flight = False
+        self._vpn_last_ready_state: bool | None = None
+        self._vpn_last_connect_attempt_ts = 0.0
         self._latest_ai_signal_id: int | None = None
         self.ai_window: tk.Toplevel | None = None
         self.ai_diagnostics_window: tk.Toplevel | None = None
@@ -126,6 +131,7 @@ class BotControlWindow:
         self.ai_history_side_filter_var = tk.StringVar(value="Todos")
         self.ai_history_engine_filter_var = tk.StringVar(value="Todos")
         self.ai_history_status_filter_var = tk.StringVar(value="Todos")
+        self._ai_automation_account = initial_account
         default_diag_market = "Cryptos" if ("/" in str(settings.default_symbol).upper() or str(settings.default_symbol).upper().endswith("USD")) else "Stocks"
         self.ai_diag_market_kind_var = tk.StringVar(value=default_diag_market)
         self.ai_diag_symbol_var = tk.StringVar(value=str(settings.default_symbol))
@@ -160,6 +166,12 @@ class BotControlWindow:
         self.ai_auto_trade_stocks_var = tk.IntVar(value=1)
         self.ai_auto_trade_cryptos_var = tk.IntVar(value=1)
         self.ai_decision_engine_var = tk.StringVar(value="heuristic")
+        self.ai_futures_only_mode_var = tk.IntVar(value=1 if bool(getattr(settings, "crypto_futures_only_mode", True)) else 0)
+        self.ai_futures_leverage_var = tk.StringVar(value=str(max(int(getattr(settings, "crypto_futures_default_leverage", 1) or 1), 1)))
+        self.ai_futures_require_technical_var = tk.IntVar(value=1 if bool(getattr(settings, "ai_futures_require_technical", True)) else 0)
+        self.ai_futures_require_news_var = tk.IntVar(value=1 if bool(getattr(settings, "ai_futures_require_news", False)) else 0)
+        self.ai_futures_enable_long_var = tk.IntVar(value=1 if bool(getattr(settings, "ai_futures_enable_long", True)) else 0)
+        self.ai_futures_enable_short_var = tk.IntVar(value=1 if bool(getattr(settings, "ai_futures_enable_short", True)) else 0)
         self.ai_pending_status_var = tk.StringVar(value="IA pendiente: --")
         self.ai_focus_stocks_only_var = tk.IntVar(value=1 if bool(getattr(settings, "ai_focus_stocks_only", False)) else 0)
         self.ai_focus_cryptos_only_var = tk.IntVar(value=1 if bool(getattr(settings, "ai_focus_cryptos_only", False)) else 0)
@@ -222,16 +234,18 @@ class BotControlWindow:
         self.config_cp_today_active_var = tk.StringVar(value="No")
         self.config_cp_active_days_remaining_var = tk.StringVar(value="0")
         self.config_cp_request_days_vars: dict[int, tk.IntVar] = {idx: tk.IntVar(value=0) for idx in range(7)}
+        self._ai_crypto_monitor_refresh_in_flight = False
 
         self._load_ai_ui_state()
 
         self._build_ui()
         self._build_ai_window()
         self._power_inhibitor = start_power_inhibitor(self.logger)
-        self._start_emergency_close_helper()
+        if self._emergency_helper_enabled:
+            self._start_emergency_close_helper()
         self._apply_selected_account(update_status=False, require_credentials=False)
         threading.Thread(target=self._refresh_accounts_header_summary, daemon=True).start()
-        self._refresh_ai_views()
+        threading.Thread(target=self._refresh_ai_views, daemon=True).start()
 
     def _build_ui(self) -> None:
         container = ttk.Frame(self.root, padding=16)
@@ -499,6 +513,17 @@ class BotControlWindow:
         ttk.Label(container, textvariable=self.app_health_var, foreground="#1f4d7a").pack(anchor="w")
         ttk.Label(container, textvariable=self.ws_health_var, foreground="#1f4d7a").pack(anchor="w")
         ttk.Label(container, textvariable=self.api_health_var, foreground="#1f4d7a").pack(anchor="w")
+        self.vpn_badge_label = tk.Label(
+            container,
+            textvariable=self.vpn_badge_var,
+            fg="white",
+            bg="#9a6700",
+            padx=10,
+            pady=4,
+            relief="ridge",
+            bd=1,
+        )
+        self.vpn_badge_label.pack(anchor="w", pady=(4, 0))
 
         self.log_notebook = ttk.Notebook(container)
         self.log_notebook.pack(fill="both", expand=True, pady=(8, 0))
@@ -899,6 +924,7 @@ class BotControlWindow:
             self.root.after(0, self._show_error, "Selecciona una cuenta para IA.")
             return
 
+        self._ai_automation_account = selected
         if hasattr(self, "ai_diag_account_var"):
             self.ai_diag_account_var.set(selected)
 
@@ -1155,6 +1181,7 @@ class BotControlWindow:
             state="readonly",
             width=10,
         ).pack(side="left", padx=(0, 8))
+        ttk.Button(mode_row, text="Config Futuros", command=self._open_futures_risk_window).pack(side="left", padx=(0, 8))
         ttk.Label(mode_row, textvariable=self.ai_pending_status_var, foreground="#1d5f2a").pack(side="left", padx=(4, 8))
         ttk.Button(mode_row, text="Guardar modo", command=lambda: self._run_async(self._save_ai_runtime_controls)).pack(side="right", padx=(8, 8))
 
@@ -1229,7 +1256,7 @@ class BotControlWindow:
         ttk.Button(
             crypto_toolbar,
             text="Refrescar Monitoreo Crypto",
-            command=lambda: self._run_async(self._refresh_ai_crypto_monitor_view),
+            command=self._refresh_ai_crypto_monitor_view_async,
         ).pack(side="right")
         monitor_height = 8 if self._ui_compact_mode else 12
         self.ai_crypto_monitor_text = tk.Text(crypto_monitor_body, height=monitor_height, wrap="word")
@@ -1295,7 +1322,8 @@ class BotControlWindow:
             self.ai_window.withdraw()
 
     def _show_ai_diagnostics_window(self) -> None:
-        if not self.ai_diag_account_var.get().strip():
+        diag_account = self.ai_diag_account_var.get().strip()
+        if (not diag_account) or (diag_account not in self.account_profiles):
             self.ai_diag_account_var.set(self.account_var.get().strip())
         if self.ai_diagnostics_window is not None and self.ai_diagnostics_window.winfo_exists():
             self.ai_diagnostics_window.deiconify()
@@ -1500,8 +1528,10 @@ class BotControlWindow:
             self._safe_after(0, self._show_error, "Ingresa un símbolo para diagnóstico IA.", False)
             return
         account_name = self.ai_diag_account_var.get().strip() if hasattr(self, "ai_diag_account_var") else self.account_var.get().strip()
-        if not account_name:
+        if (not account_name) or (account_name not in self.account_profiles):
             account_name = self.account_var.get().strip()
+            if hasattr(self, "ai_diag_account_var"):
+                self.ai_diag_account_var.set(account_name)
         asset_type = "crypto" if self.ai_diag_market_kind_var.get().strip() == "Cryptos" else "stock"
         try:
             payload = self.ai_trading_brain.get_symbol_diagnostics(
@@ -1528,7 +1558,13 @@ class BotControlWindow:
         recommendations = payload.get("recommendations", []) or []
         entry_blockers = payload.get("entry_blockers", []) or []
 
-        volume_15m_value = float(market.get("alpaca_pair_volume_15m_base", market.get("alpaca_pair_volume_15m", 0.0)) or 0.0)
+        volume_15m_value = float(
+            market.get(
+                "binance_pair_volume_15m_base",
+                market.get("alpaca_pair_volume_15m_base", market.get("alpaca_pair_volume_15m", 0.0)),
+            )
+            or 0.0
+        )
         symbol_text = str(payload.get("symbol", "") or "").upper().strip()
         base_unit = symbol_text.split("/", 1)[0] if "/" in symbol_text else "BASE"
         volume_status_text = str(market.get("volume_data_status", "N/A") or "N/A").upper()
@@ -1551,6 +1587,9 @@ class BotControlWindow:
         # until the user explicitly saves/applies settings.
         _ = runtime
         _ = settings_payload
+        latest_decision_blocked_reason = ""
+        if latest_decision:
+            latest_decision_blocked_reason = str(latest_decision.get("blocked_reason", "") or "").strip()
 
         details_lines = [
             f"Cuenta: {payload.get('account_name', 'N/A')}",
@@ -1563,22 +1602,22 @@ class BotControlWindow:
             f"- Precio: {float(market.get('price', 0.0) or 0.0):.8f}",
             f"- Spread: {float(market.get('spread', 0.0) or 0.0):.8f}",
             f"- Spread %: {float(market.get('spread_pct', 0.0) or 0.0):.4f}%",
-            f"- Volumen Alpaca 1m base: {_fmt_recent_volume(market.get('alpaca_pair_volume_1m_base', market.get('alpaca_pair_volume_1m', 0.0)), 1)} {base_unit}",
-            f"- Volumen Alpaca 1m USD: {float(market.get('alpaca_pair_volume_1m_usd', 0.0) or 0.0):.4f}",
-            f"- Volumen Alpaca 5m base: {_fmt_recent_volume(market.get('alpaca_pair_volume_5m_base', market.get('alpaca_pair_volume_5m', 0.0)), 5)} {base_unit}",
-            f"- Volumen Alpaca 5m USD: {float(market.get('alpaca_pair_volume_5m_usd', 0.0) or 0.0):.4f}",
-            f"- Volumen Alpaca 15m base: {_fmt_recent_volume(market.get('alpaca_pair_volume_15m_base', market.get('alpaca_pair_volume_15m', 0.0)), 15)} {base_unit}",
-            f"- Volumen Alpaca 15m USD: {float(market.get('alpaca_pair_volume_15m_usd', 0.0) or 0.0):.4f}",
+            f"- Volumen Binance 1m base: {_fmt_recent_volume(market.get('binance_pair_volume_1m_base', market.get('alpaca_pair_volume_1m_base', market.get('alpaca_pair_volume_1m', 0.0))), 1)} {base_unit}",
+            f"- Volumen Binance 1m USD: {float(market.get('binance_pair_volume_1m_usd', market.get('alpaca_pair_volume_1m_usd', 0.0)) or 0.0):.4f}",
+            f"- Volumen Binance 5m base: {_fmt_recent_volume(market.get('binance_pair_volume_5m_base', market.get('alpaca_pair_volume_5m_base', market.get('alpaca_pair_volume_5m', 0.0))), 5)} {base_unit}",
+            f"- Volumen Binance 5m USD: {float(market.get('binance_pair_volume_5m_usd', market.get('alpaca_pair_volume_5m_usd', 0.0)) or 0.0):.4f}",
+            f"- Volumen Binance 15m base: {_fmt_recent_volume(market.get('binance_pair_volume_15m_base', market.get('alpaca_pair_volume_15m_base', market.get('alpaca_pair_volume_15m', 0.0))), 15)} {base_unit}",
+            f"- Volumen Binance 15m USD: {float(market.get('binance_pair_volume_15m_usd', market.get('alpaca_pair_volume_15m_usd', 0.0)) or 0.0):.4f}",
             f"- Minutos usados para 5m/15m: {int(market.get('volume_5m_minutes_used', 0) or 0)}/{int(market.get('volume_15m_minutes_used', 0) or 0)} (disponibles={int(market.get('volume_minutes_available', 0) or 0)})",
-            f"- Volumen trades reales 1m base: {float(market.get('alpaca_trade_volume_1m_base', market.get('alpaca_trade_volume_1m', 0.0)) or 0.0):.4f} {base_unit}",
-            f"- Volumen trades reales 1m USD: {float(market.get('alpaca_trade_volume_1m_usd', 0.0) or 0.0):.4f}",
-            f"- Conteo trades reales 1m: {int(market.get('alpaca_trade_count_1m', 0) or 0)}",
-            f"- Ventana trades reales: {int(market.get('alpaca_trade_window_seconds', 60) or 60)}s",
+            f"- Volumen trades reales 1m base: {float(market.get('binance_trade_volume_1m_base', market.get('alpaca_trade_volume_1m_base', market.get('alpaca_trade_volume_1m', 0.0))) or 0.0):.4f} {base_unit}",
+            f"- Volumen trades reales 1m USD: {float(market.get('binance_trade_volume_1m_usd', market.get('alpaca_trade_volume_1m_usd', 0.0)) or 0.0):.4f}",
+            f"- Conteo trades reales 1m: {int(market.get('binance_trade_count_1m', market.get('alpaca_trade_count_1m', 0)) or 0)}",
+            f"- Ventana trades reales: {int(market.get('binance_trade_window_seconds', market.get('alpaca_trade_window_seconds', 60)) or 60)}s",
             f"- Estado volumen por trades: {market.get('trade_volume_status', 'N/A')}",
             f"- Error volumen por trades: {market.get('trade_volume_error', '') or 'N/A'}",
-            f"- Volumen 24h USD Alpaca: {float(market.get('alpaca_pair_volume_24h_usd', 0.0) or 0.0):.2f}",
+            f"- Volumen 24h USD Binance: {float(market.get('binance_pair_volume_24h_usd', market.get('alpaca_pair_volume_24h_usd', 0.0)) or 0.0):.2f}",
             f"- Volumen 24h USD Global: {float(market.get('global_volume_24h_usd', 0.0) or 0.0):.2f}",
-            f"- Fuente local Alpaca: {market.get('local_volume_source', market.get('volume_source', 'N/A'))}",
+            f"- Fuente local Binance: {market.get('local_volume_source', market.get('volume_source', 'N/A'))}",
             f"- Fuente volumen global: {market.get('global_volume_source', 'CoinGecko')}",
             f"- Estado datos: {market.get('volume_data_status', 'N/A')}",
             f"- DATA_STALE: {bool(market.get('data_stale', False))}",
@@ -1605,7 +1644,7 @@ class BotControlWindow:
             "",
             "Última decisión IA:",
             f"- Decisión: {latest_decision.get('decision', 'SIN DATOS') if latest_decision else 'SIN DATOS'}",
-            f"- Blocked reason: {latest_decision.get('blocked_reason', '') or payload.get('latest_decision_text', 'Sin decisión registrada para este símbolo')}" if latest_decision else f"- Blocked reason: {payload.get('latest_decision_text', 'Sin decisión registrada para este símbolo')}",
+            f"- Blocked reason: {latest_decision_blocked_reason or 'N/A'}" if latest_decision else f"- Blocked reason: {payload.get('latest_decision_text', 'Sin decisión registrada para este símbolo')}",
             f"- Razón: {latest_decision.get('reason', '') or payload.get('latest_decision_text', 'Sin decisión registrada para este símbolo')}" if latest_decision else f"- Razón: {payload.get('latest_decision_text', 'Sin decisión registrada para este símbolo')}",
             "",
             "Razones bloqueantes (exactas):",
@@ -1674,6 +1713,7 @@ class BotControlWindow:
 
         payload = {
             "account": account_name,
+            "ai_automation_account": str(getattr(self, "_ai_automation_account", "") or account_name).strip(),
             "ai_focus": {
                 "stocks_only": bool(self.ai_focus_stocks_only_var.get()),
                 "cryptos_only": bool(self.ai_focus_cryptos_only_var.get()),
@@ -1715,8 +1755,11 @@ class BotControlWindow:
 
         try:
             selected_account = str(raw.get("account", "") or "").strip()
-            if selected_account:
+            if selected_account and selected_account in self.account_profiles:
                 self.account_var.set(selected_account)
+            automation_account = str(raw.get("ai_automation_account", "") or "").strip()
+            if automation_account and automation_account in self.account_profiles:
+                self._ai_automation_account = automation_account
 
             focus_by_account = raw.get("ai_focus_by_account", {}) if isinstance(raw.get("ai_focus_by_account", {}), dict) else {}
             focus = focus_by_account.get(selected_account, {}) if selected_account and isinstance(focus_by_account.get(selected_account, {}), dict) else {}
@@ -1733,7 +1776,11 @@ class BotControlWindow:
             diag = raw.get("ai_diag", {}) if isinstance(raw.get("ai_diag", {}), dict) else {}
             diag_by_account = raw.get("ai_diag_by_account", {}) if isinstance(raw.get("ai_diag_by_account", {}), dict) else {}
             selected_diag = diag_by_account.get(selected_account, {}) if selected_account and isinstance(diag_by_account.get(selected_account, {}), dict) else {}
-            self.ai_diag_account_var.set(str(diag.get("account", self.ai_diag_account_var.get()) or self.ai_diag_account_var.get()))
+            diag_account = str(diag.get("account", self.ai_diag_account_var.get()) or self.ai_diag_account_var.get()).strip()
+            if diag_account and diag_account in self.account_profiles:
+                self.ai_diag_account_var.set(diag_account)
+            else:
+                self.ai_diag_account_var.set(selected_account or self.account_var.get().strip())
             self.ai_diag_market_kind_var.set(str(diag.get("market", self.ai_diag_market_kind_var.get()) or self.ai_diag_market_kind_var.get()))
             self.ai_diag_symbol_var.set(str(diag.get("symbol", self.ai_diag_symbol_var.get()) or self.ai_diag_symbol_var.get()).upper())
             self.ai_diag_max_spread_var.set(str(diag.get("max_spread", self.ai_diag_max_spread_var.get()) or self.ai_diag_max_spread_var.get()))
@@ -1883,12 +1930,18 @@ class BotControlWindow:
 
     def _ai_runtime_loop(self) -> None:
         if self.ai_window is not None and self.ai_window.winfo_exists() and str(self.ai_window.state()) != "withdrawn":
-            account_name = self.account_var.get().strip()
+            account_name = self._ai_automation_account_name()
             if account_name:
                 threading.Thread(target=self._ensure_ai_automation_running, args=(account_name,), daemon=True).start()
                 self._sync_ai_watch_tabs_from_recent_trades_async()
             self._refresh_ai_runtime_view()
         self.root.after(5000, self._ai_runtime_loop)
+
+    def _ai_automation_account_name(self) -> str:
+        account_name = str(getattr(self, "_ai_automation_account", "") or "").strip()
+        if account_name:
+            return account_name
+        return self.account_var.get().strip()
 
     @staticmethod
     def _is_ai_trade_origin(initiated_by: str) -> bool:
@@ -1999,20 +2052,156 @@ class BotControlWindow:
         if not account_name:
             return
         try:
+            security = self.ai_trading_brain.get_security_state(account_name)
+            self._safe_after(0, self._apply_vpn_security_state, security)
+            if bool(security.get("vpn_required", False)) and not bool(security.get("vpn_ready", False)):
+                return
             self.ai_trading_brain.ensure_automation_running(account_name)
         except Exception as ex:
             self.logger.warning("No se pudo iniciar la automatizacion IA automaticamente: %s", ex)
 
+    def _start_vpn_bootstrap_async(self) -> None:
+        if self._vpn_bootstrap_in_flight or self._is_closing:
+            return
+        self._vpn_bootstrap_in_flight = True
+        self.vpn_badge_var.set("VPN: esperando conexión...")
+
+        def worker() -> None:
+            try:
+                script_path = Path(__file__).resolve().parents[1] / "scripts" / "nordvpn_connect_do.sh"
+                if script_path.exists():
+                    try:
+                        script_env = os.environ.copy()
+                        if str(getattr(settings, "nordvpn_token", "") or "").strip():
+                            script_env["NORDVPN_TOKEN"] = str(getattr(settings, "nordvpn_token", "") or "")
+                        if str(getattr(settings, "nordvpn_email", "") or "").strip():
+                            script_env["NORDVPN_EMAIL"] = str(getattr(settings, "nordvpn_email", "") or "")
+                        if str(getattr(settings, "nordvpn_password", "") or "").strip():
+                            script_env["NORDVPN_PASSWORD"] = str(getattr(settings, "nordvpn_password", "") or "")
+                        proc = subprocess.run(
+                            [str(script_path), "--non-interactive"],
+                            check=False,
+                            capture_output=True,
+                            text=True,
+                            timeout=30,
+                            env=script_env,
+                        )
+                        if proc.returncode != 0:
+                            err = (proc.stderr or proc.stdout or "").strip()
+                            self.logger.warning("VPN bootstrap script failed rc=%s: %s", proc.returncode, err)
+                    except Exception as ex:
+                        self.logger.warning("No se pudo ejecutar script VPN de inicio: %s", ex)
+
+                account_name = self._ai_automation_account_name()
+                if account_name:
+                    security = self.ai_trading_brain.get_security_state(account_name)
+                    self._safe_after(0, self._apply_vpn_security_state, security)
+            finally:
+                self._vpn_bootstrap_in_flight = False
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _attempt_vpn_reconnect_async(self) -> None:
+        if self._vpn_bootstrap_in_flight or self._is_closing:
+            return
+        now_mono = time.monotonic()
+        if (now_mono - float(self._vpn_last_connect_attempt_ts or 0.0)) < 20.0:
+            return
+        self._vpn_last_connect_attempt_ts = now_mono
+        self._start_vpn_bootstrap_async()
+
+    def _vpn_guard_loop(self) -> None:
+        if self._is_closing:
+            return
+        if self._vpn_guard_in_flight:
+            self.root.after(5000, self._vpn_guard_loop)
+            return
+        self._vpn_guard_in_flight = True
+
+        def worker() -> None:
+            try:
+                account_name = self._ai_automation_account_name()
+                if not account_name:
+                    return
+                security = self.ai_trading_brain.get_security_state(account_name)
+                self._safe_after(0, self._apply_vpn_security_state, security)
+                if bool(security.get("vpn_required", False)) and not bool(security.get("vpn_ready", False)):
+                    self._safe_after(0, self._attempt_vpn_reconnect_async)
+            except Exception as ex:
+                self.logger.warning("VPN guard check failed: %s", ex)
+            finally:
+                self._vpn_guard_in_flight = False
+
+        threading.Thread(target=worker, daemon=True).start()
+        self.root.after(5000, self._vpn_guard_loop)
+
+    def _apply_vpn_security_state(self, security: dict[str, Any]) -> None:
+        vpn_required = bool(security.get("vpn_required", False))
+        vpn_ready = bool(security.get("vpn_ready", False))
+        vpn_reason = str(security.get("vpn_reason", "") or "")
+        was_ready = self._vpn_last_ready_state
+        self._vpn_last_ready_state = vpn_ready
+
+        if not vpn_required:
+            self.vpn_badge_var.set("VPN: no requerida")
+            self.vpn_badge_label.configure(bg="#1f5f2a")
+            return
+
+        if vpn_ready:
+            self._vpn_ever_ready = True
+            country = str(security.get("vpn_country", "") or "").strip()
+            self.vpn_badge_var.set(f"VPN CONECTADA: {country or 'Dominican Republic'}")
+            self.vpn_badge_label.configure(bg="#1f5f2a")
+            transitioned_to_ready = (was_ready is not True)
+            if self._vpn_forced_pause_active:
+                account_name = self._ai_automation_account_name()
+                if account_name:
+                    threading.Thread(target=self._ensure_ai_automation_running, args=(account_name,), daemon=True).start()
+                self._vpn_forced_pause_active = False
+            elif transitioned_to_ready:
+                account_name = self._ai_automation_account_name()
+                if account_name:
+                    threading.Thread(target=self._ensure_ai_automation_running, args=(account_name,), daemon=True).start()
+            return
+
+        if self._vpn_ever_ready:
+            self.vpn_badge_var.set("VPN CAIDA")
+            self.vpn_badge_label.configure(bg="#8a1c1c")
+        else:
+            self.vpn_badge_var.set("ESPERANDO CONEXION VPN")
+            self.vpn_badge_label.configure(bg="#9a6700")
+
+        if vpn_reason:
+            self.status_var.set(vpn_reason)
+
+        if not self._vpn_forced_pause_active:
+            try:
+                self.ai_trading_brain.pause_automation()
+                self._vpn_forced_pause_active = True
+            except Exception:
+                pass
+
     def run(self) -> None:
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
+        try:
+            self.root.deiconify()
+            self.root.lift()
+            self.root.focus_force()
+            self.root.attributes("-topmost", True)
+            self._safe_after(400, self.root.attributes, "-topmost", False)
+        except Exception:
+            pass
         self._root_after_original(50, self._drain_ui_after_queue)
-        self._root_after_original(4000, self._ensure_emergency_helper_alive)
+        if self._emergency_helper_enabled:
+            self._root_after_original(4000, self._ensure_emergency_helper_alive)
         self._write_ui_heartbeat(state="running")
         self._root_after_original(self._ui_heartbeat_interval_ms, self._ui_heartbeat_loop)
         self.root.after(250, self._initial_restore_startup)
+        self.root.after(350, self._start_vpn_bootstrap_async)
+        self.root.after(1000, self._vpn_guard_loop)
         self.root.after(1000, self._monitor_positions_loop)
         self.root.after(1000, lambda: self._run_async(self._refresh_stock_selector))
-        account_name = self.account_var.get().strip()
+        account_name = self._ai_automation_account_name()
         if account_name:
             self.root.after(1400, lambda: threading.Thread(target=self._ensure_ai_automation_running, args=(account_name,), daemon=True).start())
         self.root.after(1200, lambda: threading.Thread(target=self._refresh_nyse_status, daemon=True).start())
@@ -2073,6 +2262,8 @@ class BotControlWindow:
         os._exit(0)
 
     def _start_emergency_close_helper(self) -> None:
+        if not self._emergency_helper_enabled:
+            return
         if self._is_closing:
             return
         if self._emergency_close_process is not None and self._emergency_close_process.poll() is None:
@@ -2115,6 +2306,8 @@ class BotControlWindow:
                     pass
 
     def _ensure_emergency_helper_alive(self) -> None:
+        if not self._emergency_helper_enabled:
+            return
         if self._is_closing:
             return
         now = time.monotonic()
@@ -2173,7 +2366,7 @@ class BotControlWindow:
                 f"WebSocket: {'OK' if bool(ws.get('connected', False)) else 'DOWN'} | stale_streams={stale_count} | streams={len(streams)}"
             )
             self.api_health_var.set(
-                f"Alpaca/API: {'COOLDOWN' if bool(health.get('alpaca_cooldown', False)) else 'OK'} | threads={int(health.get('active_threads', 0) or 0)}"
+                f"Broker/API: {'COOLDOWN' if bool(health.get('alpaca_cooldown', False)) else 'OK'} | threads={int(health.get('active_threads', 0) or 0)}"
             )
         except Exception as ex:
             self.logger.warning("No se pudo refrescar health monitor en UI: %s", ex)
@@ -2382,7 +2575,7 @@ class BotControlWindow:
             self.root.after(0, self.nyse_status_var.set, "NYSE: error consultando fuente oficial")
             self.root.after(0, self.nyse_next_var.set, "Reintento automatico en 60s")
             self.root.after(0, self.nyse_days_var.set, "Proximos dias NYSE -> sin datos")
-            raise
+            return {}
 
     def _apply_nyse_status_overview(self, overview: dict[str, Any]) -> None:
         now_et = overview.get("now_et")
@@ -3534,6 +3727,12 @@ class BotControlWindow:
             auto_trade_stocks_enabled=False,
             auto_trade_cryptos_enabled=False,
             scanner_decision_engine=str(runtime.get("scanner_decision_engine", "heuristic") or "heuristic"),
+            futures_only_mode=bool(runtime.get("futures_only_mode", getattr(settings, "crypto_futures_only_mode", True))),
+            futures_leverage=max(int(runtime.get("futures_leverage", getattr(settings, "crypto_futures_default_leverage", 1)) or 1), 1),
+            futures_require_technical=bool(runtime.get("futures_require_technical", getattr(settings, "ai_futures_require_technical", True))),
+            futures_require_news=bool(runtime.get("futures_require_news", getattr(settings, "ai_futures_require_news", False))),
+            futures_enable_long=bool(runtime.get("futures_enable_long", getattr(settings, "ai_futures_enable_long", True))),
+            futures_enable_short=bool(runtime.get("futures_enable_short", getattr(settings, "ai_futures_enable_short", True))),
         )
 
         self._pause_ia_watch_tab(watch_id)
@@ -5591,7 +5790,7 @@ class BotControlWindow:
         self._ai_news_autofill_text = ""
 
     def _refresh_ai_views(self) -> None:
-        account_name = self.account_var.get().strip()
+        account_name = self._ai_automation_account_name()
         if account_name:
             self._ensure_ai_automation_running(account_name)
         try:
@@ -5608,10 +5807,25 @@ class BotControlWindow:
         if hasattr(self, "ai_signal_text"):
             self._refresh_ai_signals_view()
         if getattr(self, "ai_crypto_monitor_text", None) is not None:
-            self._refresh_ai_crypto_monitor_view()
+            self._refresh_ai_crypto_monitor_view_async()
+
+    def _refresh_ai_crypto_monitor_view_async(self) -> None:
+        if self._ai_crypto_monitor_refresh_in_flight:
+            return
+        self._ai_crypto_monitor_refresh_in_flight = True
+
+        def worker() -> None:
+            try:
+                self._refresh_ai_crypto_monitor_view()
+            finally:
+                self._ai_crypto_monitor_refresh_in_flight = False
+
+        threading.Thread(target=worker, daemon=True).start()
 
     def _start_ai_automation(self) -> None:
         account_name = self.account_var.get().strip()
+        self._ai_automation_account = account_name
+        self._save_ai_ui_state()
         self._persist_ai_runtime_controls(show_message=False)
         status = self.ai_trading_brain.start_automation(account_name=account_name)
         self._refresh_ai_runtime_view(status=status)
@@ -5692,7 +5906,9 @@ class BotControlWindow:
         self.root.after(0, self._show_success, "Bot automático IA en pausa.", False)
 
     def _persist_ai_runtime_controls(self, show_message: bool = True) -> None:
-        account_name = self.account_var.get().strip()
+        account_name = self._ai_automation_account_name()
+        if not account_name:
+            account_name = self.account_var.get().strip()
         self.ai_trading_brain.update_runtime_controls(
             account_name=account_name,
             max_capital_assigned=float(self.ai_max_capital_var.get().strip() or 0.0),
@@ -5707,6 +5923,12 @@ class BotControlWindow:
             auto_trade_stocks_enabled=bool(self.ai_auto_trade_stocks_var.get()),
             auto_trade_cryptos_enabled=bool(self.ai_auto_trade_cryptos_var.get()),
             scanner_decision_engine=str(self.ai_decision_engine_var.get() or "heuristic"),
+            futures_only_mode=bool(self.ai_futures_only_mode_var.get()),
+            futures_leverage=max(int(float(self.ai_futures_leverage_var.get().strip() or "1")), 1),
+            futures_require_technical=bool(self.ai_futures_require_technical_var.get()),
+            futures_require_news=bool(self.ai_futures_require_news_var.get()),
+            futures_enable_long=bool(self.ai_futures_enable_long_var.get()),
+            futures_enable_short=bool(self.ai_futures_enable_short_var.get()),
         )
         target_stock = float(self.ai_target_profit_stocks_var.get().strip() or self.ai_target_profit_var.get().strip() or 0.0)
         target_crypto = float(self.ai_target_profit_cryptos_var.get().strip() or self.ai_target_profit_var.get().strip() or 0.0)
@@ -5717,7 +5939,7 @@ class BotControlWindow:
         self.ai_target_profit_var.set(str(target_stock))
         self._refresh_ai_views()
         if show_message:
-            self.root.after(0, self._show_success, "AI Trading Brain actualizado.", False)
+            self.root.after(0, self._show_success, f"AI Trading Brain actualizado para cuenta: {account_name}", False)
 
     def _persist_ai_focus_controls(self, show_message: bool = True) -> None:
         account_name = self.account_var.get().strip()
@@ -5859,21 +6081,27 @@ class BotControlWindow:
         self._persist_ai_focus_controls(show_message=False)
 
     def _toggle_ai_stocks_execution(self) -> None:
+        account_name = self._ai_automation_account_name()
+        if not account_name:
+            account_name = self.account_var.get().strip()
         current = bool(self.ai_auto_trade_stocks_var.get())
         self.ai_auto_trade_stocks_var.set(0 if current else 1)
         self._persist_ai_runtime_controls(show_message=False)
         state = "ON" if not current else "PAUSADA"
-        self.root.after(0, self._show_success, f"Ejecución Stocks: {state}", False)
+        self.root.after(0, self._show_success, f"Ejecución Stocks ({account_name}): {state}", False)
 
     def _toggle_ai_cryptos_execution(self) -> None:
+        account_name = self._ai_automation_account_name()
+        if not account_name:
+            account_name = self.account_var.get().strip()
         current = bool(self.ai_auto_trade_cryptos_var.get())
         self.ai_auto_trade_cryptos_var.set(0 if current else 1)
         self._persist_ai_runtime_controls(show_message=False)
         state = "ON" if not current else "PAUSADA"
-        self.root.after(0, self._show_success, f"Ejecución Cryptos: {state}", False)
+        self.root.after(0, self._show_success, f"Ejecución Cryptos ({account_name}): {state}", False)
 
     def _toggle_ai_learning_automation(self) -> None:
-        account_name = self.account_var.get().strip()
+        account_name = self._ai_automation_account_name()
         status = self.ai_trading_brain.get_automation_status(account_name)
         learning_running = all(
             status.get(key, "Stopped") == "Running"
@@ -5884,7 +6112,9 @@ class BotControlWindow:
             status = self.ai_trading_brain.pause_automation()
             message = "Aprendizaje IA: PAUSED"
         else:
+            self._ai_automation_account = account_name
             self._persist_ai_runtime_controls(show_message=False)
+            self._save_ai_ui_state()
             status = self.ai_trading_brain.start_automation(account_name=account_name)
             message = "Aprendizaje IA: RUNNING"
 
@@ -5895,7 +6125,7 @@ class BotControlWindow:
         if not hasattr(self, "ai_runtime_text"):
             return
         if status is None:
-            status = self.ai_trading_brain.get_automation_status(self.account_var.get().strip())
+            status = self.ai_trading_brain.get_automation_status(self._ai_automation_account_name())
 
         def _fmt_runtime_time(value: Any) -> str:
             raw = str(value or "").strip()
@@ -6007,6 +6237,12 @@ class BotControlWindow:
         self.ai_kill_switch_var.set(1 if bool(runtime.get("kill_switch", 0)) else 0)
         self.ai_auto_trade_stocks_var.set(1 if bool(runtime.get("auto_trade_stocks_enabled", 1)) else 0)
         self.ai_auto_trade_cryptos_var.set(1 if bool(runtime.get("auto_trade_cryptos_enabled", 1)) else 0)
+        self.ai_futures_only_mode_var.set(1 if bool(runtime.get("futures_only_mode", getattr(settings, "crypto_futures_only_mode", True))) else 0)
+        self.ai_futures_leverage_var.set(str(max(int(runtime.get("futures_leverage", getattr(settings, "crypto_futures_default_leverage", 1)) or 1), 1)))
+        self.ai_futures_require_technical_var.set(1 if bool(runtime.get("futures_require_technical", getattr(settings, "ai_futures_require_technical", True))) else 0)
+        self.ai_futures_require_news_var.set(1 if bool(runtime.get("futures_require_news", getattr(settings, "ai_futures_require_news", False))) else 0)
+        self.ai_futures_enable_long_var.set(1 if bool(runtime.get("futures_enable_long", getattr(settings, "ai_futures_enable_long", True))) else 0)
+        self.ai_futures_enable_short_var.set(1 if bool(runtime.get("futures_enable_short", getattr(settings, "ai_futures_enable_short", True))) else 0)
         self.ai_diag_signal_only_var.set(self.ai_signal_only_var.get())
         self.ai_diag_auto_stocks_var.set(self.ai_auto_trade_stocks_var.get())
         self.ai_diag_auto_cryptos_var.set(self.ai_auto_trade_cryptos_var.get())
@@ -6037,6 +6273,99 @@ class BotControlWindow:
 
     def _save_ai_runtime_controls(self) -> None:
         self._persist_ai_runtime_controls(show_message=True)
+
+    def _open_futures_risk_window(self) -> None:
+        window = tk.Toplevel(self.root)
+        window.title("Configuracion de Futuros")
+        window.transient(self.ai_window if self.ai_window is not None else self.root)
+        window.grab_set()
+        window.resizable(False, False)
+
+        body = ttk.Frame(window, padding=12)
+        body.pack(fill="both", expand=True)
+
+        ttk.Label(body, text="Riesgo y dirección para futuros", font=("TkDefaultFont", 11, "bold")).grid(
+            row=0,
+            column=0,
+            columnspan=2,
+            sticky="w",
+            pady=(0, 8),
+        )
+        ttk.Checkbutton(body, text="Solo futuros (ignorar stocks)", variable=self.ai_futures_only_mode_var).grid(
+            row=1,
+            column=0,
+            columnspan=2,
+            sticky="w",
+            pady=3,
+        )
+        ttk.Label(body, text="Apalancamiento (1x, 2x, 3x...)").grid(row=2, column=0, sticky="w", pady=3)
+        ttk.Entry(body, textvariable=self.ai_futures_leverage_var, width=10).grid(row=2, column=1, sticky="w", pady=3)
+
+        ttk.Checkbutton(body, text="Permitir LONG", variable=self.ai_futures_enable_long_var).grid(
+            row=3,
+            column=0,
+            columnspan=2,
+            sticky="w",
+            pady=3,
+        )
+        ttk.Checkbutton(body, text="Permitir SHORT", variable=self.ai_futures_enable_short_var).grid(
+            row=4,
+            column=0,
+            columnspan=2,
+            sticky="w",
+            pady=3,
+        )
+        ttk.Checkbutton(body, text="Exigir confirmacion tecnica", variable=self.ai_futures_require_technical_var).grid(
+            row=5,
+            column=0,
+            columnspan=2,
+            sticky="w",
+            pady=3,
+        )
+        ttk.Checkbutton(body, text="Exigir confirmacion de noticias", variable=self.ai_futures_require_news_var).grid(
+            row=6,
+            column=0,
+            columnspan=2,
+            sticky="w",
+            pady=3,
+        )
+
+        ttk.Label(
+            body,
+            text="El scanner combina tecnico + noticias para decidir long/short segun estas reglas.",
+            foreground="#666",
+        ).grid(row=7, column=0, columnspan=2, sticky="w", pady=(8, 4))
+
+        actions = ttk.Frame(body)
+        actions.grid(row=8, column=0, columnspan=2, sticky="e", pady=(8, 0))
+        ttk.Button(actions, text="Cancelar", command=window.destroy).pack(side="right", padx=(8, 0))
+        ttk.Button(
+            actions,
+            text="Guardar",
+            command=lambda: self._save_futures_risk_window(window),
+        ).pack(side="right")
+
+    def _save_futures_risk_window(self, window: tk.Toplevel) -> None:
+        try:
+            leverage = max(int(float(self.ai_futures_leverage_var.get().strip() or "1")), 1)
+        except ValueError:
+            self._show_error("Apalancamiento invalido. Usa valores como 1, 2, 3...")
+            return
+
+        self.ai_futures_leverage_var.set(str(leverage))
+        self._write_env_values(
+            {
+                "CRYPTO_FUTURES_ONLY_MODE": "true" if bool(self.ai_futures_only_mode_var.get()) else "false",
+                "CRYPTO_FUTURES_DEFAULT_LEVERAGE": str(leverage),
+                "AI_FUTURES_REQUIRE_TECHNICAL": "true" if bool(self.ai_futures_require_technical_var.get()) else "false",
+                "AI_FUTURES_REQUIRE_NEWS": "true" if bool(self.ai_futures_require_news_var.get()) else "false",
+                "AI_FUTURES_ENABLE_LONG": "true" if bool(self.ai_futures_enable_long_var.get()) else "false",
+                "AI_FUTURES_ENABLE_SHORT": "true" if bool(self.ai_futures_enable_short_var.get()) else "false",
+            }
+        )
+        self._persist_ai_runtime_controls(show_message=False)
+        window.destroy()
+        self._show_success("Configuracion de futuros guardada y aplicada.", False)
 
     def _refresh_ai_dashboard_view(self) -> None:
         account_name = self.account_var.get().strip()
@@ -7054,11 +7383,23 @@ class BotControlWindow:
         return "N/A"
 
     def _refresh_ai_security_view(self) -> None:
-        security = self.ai_trading_brain.get_security_state(self.account_var.get().strip())
+        account_name = self._ai_automation_account_name()
+        security = self.ai_trading_brain.get_security_state(account_name)
+        live_status = "ON" if security.get("live_trading_enabled") else "OFF"
+        if security.get("paper_trading") and not security.get("live_trading_enabled"):
+            live_status = "OFF (normal en paper)"
         lines = [
+            f"Cuenta seguridad IA: {account_name or 'N/A'}",
             f"Kill switch: {'ON' if security.get('kill_switch') else 'OFF'}",
-            f"Trading real activado: {'ON' if security.get('live_trading_enabled') else 'OFF'}",
+            f"Trading real/live activado: {live_status}",
             f"Paper trading activado: {'ON' if security.get('paper_trading') else 'OFF'}",
+            f"VPN requerida: {'SI' if security.get('vpn_required') else 'NO'}",
+            f"VPN lista para operar: {'SI' if security.get('vpn_ready') else 'NO'}",
+            f"Proveedor VPN: {security.get('vpn_provider', 'NordVPN')}",
+            f"Pais VPN requerido: {security.get('vpn_required_country', 'Dominican Republic')}",
+            f"Pais VPN actual: {security.get('vpn_country', 'N/A') or 'N/A'}",
+            f"Estado VPN: {security.get('vpn_status', 'N/A')}",
+            f"Motivo VPN: {security.get('vpn_reason', 'N/A') or 'N/A'}",
             f"Auto trading stocks: {'ON' if security.get('auto_trade_stocks_enabled') else 'PAUSADO'}",
             f"Auto trading cryptos: {'ON' if security.get('auto_trade_cryptos_enabled') else 'PAUSADO'}",
             f"Modo solo señales: {'ON' if security.get('signal_only_mode') else 'OFF'}",
@@ -7151,10 +7492,23 @@ class BotControlWindow:
         self.root.after(0, self._show_success, f"Rollback de modelo: {version or 'sin cambios'}", False)
 
     def _set_text_widget(self, widget: Any, text: str) -> None:
-        widget.configure(state="normal")
-        widget.delete("1.0", tk.END)
-        widget.insert(tk.END, text)
-        widget.configure(state="disabled")
+        def _apply() -> None:
+            if self._is_closing or widget is None:
+                return
+            try:
+                if hasattr(widget, "winfo_exists") and not widget.winfo_exists():
+                    return
+                widget.configure(state="normal")
+                widget.delete("1.0", tk.END)
+                widget.insert(tk.END, text)
+                widget.configure(state="disabled")
+            except (RuntimeError, tk.TclError):
+                return
+
+        if threading.get_ident() == self._ui_thread_ident:
+            _apply()
+            return
+        self._safe_after(0, _apply)
 
     def _get_account_runtime(self, account_name: str) -> dict[str, Any]:
         runtime = self._account_runtimes.get(account_name)
@@ -7318,7 +7672,14 @@ class BotControlWindow:
         selected = self.account_var.get().strip()
         profile = self.account_profiles.get(selected)
         if not profile:
-            raise ValueError("Cuenta no soportada")
+            fallback = next(iter(self.account_profiles.keys()), "")
+            if not fallback:
+                raise ValueError("No hay cuentas configuradas")
+            self.account_var.set(fallback)
+            selected = fallback
+            profile = self.account_profiles.get(selected)
+            if not profile:
+                raise ValueError("Cuenta no soportada")
 
         endpoint = profile.get("endpoint", "")
         api_key = profile.get("key", "")

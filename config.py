@@ -46,17 +46,20 @@ def _env_bool(*names: str, default: bool) -> bool:
 
 @dataclass(frozen=True)
 class Settings:
-    alpaca_endpoint: str = _env("ALPACA_BASE_URL", "ALPACA_ENDPOINT", default="https://paper-api.alpaca.markets/v2")
-    alpaca_api_key: str = _env("ALPACA_API_KEY", "ALPACA_KEY", default="")
-    alpaca_api_secret: str = _env("ALPACA_SECRET_KEY", "ALPACA_API_SECRET", default="")
+    broker_provider: str = _env("BROKER_PROVIDER", default="binance").lower()
+
+    alpaca_endpoint: str = _env("BINANCE_BASE_URL", "BINANCE_ENDPOINT", "ALPACA_BASE_URL", "ALPACA_ENDPOINT", default="https://testnet.binancefuture.com")
+    alpaca_api_key: str = _env("BINANCE_API_KEY", "BINANCE_DEMO_API_KEY", "ALPACA_API_KEY", "ALPACA_KEY", default="")
+    alpaca_api_secret: str = _env("BINANCE_API_SECRET", "BINANCE_DEMO_API_SECRET", "ALPACA_SECRET_KEY", "ALPACA_API_SECRET", default="")
 
     alpaca_paper_endpoint: str = _env(
+        "BINANCE_DEMO_ENDPOINT",
         "ALPACA_PAPER_BASE_URL",
         "ALPACA_PAPER_ENDPOINT",
-        default="https://paper-api.alpaca.markets/v2",
+        default="https://testnet.binancefuture.com",
     )
-    alpaca_paper_key: str = _env("ALPACA_PAPER_KEY", "ALPACA_API_KEY", default="")
-    alpaca_paper_secret: str = _env("ALPACA_PAPER_SECRET", "ALPACA_SECRET_KEY", "ALPACA_API_SECRET", default="")
+    alpaca_paper_key: str = _env("BINANCE_DEMO_API_KEY", "BINANCE_API_KEY", "ALPACA_PAPER_KEY", "ALPACA_API_KEY", default="")
+    alpaca_paper_secret: str = _env("BINANCE_DEMO_API_SECRET", "BINANCE_API_SECRET", "ALPACA_PAPER_SECRET", "ALPACA_SECRET_KEY", "ALPACA_API_SECRET", default="")
 
     alpaca_paper2_endpoint: str = _env(
         "ALPACA_PAPER2_ENDPOINT",
@@ -73,6 +76,10 @@ class Settings:
     alpaca_live_endpoint: str = _env("ALPACA_LIVE_ENDPOINT", default="https://api.alpaca.markets/v2")
     alpaca_live_key: str = _env("ALPACA_LIVE_KEY", default="")
     alpaca_live_secret: str = _env("ALPACA_LIVE_SECRET", default="")
+
+    binance_demo_endpoint: str = _env("BINANCE_DEMO_ENDPOINT", default="https://testnet.binancefuture.com")
+    binance_demo_key: str = _env("BINANCE_DEMO_API_KEY", "BINANCE_API_KEY", default="")
+    binance_demo_secret: str = _env("BINANCE_DEMO_API_SECRET", "BINANCE_API_SECRET", default="")
 
     openai_api_key: str = _env("OPENAI_API_KEY", default="")
     openai_model: str = _env("OPENAI_MODEL", default="gpt-4.1-mini")
@@ -142,6 +149,11 @@ class Settings:
     ai_openai_news_trigger_importance: float = float(_env("AI_OPENAI_NEWS_TRIGGER_IMPORTANCE", default="65"))
     ai_min_volume_24h_usd: float = float(_env("AI_MIN_VOLUME_24H_USD", default="100000"))
     ai_min_execution_confidence: float = float(_env("AI_MIN_EXECUTION_CONFIDENCE", default="60"))
+    ai_watch_as_buy_small: bool = _env_bool("AI_WATCH_AS_BUY_SMALL", default=False)
+    ai_watch_resolution_min_evidence: int = int(_env("AI_WATCH_RESOLUTION_MIN_EVIDENCE", default="2"))
+    ai_watch_resolution_min_edge: int = int(_env("AI_WATCH_RESOLUTION_MIN_EDGE", default="1"))
+    ai_watch_resolution_min_volume_1m_usd: float = float(_env("AI_WATCH_RESOLUTION_MIN_VOLUME_1M_USD", default="1000"))
+    ai_watch_resolution_tie_news_bias: float = float(_env("AI_WATCH_RESOLUTION_TIE_NEWS_BIAS", default="0.12"))
     ai_outcome_win_profit_pct: float = float(_env("AI_OUTCOME_WIN_PROFIT_PCT", default="0.25"))
     ai_outcome_loss_drawdown_pct: float = float(_env("AI_OUTCOME_LOSS_DRAWDOWN_PCT", default="0.25"))
     ai_training_label_type: str = _env("AI_TRAINING_LABEL_TYPE", default="result_15m_fallback_30m").lower()
@@ -153,7 +165,7 @@ class Settings:
     ai_focus_cryptos_symbols: str = _env("AI_FOCUS_CRYPTOS_SYMBOLS", default="")
 
     # Stability / timeout controls
-    http_timeout_alpaca_seconds: int = int(_env("HTTP_TIMEOUT_ALPACA_SECONDS", default="10"))
+    http_timeout_alpaca_seconds: int = int(_env("HTTP_TIMEOUT_BINANCE_SECONDS", "HTTP_TIMEOUT_ALPACA_SECONDS", default="10"))
     http_timeout_cryptopanic_seconds: int = int(_env("HTTP_TIMEOUT_CRYPTOPANIC_SECONDS", default="10"))
     http_timeout_openai_seconds: int = int(_env("HTTP_TIMEOUT_OPENAI_SECONDS", default="25"))
     http_timeout_news_seconds: int = int(_env("HTTP_TIMEOUT_NEWS_SECONDS", default="10"))
@@ -161,6 +173,12 @@ class Settings:
     websocket_max_reconnect_backoff_seconds: int = int(_env("WEBSOCKET_MAX_RECONNECT_BACKOFF_SECONDS", default="30"))
     health_monitor_interval_seconds: int = int(_env("HEALTH_MONITOR_INTERVAL_SECONDS", default="30"))
     ui_max_log_lines: int = int(_env("UI_MAX_LOG_LINES", default="1000"))
+    require_nordvpn_before_trading: bool = _env_bool("REQUIRE_NORDVPN_BEFORE_TRADING", default=True)
+    required_vpn_provider: str = _env("REQUIRED_VPN_PROVIDER", default="NordVPN")
+    required_vpn_country: str = _env("REQUIRED_VPN_COUNTRY", default="Dominican Republic")
+    nordvpn_email: str = _env("NORDVPN_EMAIL", default="")
+    nordvpn_password: str = _env("NORDVPN_PASSWORD", default="")
+    nordvpn_token: str = _env("NORDVPN_TOKEN", default="")
 
     # ===== STOCKS CONFIGURATION =====
     stock_allow_hold: bool = _env_bool("STOCK_ALLOW_HOLD", default=True)
@@ -173,6 +191,13 @@ class Settings:
     crypto_allow_stop_loss: bool = _env_bool("CRYPTO_ALLOW_STOP_LOSS", default=True)
     crypto_allow_short_signals: bool = _env_bool("CRYPTO_ALLOW_SHORT_SIGNALS", default=True)
     crypto_allow_short_execution: bool = _env_bool("CRYPTO_ALLOW_SHORT_EXECUTION", default=False)
+    crypto_futures_only_mode: bool = _env_bool("CRYPTO_FUTURES_ONLY_MODE", default=True)
+    crypto_futures_default_leverage: int = int(_env("CRYPTO_FUTURES_DEFAULT_LEVERAGE", default="1"))
+    crypto_futures_max_leverage: int = int(_env("CRYPTO_FUTURES_MAX_LEVERAGE", default="20"))
+    ai_futures_require_technical: bool = _env_bool("AI_FUTURES_REQUIRE_TECHNICAL", default=True)
+    ai_futures_require_news: bool = _env_bool("AI_FUTURES_REQUIRE_NEWS", default=False)
+    ai_futures_enable_long: bool = _env_bool("AI_FUTURES_ENABLE_LONG", default=True)
+    ai_futures_enable_short: bool = _env_bool("AI_FUTURES_ENABLE_SHORT", default=True)
     crypto_max_hold_minutes: int = int(_env("CRYPTO_MAX_HOLD_MINUTES", default="30"))
     crypto_min_entry_score: float = float(_env("CRYPTO_MIN_ENTRY_SCORE", default="75.0"))
     crypto_buy_small_score_threshold: float = float(_env("CRYPTO_BUY_SMALL_SCORE_THRESHOLD", default="84.0"))
@@ -242,18 +267,31 @@ class Settings:
         }
 
     def account_profiles(self) -> dict[str, dict[str, str]]:
+        if str(self.broker_provider or "alpaca").strip().lower() == "binance":
+            return {
+                "Binance Demo": {
+                    "mode": "DEMO",
+                    "endpoint": self.binance_demo_endpoint,
+                    "key": self.binance_demo_key,
+                    "secret": self.binance_demo_secret,
+                    "provider": "binance",
+                }
+            }
+
         profiles: dict[str, dict[str, str]] = {
             "Paper": {
                 "mode": "PAPER",
                 "endpoint": self.alpaca_paper_endpoint,
                 "key": self.alpaca_paper_key,
                 "secret": self.alpaca_paper_secret,
+                "provider": "alpaca",
             },
             "Real": {
                 "mode": "LIVE",
                 "endpoint": self.alpaca_live_endpoint,
                 "key": self.alpaca_live_key,
                 "secret": self.alpaca_live_secret,
+                "provider": "alpaca",
             },
         }
 
@@ -263,6 +301,7 @@ class Settings:
             "endpoint": self.alpaca_endpoint,
             "key": self.alpaca_api_key,
             "secret": self.alpaca_api_secret,
+            "provider": "alpaca",
         }
 
         known_fingerprints = {
@@ -283,6 +322,7 @@ class Settings:
                 "endpoint": self.alpaca_paper2_endpoint,
                 "key": self.alpaca_paper2_key,
                 "secret": self.alpaca_paper2_secret,
+                "provider": "alpaca",
             }
 
         if self.alpaca_paper3_endpoint and self.alpaca_paper3_key and self.alpaca_paper3_secret:
@@ -291,6 +331,7 @@ class Settings:
                 "endpoint": self.alpaca_paper3_endpoint,
                 "key": self.alpaca_paper3_key,
                 "secret": self.alpaca_paper3_secret,
+                "provider": "alpaca",
             }
 
         # Conventional second/third paper account env names.
@@ -305,6 +346,7 @@ class Settings:
                     "endpoint": endpoint,
                     "key": key,
                     "secret": secret,
+                    "provider": "alpaca",
                 }
 
         # Optional JSON format:
@@ -322,6 +364,7 @@ class Settings:
                             "endpoint": str(payload.get("endpoint", "")),
                             "key": str(payload.get("key", "")),
                             "secret": str(payload.get("secret", "")),
+                            "provider": str(payload.get("provider", "alpaca")).lower(),
                         }
             except Exception:
                 pass
@@ -352,6 +395,7 @@ class Settings:
                 bucket["mode"] = env_value.upper()
 
         for account_name, payload in temp_accounts.items():
+            payload["provider"] = "alpaca"
             profiles[account_name] = payload
 
         return profiles

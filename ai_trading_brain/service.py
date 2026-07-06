@@ -5,8 +5,11 @@ import json
 import math
 from collections import deque
 import os
+import shutil
+import subprocess
 import threading
 import time
+import unicodedata
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import resource
@@ -26,6 +29,24 @@ from ml_model.predictor import SignalPredictor
 from runtime.db_writer import DatabaseWriterWorker
 from runtime.alpaca_streams import AlpacaStreamManager
 from runtime.thread_manager import ThreadManager
+
+
+class NullStreamManager:
+    def __init__(self) -> None:
+        self.connected = False
+
+    def start(self, account_name: str) -> None:
+        _ = account_name
+        self.connected = False
+
+    def stop(self) -> None:
+        self.connected = False
+
+    def reconnect_now(self) -> None:
+        self.connected = False
+
+    def status_snapshot(self) -> dict[str, Any]:
+        return {"status": "disabled", "connected": False, "provider": "binance"}
 
 
 class AITradingBrainService:
@@ -69,6 +90,7 @@ class AITradingBrainService:
         self._last_auto_trained_outcomes = 0
         self._news_fetch_cache_by_symbol: dict[str, tuple[float, list[dict[str, str]]]] = {}
         self._news_fetch_cooldown_until_by_symbol: dict[str, float] = {}
+        self._diagnostic_signal_refresh_at_by_key: dict[str, float] = {}
         self._stream_bar_history_by_symbol: dict[str, deque[dict[str, Any]]] = {}
         self._global_crypto_cache_by_symbol: dict[str, dict[str, Any]] = {}
         self._focus_by_account: dict[str, dict[str, Any]] = {}
@@ -157,20 +179,23 @@ class AITradingBrainService:
             thread_manager=self._thread_manager,
             role="trainer",
         )
-        self.stream_manager = AlpacaStreamManager(
-            alpaca_endpoint=self.broker.endpoint,
-            api_key=str(getattr(self.broker, "api_key", "") or ""),
-            api_secret=str(getattr(self.broker, "api_secret", "") or ""),
-            logger=logger,
-            symbol_provider=self._stream_subscription_symbols,
-            market_event_callback=self._handle_stream_market_event,
-            news_event_callback=self._handle_stream_news_event,
-            trade_update_callback=self._handle_stream_trade_update,
-            paper_trading=bool(settings.paper_trading),
-            thread_manager=self._thread_manager,
-            stale_seconds=float(getattr(settings, "websocket_stale_seconds", 45) or 45),
-            max_backoff_seconds=float(getattr(settings, "websocket_max_reconnect_backoff_seconds", 30) or 30),
-        )
+        if str(getattr(self.broker, "provider", "alpaca") or "alpaca").lower() == "binance":
+            self.stream_manager = NullStreamManager()
+        else:
+            self.stream_manager = AlpacaStreamManager(
+                alpaca_endpoint=self.broker.endpoint,
+                api_key=str(getattr(self.broker, "api_key", "") or ""),
+                api_secret=str(getattr(self.broker, "api_secret", "") or ""),
+                logger=logger,
+                symbol_provider=self._stream_subscription_symbols,
+                market_event_callback=self._handle_stream_market_event,
+                news_event_callback=self._handle_stream_news_event,
+                trade_update_callback=self._handle_stream_trade_update,
+                paper_trading=bool(settings.paper_trading),
+                thread_manager=self._thread_manager,
+                stale_seconds=float(getattr(settings, "websocket_stale_seconds", 45) or 45),
+                max_backoff_seconds=float(getattr(settings, "websocket_max_reconnect_backoff_seconds", 30) or 30),
+            )
         self.volume_manager = CryptoVolumeManager(
             database=self.database,
             market_data=self.market_data,
@@ -250,6 +275,145 @@ class AITradingBrainService:
 
     def reconnect_websocket(self) -> None:
         self.stream_manager.reconnect_now()
+
+    @staticmethod
+    def _normalize_text(value: Any) -> str:
+        raw = str(value or "").strip()
+        if not raw:
+            return ""
+        raw = raw.replace("_", " ").replace("-", " ")
+        normalized = unicodedata.normalize("NFKD", raw)
+        ascii_only = "".join(ch for ch in normalized if not unicodedata.combining(ch))
+        return " ".join(ascii_only.lower().split())
+
+    def _vpn_requirement_enabled(self) -> bool:
+        return bool(getattr(self.settings, "require_nordvpn_before_trading", True))
+
+    def _required_vpn_country(self) -> str:
+        return str(getattr(self.settings, "required_vpn_country", "Dominican Republic") or "Dominican Republic").strip()
+
+    def _vpn_status(self) -> dict[str, Any]:
+        requirement_enabled = self._vpn_requirement_enabled()
+        provider = str(getattr(self.settings, "required_vpn_provider", "NordVPN") or "NordVPN").strip() or "NordVPN"
+        required_country = self._required_vpn_country()
+
+        if not requirement_enabled:
+            return {
+                "enabled": False,
+                "ready": True,
+                "provider": provider,
+                "required_country": required_country,
+                "status": "DISABLED",
+                "country": "",
+                "reason": "VPN requirement disabled by configuration",
+            }
+
+        if provider.lower() != "nordvpn":
+            return {
+                "enabled": True,
+                "ready": False,
+                "provider": provider,
+                "required_country": required_country,
+                "status": "UNSUPPORTED_PROVIDER",
+                "country": "",
+                "reason": f"Unsupported VPN provider: {provider}",
+            }
+
+        nordvpn_bin = shutil.which("nordvpn")
+        if not nordvpn_bin:
+            return {
+                "enabled": True,
+                "ready": False,
+                "provider": provider,
+                "required_country": required_country,
+                "status": "NORDVPN_NOT_INSTALLED",
+                "country": "",
+                "reason": "NordVPN CLI not found in PATH",
+            }
+
+        try:
+            proc = subprocess.run(
+                [nordvpn_bin, "status"],
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=8,
+            )
+        except Exception as ex:
+            return {
+                "enabled": True,
+                "ready": False,
+                "provider": provider,
+                "required_country": required_country,
+                "status": "STATUS_ERROR",
+                "country": "",
+                "reason": f"Unable to read NordVPN status: {ex}",
+            }
+
+        output = (proc.stdout or "") + "\n" + (proc.stderr or "")
+        normalized_output = self._normalize_text(output)
+        if "permission denied" in normalized_output and "groupadd nordvpn" in normalized_output:
+            return {
+                "enabled": True,
+                "ready": False,
+                "provider": provider,
+                "required_country": required_country,
+                "status": "PERMISSION_DENIED",
+                "country": "",
+                "reason": "NordVPN requires permissions: run 'sudo groupadd nordvpn' and 'sudo usermod -aG nordvpn $USER', then reboot",
+            }
+        parsed: dict[str, str] = {}
+        for line in output.splitlines():
+            if ":" not in line:
+                continue
+            key, value = line.split(":", 1)
+            parsed[self._normalize_text(key)] = str(value or "").strip()
+
+        status_text = str(parsed.get("status", "") or "").strip()
+        country = str(parsed.get("country", "") or "").strip()
+        connected = "connected" in self._normalize_text(status_text)
+        if not connected:
+            return {
+                "enabled": True,
+                "ready": False,
+                "provider": provider,
+                "required_country": required_country,
+                "status": "DISCONNECTED",
+                "country": country,
+                "reason": f"NordVPN disconnected ({status_text or 'status unknown'})",
+            }
+
+        normalized_required = self._normalize_text(required_country)
+        normalized_country = self._normalize_text(country)
+        country_ok = normalized_required in normalized_country if normalized_country else False
+        if not country_ok:
+            return {
+                "enabled": True,
+                "ready": False,
+                "provider": provider,
+                "required_country": required_country,
+                "status": "WRONG_COUNTRY",
+                "country": country,
+                "reason": f"VPN country must be {required_country}; current={country or 'unknown'}",
+            }
+
+        return {
+            "enabled": True,
+            "ready": True,
+            "provider": provider,
+            "required_country": required_country,
+            "status": "READY",
+            "country": country,
+            "reason": "NordVPN connected to required country",
+        }
+
+    def _ensure_vpn_ready_for_trading(self, action: str) -> None:
+        vpn = self._vpn_status()
+        if bool(vpn.get("ready", False)):
+            return
+        reason = str(vpn.get("reason", "VPN requirement not met") or "VPN requirement not met")
+        status = str(vpn.get("status", "VPN_BLOCKED") or "VPN_BLOCKED")
+        raise ValueError(f"{action} blocked by VPN policy [{status}]: {reason}")
 
     def _start_health_monitor(self) -> None:
         if self._health_thread is not None and self._health_thread.is_alive():
@@ -396,6 +560,12 @@ class AITradingBrainService:
                 auto_trade_stocks_enabled=bool(existing_runtime.get("auto_trade_stocks_enabled", 1)) if existing_runtime else True,
                 auto_trade_cryptos_enabled=bool(existing_runtime.get("auto_trade_cryptos_enabled", 1)) if existing_runtime else True,
                 scanner_decision_engine=str((existing_runtime or {}).get("scanner_decision_engine", "heuristic") or "heuristic"),
+                futures_only_mode=bool((existing_runtime or {}).get("futures_only_mode", getattr(self.settings, "crypto_futures_only_mode", True))),
+                futures_leverage=int((existing_runtime or {}).get("futures_leverage", getattr(self.settings, "crypto_futures_default_leverage", 1)) or 1),
+                futures_require_technical=bool((existing_runtime or {}).get("futures_require_technical", getattr(self.settings, "ai_futures_require_technical", True))),
+                futures_require_news=bool((existing_runtime or {}).get("futures_require_news", getattr(self.settings, "ai_futures_require_news", False))),
+                futures_enable_long=bool((existing_runtime or {}).get("futures_enable_long", getattr(self.settings, "ai_futures_enable_long", True))),
+                futures_enable_short=bool((existing_runtime or {}).get("futures_enable_short", getattr(self.settings, "ai_futures_enable_short", True))),
             )
         self.database.cleanup_old_data(
             snapshot_minutes_days=int(self.settings.ai_snapshots_1m_days),
@@ -428,6 +598,12 @@ class AITradingBrainService:
         auto_trade_stocks_enabled: bool,
         auto_trade_cryptos_enabled: bool,
         scanner_decision_engine: str = "heuristic",
+        futures_only_mode: bool = True,
+        futures_leverage: int = 1,
+        futures_require_technical: bool = True,
+        futures_require_news: bool = False,
+        futures_enable_long: bool = True,
+        futures_enable_short: bool = True,
     ) -> None:
         account = self.refresh_account_context(account_name)
         funds = self.database.get_bot_funds(int(account["id"]))
@@ -452,6 +628,12 @@ class AITradingBrainService:
             auto_trade_stocks_enabled=auto_trade_stocks_enabled,
             auto_trade_cryptos_enabled=auto_trade_cryptos_enabled,
             scanner_decision_engine=str(scanner_decision_engine or "heuristic"),
+            futures_only_mode=bool(futures_only_mode),
+            futures_leverage=max(int(futures_leverage or 1), 1),
+            futures_require_technical=bool(futures_require_technical),
+            futures_require_news=bool(futures_require_news),
+            futures_enable_long=bool(futures_enable_long),
+            futures_enable_short=bool(futures_enable_short),
         )
         self.auto_controller.signal_only_mode = bool(signal_only_mode)
         self.auto_controller.paper_trading = bool(paper_trading)
@@ -460,6 +642,7 @@ class AITradingBrainService:
 
     def start_automation(self, account_name: str) -> dict[str, Any]:
         self.refresh_account_context(account_name)
+        self._ensure_vpn_ready_for_trading("Automation start")
         with self._worker_lock:
             self._active_account_for_workers = account_name
         self.stream_manager.start(account_name)
@@ -556,6 +739,12 @@ class AITradingBrainService:
             "decision_actor": ("Modelo entrenado" if scanner_engine == "model" else "Heurística"),
             "auto_trade_stocks_enabled": bool(runtime.get("auto_trade_stocks_enabled", 1)) if runtime else True,
             "auto_trade_cryptos_enabled": bool(runtime.get("auto_trade_cryptos_enabled", 1)) if runtime else True,
+            "futures_only_mode": bool(runtime.get("futures_only_mode", getattr(self.settings, "crypto_futures_only_mode", True))) if runtime else bool(getattr(self.settings, "crypto_futures_only_mode", True)),
+            "futures_leverage": max(int(runtime.get("futures_leverage", getattr(self.settings, "crypto_futures_default_leverage", 1)) or 1), 1) if runtime else max(int(getattr(self.settings, "crypto_futures_default_leverage", 1) or 1), 1),
+            "futures_require_technical": bool(runtime.get("futures_require_technical", getattr(self.settings, "ai_futures_require_technical", True))) if runtime else bool(getattr(self.settings, "ai_futures_require_technical", True)),
+            "futures_require_news": bool(runtime.get("futures_require_news", getattr(self.settings, "ai_futures_require_news", False))) if runtime else bool(getattr(self.settings, "ai_futures_require_news", False)),
+            "futures_enable_long": bool(runtime.get("futures_enable_long", getattr(self.settings, "ai_futures_enable_long", True))) if runtime else bool(getattr(self.settings, "ai_futures_enable_long", True)),
+            "futures_enable_short": bool(runtime.get("futures_enable_short", getattr(self.settings, "ai_futures_enable_short", True))) if runtime else bool(getattr(self.settings, "ai_futures_enable_short", True)),
             "health": self.get_health_snapshot(),
             "threads": self._thread_manager.summary(),
             "websocket": self.stream_manager.status_snapshot(),
@@ -597,6 +786,7 @@ class AITradingBrainService:
         account = self.refresh_account_context(account_name)
         runtime = self.database.get_runtime_settings(int(account["id"])) or {}
         funds = self.database.get_bot_funds(int(account["id"])) or {}
+        vpn = self._vpn_status()
         return {
             "kill_switch": bool(runtime.get("kill_switch", 0)),
             "paper_trading": bool(runtime.get("paper_trading", 0)),
@@ -607,8 +797,15 @@ class AITradingBrainService:
             "auto_trade_cryptos_enabled": bool(runtime.get("auto_trade_cryptos_enabled", 1)),
             "max_daily_loss": float(funds.get("max_daily_loss", 0.0) or 0.0),
             "max_position_size": float(funds.get("max_position_size", 0.0) or 0.0),
-            "api_keys_ok": bool(self.settings.alpaca_api_key and self.settings.alpaca_api_secret),
+            "api_keys_ok": bool(str(getattr(self.broker, "api_key", "") or "") and str(getattr(self.broker, "api_secret", "") or "")),
             "openai_key_ok": bool(self.settings.openai_api_key),
+            "vpn_required": bool(vpn.get("enabled", False)),
+            "vpn_ready": bool(vpn.get("ready", False)),
+            "vpn_provider": str(vpn.get("provider", "NordVPN") or "NordVPN"),
+            "vpn_required_country": str(vpn.get("required_country", self._required_vpn_country()) or self._required_vpn_country()),
+            "vpn_country": str(vpn.get("country", "") or ""),
+            "vpn_status": str(vpn.get("status", "N/A") or "N/A"),
+            "vpn_reason": str(vpn.get("reason", "") or ""),
             "recent_logs": self.database.latest_decision_logs(limit=15),
         }
 
@@ -713,6 +910,38 @@ class AITradingBrainService:
         if normalized.endswith("USD") and len(normalized) > 3:
             return normalized[:-3]
         return normalized
+
+    @staticmethod
+    def _normalize_crypto_symbol_input(symbol: str) -> str:
+        raw = str(symbol or "").upper().strip().replace(" ", "")
+        if not raw:
+            return ""
+
+        alias_to_base = {
+            "SOLANA": "SOL",
+            "BITCOIN": "BTC",
+            "ETHEREUM": "ETH",
+            "RIPPLE": "XRP",
+            "DOGECOIN": "DOGE",
+            "CHAINLINK": "LINK",
+            "AVALANCHE": "AVAX",
+            "LITECOIN": "LTC",
+        }
+        base_candidates = {"BTC", "ETH", "SOL", "XRP", "DOGE", "LINK", "AVAX", "LTC", "PEPE", "BONK", "SHIB", "WIF"}
+
+        raw = alias_to_base.get(raw, raw)
+        if "/" in raw:
+            base, quote = raw.split("/", 1)
+            quote = "USD" if quote in {"USD", "USDT", "USDC"} else quote
+            return f"{base}/{quote}"
+
+        for quote in ("USDT", "USDC", "USD"):
+            if raw.endswith(quote) and len(raw) > len(quote):
+                return f"{raw[:-len(quote)]}/USD"
+
+        if raw in base_candidates:
+            return f"{raw}/USD"
+        return raw
 
     @staticmethod
     def _coingecko_coin_id(base_symbol: str) -> str | None:
@@ -889,14 +1118,17 @@ class AITradingBrainService:
         account_id = int(account["id"])
         runtime = self.database.get_runtime_settings(account_id) or {}
         account_name_key = str(account_name or "").strip().lower()
-        symbol_norm = str(symbol or "").upper().replace(" ", "").strip()
-        if not symbol_norm:
+        input_symbol = str(symbol or "").upper().replace(" ", "").strip()
+        if not input_symbol:
             raise ValueError("Simbolo invalido para diagnostico IA")
-        symbol_key = self._symbol_key(symbol_norm)
 
         inferred_asset_type = str(asset_type or "").lower().strip()
         if inferred_asset_type not in {"stock", "crypto"}:
-            inferred_asset_type = "crypto" if "/" in symbol_norm or symbol_norm.endswith("USD") else "stock"
+            crypto_hint = self._normalize_crypto_symbol_input(input_symbol)
+            inferred_asset_type = "crypto" if ("/" in input_symbol or input_symbol.endswith("USD") or input_symbol.endswith("USDT") or input_symbol.endswith("USDC") or "/" in crypto_hint) else "stock"
+
+        symbol_norm = self._normalize_crypto_symbol_input(input_symbol) if inferred_asset_type == "crypto" else input_symbol
+        symbol_key = self._symbol_key(symbol_norm)
 
         snapshots = self.database.latest_market_snapshots(symbol_norm, limit=240)
         latest_snapshot = snapshots[0] if snapshots else {}
@@ -946,6 +1178,64 @@ class AITradingBrainService:
         if latest_decision is None and not account_name_key:
             latest_decision = fallback_decision
 
+        # If the diagnostic signal is stale for crypto, force a one-shot refresh so
+        # the operator does not see an old AVOID while market data is already updated.
+        signal_timestamp = self._parse_iso_timestamp(str((latest_signal or {}).get("timestamp", "") or ""))
+        signal_age_seconds = float("inf")
+        if signal_timestamp is not None:
+            signal_age_seconds = max((datetime.now(timezone.utc) - signal_timestamp).total_seconds(), 0.0)
+        should_refresh_diagnostic_signal = (
+            inferred_asset_type == "crypto"
+            and (
+                latest_signal is None
+                or signal_age_seconds > 120.0
+            )
+        )
+        if should_refresh_diagnostic_signal:
+            refresh_key = f"{account_name_key}:{symbol_key}"
+            now_mono = time.monotonic()
+            last_refresh = float(self._diagnostic_signal_refresh_at_by_key.get(refresh_key, 0.0) or 0.0)
+            if (now_mono - last_refresh) > 20.0:
+                self._diagnostic_signal_refresh_at_by_key[refresh_key] = now_mono
+                try:
+                    self.generate_signal(
+                        symbol=symbol_norm,
+                        asset_type=inferred_asset_type,
+                        account_name=account_name,
+                        text_context="",
+                        source="diagnostic_auto_refresh",
+                    )
+                except Exception as ex:
+                    self.logger.warning("Diagnostic auto-refresh signal failed for %s: %s", symbol_norm, ex)
+                else:
+                    for row in self.database.latest_signals(limit=200):
+                        if self._symbol_key(str(row.get("symbol", ""))) != symbol_key:
+                            continue
+                        features_row = row.get("features_json") or {}
+                        signal_account = str(features_row.get("account_name", "") or "").strip().lower()
+                        if signal_account and signal_account == account_name_key:
+                            latest_signal = row
+                            break
+                    for row in self.database.latest_decision_logs(limit=200):
+                        if self._symbol_key(str(row.get("symbol", ""))) != symbol_key:
+                            continue
+                        row_payload = dict(row)
+                        raw_context = row_payload.get("raw_context_json")
+                        context_payload: dict[str, Any] = {}
+                        if isinstance(raw_context, dict):
+                            context_payload = raw_context
+                        elif isinstance(raw_context, str):
+                            try:
+                                loaded = json.loads(raw_context)
+                                context_payload = loaded if isinstance(loaded, dict) else {}
+                            except Exception:
+                                context_payload = {}
+                        decision_account = str(context_payload.get("account_name", "") or "").strip().lower()
+                        if decision_account and decision_account == account_name_key:
+                            row_payload["raw_context_json"] = context_payload
+                            latest_decision = row_payload
+                            break
+
         live_candles_1m: list[dict[str, Any]] = []
         live_candles_15m: list[dict[str, Any]] = []
         live_quote: dict[str, Any] = {}
@@ -990,16 +1280,16 @@ class AITradingBrainService:
         if spread_pct <= 0.0 and price > 0.0:
             spread_pct = (spread / price) * 100.0
 
-        alpaca_pair_volume_1m_base = 0.0
-        alpaca_pair_volume_5m_base = 0.0
-        alpaca_pair_volume_15m_base = 0.0
-        alpaca_pair_volume_1m_usd = 0.0
-        alpaca_pair_volume_5m_usd = 0.0
-        alpaca_pair_volume_15m_usd = 0.0
-        alpaca_trade_volume_1m_base = 0.0
-        alpaca_trade_volume_1m_usd = 0.0
-        alpaca_trade_count_1m = 0
-        alpaca_trade_window_seconds = 60
+        binance_pair_volume_1m_base = 0.0
+        binance_pair_volume_5m_base = 0.0
+        binance_pair_volume_15m_base = 0.0
+        binance_pair_volume_1m_usd = 0.0
+        binance_pair_volume_5m_usd = 0.0
+        binance_pair_volume_15m_usd = 0.0
+        binance_trade_volume_1m_base = 0.0
+        binance_trade_volume_1m_usd = 0.0
+        binance_trade_count_1m = 0
+        binance_trade_window_seconds = 60
         trade_volume_status = "N/A"
         trade_volume_error = ""
 
@@ -1008,17 +1298,17 @@ class AITradingBrainService:
             trades_5m = self.market_data.get_recent_trade_stats(symbol=symbol_norm, lookback_seconds=300, limit=5000)
             trades_15m = self.market_data.get_recent_trade_stats(symbol=symbol_norm, lookback_seconds=900, limit=5000)
 
-            alpaca_trade_volume_1m_base = float(trades_1m.get("volume", 0.0) or 0.0)
-            alpaca_trade_volume_1m_usd = float(trades_1m.get("volume_usd", 0.0) or 0.0)
-            alpaca_trade_count_1m = int(trades_1m.get("count", 0) or 0)
-            alpaca_trade_window_seconds = int(trades_1m.get("lookback_seconds", 60) or 60)
+            binance_trade_volume_1m_base = float(trades_1m.get("volume", 0.0) or 0.0)
+            binance_trade_volume_1m_usd = float(trades_1m.get("volume_usd", 0.0) or 0.0)
+            binance_trade_count_1m = int(trades_1m.get("count", 0) or 0)
+            binance_trade_window_seconds = int(trades_1m.get("lookback_seconds", 60) or 60)
 
-            alpaca_pair_volume_1m_base = alpaca_trade_volume_1m_base
-            alpaca_pair_volume_5m_base = float(trades_5m.get("volume", 0.0) or 0.0)
-            alpaca_pair_volume_15m_base = float(trades_15m.get("volume", 0.0) or 0.0)
-            alpaca_pair_volume_1m_usd = alpaca_trade_volume_1m_usd
-            alpaca_pair_volume_5m_usd = float(trades_5m.get("volume_usd", 0.0) or 0.0)
-            alpaca_pair_volume_15m_usd = float(trades_15m.get("volume_usd", 0.0) or 0.0)
+            binance_pair_volume_1m_base = binance_trade_volume_1m_base
+            binance_pair_volume_5m_base = float(trades_5m.get("volume", 0.0) or 0.0)
+            binance_pair_volume_15m_base = float(trades_15m.get("volume", 0.0) or 0.0)
+            binance_pair_volume_1m_usd = binance_trade_volume_1m_usd
+            binance_pair_volume_5m_usd = float(trades_5m.get("volume_usd", 0.0) or 0.0)
+            binance_pair_volume_15m_usd = float(trades_15m.get("volume_usd", 0.0) or 0.0)
             trade_volume_status = "OK"
         except Exception as ex:
             trade_volume_status = "ERROR"
@@ -1034,9 +1324,9 @@ class AITradingBrainService:
 
         now_iso = self._now_iso()
         day_ago_iso = (now_utc - timedelta(hours=24)).isoformat()
-        alpaca_pair_volume_24h_usd = 0.0
+        binance_pair_volume_24h_usd = 0.0
         if live_candles_15m:
-            alpaca_pair_volume_24h_usd = sum(
+            binance_pair_volume_24h_usd = sum(
                 float(row.get("close", 0.0) or 0.0) * float(row.get("volume", 0.0) or 0.0)
                 for row in live_candles_15m
             )
@@ -1061,19 +1351,19 @@ class AITradingBrainService:
                 volume_snapshot = self.volume_manager.build_snapshot(
                     symbol=symbol_norm,
                     price=price,
-                    alpaca_24h_volume=alpaca_pair_volume_24h_usd,
+                    binance_24h_volume=binance_pair_volume_24h_usd,
                 )
                 volume_validation = self.volume_manager.validate_volume_data(symbol_norm)
-                alpaca_pair_volume_1m_base = float(volume_snapshot.get("local_volume_1m_base", volume_snapshot.get("local_volume_1m", alpaca_pair_volume_1m_base)) or 0.0)
-                alpaca_pair_volume_5m_base = float(volume_snapshot.get("local_volume_5m_base", volume_snapshot.get("local_volume_5m", alpaca_pair_volume_5m_base)) or 0.0)
-                alpaca_pair_volume_15m_base = float(volume_snapshot.get("local_volume_15m_base", volume_snapshot.get("local_volume_15m", alpaca_pair_volume_15m_base)) or 0.0)
-                alpaca_pair_volume_1m_usd = float(volume_snapshot.get("local_volume_1m_usd", alpaca_pair_volume_1m_usd) or 0.0)
-                alpaca_pair_volume_5m_usd = float(volume_snapshot.get("local_volume_5m_usd", alpaca_pair_volume_5m_usd) or 0.0)
-                alpaca_pair_volume_15m_usd = float(volume_snapshot.get("local_volume_15m_usd", alpaca_pair_volume_15m_usd) or 0.0)
-                alpaca_trade_volume_1m_base = float(volume_snapshot.get("local_volume_1m_base", alpaca_trade_volume_1m_base) or 0.0)
-                alpaca_trade_volume_1m_usd = float(volume_snapshot.get("local_volume_1m_usd", alpaca_trade_volume_1m_usd) or 0.0)
-                alpaca_trade_count_1m = int(volume_snapshot.get("trade_count_1m", alpaca_trade_count_1m) or 0)
-                alpaca_trade_window_seconds = 60
+                binance_pair_volume_1m_base = float(volume_snapshot.get("local_volume_1m_base", volume_snapshot.get("local_volume_1m", binance_pair_volume_1m_base)) or 0.0)
+                binance_pair_volume_5m_base = float(volume_snapshot.get("local_volume_5m_base", volume_snapshot.get("local_volume_5m", binance_pair_volume_5m_base)) or 0.0)
+                binance_pair_volume_15m_base = float(volume_snapshot.get("local_volume_15m_base", volume_snapshot.get("local_volume_15m", binance_pair_volume_15m_base)) or 0.0)
+                binance_pair_volume_1m_usd = float(volume_snapshot.get("local_volume_1m_usd", binance_pair_volume_1m_usd) or 0.0)
+                binance_pair_volume_5m_usd = float(volume_snapshot.get("local_volume_5m_usd", binance_pair_volume_5m_usd) or 0.0)
+                binance_pair_volume_15m_usd = float(volume_snapshot.get("local_volume_15m_usd", binance_pair_volume_15m_usd) or 0.0)
+                binance_trade_volume_1m_base = float(volume_snapshot.get("local_volume_1m_base", binance_trade_volume_1m_base) or 0.0)
+                binance_trade_volume_1m_usd = float(volume_snapshot.get("local_volume_1m_usd", binance_trade_volume_1m_usd) or 0.0)
+                binance_trade_count_1m = int(volume_snapshot.get("trade_count_1m", binance_trade_count_1m) or 0)
+                binance_trade_window_seconds = 60
                 global_volume_24h_usd = float(volume_snapshot.get("global_volume_24h_usd", global_volume_24h_usd) or 0.0)
                 global_volume_source = self._normalize_global_source_label(volume_snapshot.get("global_volume_source", global_volume_source))
                 global_volume_status = str(volume_snapshot.get("global_volume_status", global_volume_status) or global_volume_status)
@@ -1081,7 +1371,7 @@ class AITradingBrainService:
                 trade_volume_status = str(volume_snapshot.get("volume_status", trade_volume_status) or trade_volume_status)
                 if str(volume_snapshot.get("error_message", "") or "").strip():
                     trade_volume_error = str(volume_snapshot.get("error_message", "") or "")
-                volume_source = str(volume_snapshot.get("local_volume_source", volume_snapshot.get("volume_source", "alpaca_pair")) or "alpaca_pair")
+                volume_source = str(volume_snapshot.get("local_volume_source", volume_snapshot.get("volume_source", "binance_pair")) or "binance_pair")
                 data_source = str(volume_snapshot.get("volume_source", "live_trades") or "live_trades")
             except Exception as ex:
                 self.logger.warning("CryptoVolumeManager diagnostics failed for %s: %s", symbol_norm, ex)
@@ -1161,12 +1451,17 @@ class AITradingBrainService:
             key = normalized_reason.lower()
             if "below_average_cost" in key:
                 continue
+            if "target ia no alcanzable ahora" in key:
+                continue
             if key in seen:
                 continue
             seen.add(key)
             blocked_reasons_unique.append(normalized_reason)
 
         signal_type = str((latest_signal or {}).get("signal_type", "") or "").upper().strip()
+        allow_watch_as_buy_small = bool(getattr(self.settings, "ai_watch_as_buy_small", False))
+        if allow_watch_as_buy_small and signal_type == "WATCH":
+            signal_type = "BUY_SMALL"
         confidence = float((latest_signal or {}).get("confidence_score", 0.0) or 0.0)
         actual_signal_engine = self._trade_decision_engine_from_reason(signal_reason)
         requested_signal_engine = self._requested_decision_engine_from_reason(signal_reason)
@@ -1174,6 +1469,8 @@ class AITradingBrainService:
         current_approved_model = str(self.registry.approved_version() or "").strip()
         current_approved_model_available = bool(self.registry.approved_model_available())
         is_buy_signal = signal_type in {"BUY", "BUY_SMALL"}
+        is_short_signal = signal_type == "SELL_SHORT"
+        is_entry_signal = is_buy_signal or is_short_signal
         auto_enabled_for_asset = self._is_effective_auto_enabled_for_symbol(
             runtime=runtime,
             account_name=account_name,
@@ -1183,13 +1480,13 @@ class AITradingBrainService:
 
         liquidity_check_state = "APPLIES"
         liquidity_check_ok = True
-        liquidity_current = global_volume_24h_usd if inferred_asset_type == "crypto" else alpaca_pair_volume_24h_usd
+        liquidity_current = global_volume_24h_usd if inferred_asset_type == "crypto" else binance_pair_volume_24h_usd
         if inferred_asset_type == "crypto":
             if global_volume_status == "OK" and not global_volume_warning:
                 liquidity_check_ok = global_volume_24h_usd >= ai_min_volume_24h_usd
             elif volume_data_status == "OK":
-                liquidity_current = alpaca_pair_volume_24h_usd
-                liquidity_check_ok = alpaca_pair_volume_24h_usd >= ai_min_volume_24h_usd
+                liquidity_current = binance_pair_volume_24h_usd
+                liquidity_check_ok = binance_pair_volume_24h_usd >= ai_min_volume_24h_usd
             elif global_volume_status in {"ERROR", "STALE"}:
                 liquidity_check_state = "SKIPPED_GLOBAL_SOURCE"
             elif global_volume_warning:
@@ -1200,7 +1497,7 @@ class AITradingBrainService:
             if volume_data_status != "OK":
                 liquidity_check_state = "SKIPPED_INSUFFICIENT_DATA"
             else:
-                liquidity_check_ok = alpaca_pair_volume_24h_usd >= ai_min_volume_24h_usd
+                liquidity_check_ok = binance_pair_volume_24h_usd >= ai_min_volume_24h_usd
 
         signal_available = latest_signal is not None
 
@@ -1225,7 +1522,7 @@ class AITradingBrainService:
             },
             {
                 "name": "buy_signal_available",
-                "ok": is_buy_signal,
+                "ok": is_entry_signal,
                 "current": signal_type if signal_type else "NO_SIGNAL",
                 "required": True,
             },
@@ -1288,7 +1585,7 @@ class AITradingBrainService:
         ]
 
         blocked_reasons_for_entry = list(blocked_reasons_unique)
-        if not is_buy_signal:
+        if not is_entry_signal:
             current_signal = signal_type if signal_type else "NO_SIGNAL"
             blocked_reasons_for_entry = [f"Señal actual no habilita compra ({current_signal})"]
             if requested_signal_engine == "model" and actual_signal_engine == "heuristic_fallback":
@@ -1407,7 +1704,7 @@ class AITradingBrainService:
             if not bool(item.get("ok", False)):
                 entry_blockers.append(f"{name}=FAIL")
         for blocked in blocked_reasons_for_entry:
-            if not is_buy_signal and "spread demasiado alto" in str(blocked).lower():
+            if not is_entry_signal and "spread demasiado alto" in str(blocked).lower():
                 continue
             text = str(blocked or "").strip()
             if text:
@@ -1421,26 +1718,41 @@ class AITradingBrainService:
                 "price": price,
                 "spread": spread,
                 "spread_pct": spread_pct,
-                "alpaca_pair_volume_1m_base": alpaca_pair_volume_1m_base,
-                "alpaca_pair_volume_5m_base": alpaca_pair_volume_5m_base,
-                "alpaca_pair_volume_15m_base": alpaca_pair_volume_15m_base,
-                "alpaca_pair_volume_1m_usd": alpaca_pair_volume_1m_usd,
-                "alpaca_pair_volume_5m_usd": alpaca_pair_volume_5m_usd,
-                "alpaca_pair_volume_15m_usd": alpaca_pair_volume_15m_usd,
-                "alpaca_pair_volume_1m": alpaca_pair_volume_1m_base,
-                "alpaca_pair_volume_5m": alpaca_pair_volume_5m_base,
-                "alpaca_pair_volume_15m": alpaca_pair_volume_15m_base,
+                "binance_pair_volume_1m_base": binance_pair_volume_1m_base,
+                "binance_pair_volume_5m_base": binance_pair_volume_5m_base,
+                "binance_pair_volume_15m_base": binance_pair_volume_15m_base,
+                "binance_pair_volume_1m_usd": binance_pair_volume_1m_usd,
+                "binance_pair_volume_5m_usd": binance_pair_volume_5m_usd,
+                "binance_pair_volume_15m_usd": binance_pair_volume_15m_usd,
+                "alpaca_pair_volume_1m_base": binance_pair_volume_1m_base,
+                "alpaca_pair_volume_5m_base": binance_pair_volume_5m_base,
+                "alpaca_pair_volume_15m_base": binance_pair_volume_15m_base,
+                "alpaca_pair_volume_1m_usd": binance_pair_volume_1m_usd,
+                "alpaca_pair_volume_5m_usd": binance_pair_volume_5m_usd,
+                "alpaca_pair_volume_15m_usd": binance_pair_volume_15m_usd,
+                "binance_pair_volume_1m": binance_pair_volume_1m_base,
+                "binance_pair_volume_5m": binance_pair_volume_5m_base,
+                "binance_pair_volume_15m": binance_pair_volume_15m_base,
+                "alpaca_pair_volume_1m": binance_pair_volume_1m_base,
+                "alpaca_pair_volume_5m": binance_pair_volume_5m_base,
+                "alpaca_pair_volume_15m": binance_pair_volume_15m_base,
                 "volume_5m_minutes_used": min(5, max(candle_count_1m, 0)),
                 "volume_15m_minutes_used": min(15, max(candle_count_1m, 0)),
                 "volume_minutes_available": max(candle_count_1m, 0),
-                "alpaca_trade_volume_1m_base": alpaca_trade_volume_1m_base,
-                "alpaca_trade_volume_1m_usd": alpaca_trade_volume_1m_usd,
-                "alpaca_trade_volume_1m": alpaca_trade_volume_1m_base,
-                "alpaca_trade_count_1m": alpaca_trade_count_1m,
-                "alpaca_trade_window_seconds": alpaca_trade_window_seconds,
+                "binance_trade_volume_1m_base": binance_trade_volume_1m_base,
+                "binance_trade_volume_1m_usd": binance_trade_volume_1m_usd,
+                "binance_trade_volume_1m": binance_trade_volume_1m_base,
+                "binance_trade_count_1m": binance_trade_count_1m,
+                "binance_trade_window_seconds": binance_trade_window_seconds,
+                "alpaca_trade_volume_1m_base": binance_trade_volume_1m_base,
+                "alpaca_trade_volume_1m_usd": binance_trade_volume_1m_usd,
+                "alpaca_trade_volume_1m": binance_trade_volume_1m_base,
+                "alpaca_trade_count_1m": binance_trade_count_1m,
+                "alpaca_trade_window_seconds": binance_trade_window_seconds,
                 "trade_volume_status": trade_volume_status,
                 "trade_volume_error": trade_volume_error,
-                "alpaca_pair_volume_24h_usd": alpaca_pair_volume_24h_usd,
+                "binance_pair_volume_24h_usd": binance_pair_volume_24h_usd,
+                "alpaca_pair_volume_24h_usd": binance_pair_volume_24h_usd,
                 "global_volume_24h_usd": global_volume_24h_usd,
                 "volume_source": volume_source,
                 "local_volume_source": volume_source,
@@ -1586,6 +1898,9 @@ class AITradingBrainService:
         blocked_reason = self._blocked_buy_reason(symbol=symbol, account_id=account_id, features=features, account_name=account_name)
         signal_type = str(prediction["action"])
         reason = str(prediction["reason"])
+        if bool(getattr(self.settings, "ai_watch_as_buy_small", False)) and signal_type == "WATCH":
+            signal_type = "BUY_SMALL"
+            reason = f"{reason} | WATCH adaptado a BUY_SMALL por AI_WATCH_AS_BUY_SMALL"
         target_profit_per_unit = self._target_profit_per_unit(asset_type=asset_type, price=current_price, account_id=account_id)
         target_take_profit = current_price + target_profit_per_unit
         if signal_type in {"BUY", "BUY_SMALL"}:
@@ -1599,8 +1914,6 @@ class AITradingBrainService:
                 spread_now * 2.0,
                 target_profit_per_unit * 0.5,
             )
-            if recent_high + reachable_buffer < target_take_profit:
-                blocked_reason = (blocked_reason + " | " if blocked_reason else "") + "Target IA no alcanzable ahora"
 
         if blocked_reason:
             signal_type = "AVOID" if signal_type in {"BUY", "BUY_SMALL"} else signal_type
@@ -1744,7 +2057,7 @@ class AITradingBrainService:
         return filtered
 
     def get_scalping_board(self, limit_stocks: int = 6, limit_cryptos: int = 3) -> dict[str, list[dict[str, Any]]]:
-        actionable = {"WATCH", "BUY_SMALL", "BUY", "SELL_ALLOWED"}
+        actionable = {"WATCH", "BUY_SMALL", "BUY", "SELL_ALLOWED", "SELL_SHORT"}
         signals = self.list_signals(limit=200)
         by_symbol: dict[str, dict[str, Any]] = {}
         for item in signals:
@@ -2129,6 +2442,8 @@ class AITradingBrainService:
                 "reason": self._emergency_reason or "Entradas pausadas por estabilidad",
             }
         allowed_buy_actions = {"BUY", "BUY_SMALL"}
+        if bool(getattr(self.settings, "ai_watch_as_buy_small", False)):
+            allowed_buy_actions.add("WATCH")
         if signal_type not in allowed_buy_actions:
             raise ValueError(f"IA no ejecuta compras para senales tipo {signal_type or 'N/A'}")
 
@@ -2179,6 +2494,8 @@ class AITradingBrainService:
         if bool(runtime.get("signal_only_mode", 1)):
             return {"status": "signal_only", "qty": qty, "limit_price": limit_price}
 
+        self._ensure_vpn_ready_for_trading("Buy order")
+
         order = self.order_manager.create_limit_order(symbol=str(signal["symbol"]), qty=qty, side="buy", limit_price=limit_price, time_in_force="gtc")
         self.database.insert_trade(
             {
@@ -2226,6 +2543,117 @@ class AITradingBrainService:
             "qty": qty,
             "limit_price": limit_price,
             "immediate_exit": immediate_exit,
+        }
+
+    @staticmethod
+    def _runtime_futures_leverage(runtime: dict[str, Any], default_value: int) -> int:
+        return max(int(runtime.get("futures_leverage", default_value) or default_value), 1)
+
+    def place_limit_short(
+        self,
+        signal_id: int,
+        account_name: str,
+        manual_approved: bool,
+        initiated_by: str = "bot_auto",
+    ) -> dict[str, Any]:
+        account = self.refresh_account_context(account_name)
+        account_id = int(account["id"])
+        runtime = self.database.get_runtime_settings(account_id) or {}
+        funds = self.database.get_bot_funds(account_id) or {}
+        signal = next((item for item in self.database.latest_signals(limit=200) if int(item["id"]) == int(signal_id)), None)
+        if signal is None:
+            raise ValueError("Senal no encontrada")
+
+        signal_type = str(signal.get("signal_type", "")).upper().strip()
+        asset_type = str(signal.get("asset_type", "")).lower().strip()
+        if signal_type != "SELL_SHORT":
+            raise ValueError(f"IA no ejecuta short para senales tipo {signal_type or 'N/A'}")
+        if asset_type != "crypto":
+            raise ValueError("Short automatico solo habilitado para cryptos en futures")
+        if not bool(runtime.get("futures_enable_short", getattr(self.settings, "ai_futures_enable_short", True))):
+            raise ValueError("Short deshabilitado en configuracion de futuros")
+
+        if self._is_auto_execution_paused_for_asset(
+            runtime=runtime,
+            asset_type=asset_type,
+            initiated_by=initiated_by,
+            symbol=str(signal.get("symbol", "") or ""),
+            account_name=account_name,
+        ):
+            return {
+                "status": "paused_asset_type",
+                "asset_type": asset_type,
+                "reason": f"Auto trading pausado para {asset_type}",
+            }
+
+        confidence = float(signal.get("confidence_score", 0.0) or 0.0)
+        min_confidence = float(getattr(self.settings, "ai_min_execution_confidence", 60.0) or 60.0)
+        if confidence < min_confidence:
+            raise ValueError(f"Confianza insuficiente para ejecutar short ({confidence:.2f} < {min_confidence:.2f})")
+        if bool(runtime.get("kill_switch", 0)):
+            raise ValueError("Kill switch activo")
+        if bool(runtime.get("manual_approval_required", 1)) and not manual_approved:
+            raise ValueError("Se requiere aprobacion manual")
+        if not bool(runtime.get("paper_trading", 1)) and not bool(runtime.get("live_trading_enabled", 0)):
+            raise ValueError("Trading live deshabilitado")
+
+        leverage_default = int(getattr(self.settings, "crypto_futures_default_leverage", 1) or 1)
+        leverage_max = max(int(getattr(self.settings, "crypto_futures_max_leverage", 20) or 20), 1)
+        leverage = min(self._runtime_futures_leverage(runtime, leverage_default), leverage_max)
+
+        capital = min(float(funds.get("available_capital", 0.0) or 0.0), float(funds.get("max_position_size", 0.0) or 0.0))
+        if capital <= 0:
+            raise ValueError("No hay capital disponible")
+        limit_price = float(signal.get("suggested_limit_price", 0.0) or signal.get("entry_price", 0.0) or 0.0)
+        if limit_price <= 0:
+            raise ValueError("Precio limit invalido")
+
+        qty = round((capital * float(leverage)) / limit_price, 6)
+        if qty <= 0:
+            raise ValueError("Cantidad calculada invalida")
+        if bool(runtime.get("signal_only_mode", 1)):
+            return {"status": "signal_only", "qty": qty, "limit_price": limit_price, "leverage": leverage}
+
+        self._ensure_vpn_ready_for_trading("Short order")
+
+        if hasattr(self.broker, "set_futures_leverage"):
+            try:
+                self.broker.set_futures_leverage(symbol=str(signal["symbol"]), leverage=leverage)
+            except Exception as ex:
+                self.logger.warning("No se pudo aplicar leverage %sx en %s: %s", leverage, signal["symbol"], ex)
+
+        order = self.order_manager.create_limit_order(
+            symbol=str(signal["symbol"]),
+            qty=qty,
+            side="sell",
+            limit_price=limit_price,
+            time_in_force="gtc",
+        )
+        self.database.insert_trade(
+            {
+                "timestamp": self._now_iso(),
+                "account_id": account_id,
+                "symbol": str(signal["symbol"]),
+                "asset_type": str(signal["asset_type"]),
+                "side": "sell",
+                "order_type": "limit",
+                "qty": qty,
+                "limit_price": limit_price,
+                "filled_price": float(order.get("filled_avg_price", 0.0) or 0.0),
+                "fees": 0.0,
+                "status": str(order.get("status", "submitted")),
+                "initiated_by": initiated_by,
+                "broker_order_id": str(order.get("id", "")),
+                "signal_id": int(signal_id),
+                "created_at": self._now_iso(),
+            }
+        )
+        return {
+            "status": "submitted",
+            "order": order,
+            "qty": qty,
+            "limit_price": limit_price,
+            "leverage": leverage,
         }
 
     def _place_immediate_ai_target_exit(
@@ -2556,6 +2984,8 @@ class AITradingBrainService:
         if bool(runtime.get("signal_only_mode", 1)):
             return {"status": "signal_only", "qty": float(position["qty"]), "limit_price": limit_price}
 
+        self._ensure_vpn_ready_for_trading("Sell order")
+
         order = self.order_manager.create_limit_order(
             symbol=str(position["symbol"]),
             qty=float(position["qty"]),
@@ -2833,6 +3263,15 @@ class AITradingBrainService:
         scanner_engine = str(runtime.get("scanner_decision_engine", "heuristic") or "heuristic").strip().lower()
         if scanner_engine not in {"heuristic", "model"}:
             scanner_engine = "heuristic"
+        futures_only_mode = bool(runtime.get("futures_only_mode", getattr(self.settings, "crypto_futures_only_mode", True)))
+        futures_require_technical = bool(runtime.get("futures_require_technical", getattr(self.settings, "ai_futures_require_technical", True)))
+        futures_require_news = bool(runtime.get("futures_require_news", getattr(self.settings, "ai_futures_require_news", False)))
+        futures_enable_long = bool(runtime.get("futures_enable_long", getattr(self.settings, "ai_futures_enable_long", True))) and bool(
+            getattr(self.settings, "ai_futures_enable_long", True)
+        )
+        futures_enable_short = bool(runtime.get("futures_enable_short", getattr(self.settings, "ai_futures_enable_short", True))) and bool(
+            getattr(self.settings, "ai_futures_enable_short", True)
+        )
         focus = self._focus_for_account(account_name)
         focus_stocks_only = bool(focus.get("stocks_only", False))
         focus_cryptos_only = bool(focus.get("cryptos_only", False))
@@ -2842,6 +3281,9 @@ class AITradingBrainService:
         for item in symbols:
             symbol = str(item.get("symbol", "")).upper()
             asset_type = str(item.get("asset_type", "stock"))
+
+            if futures_only_mode and str(asset_type).lower() != "crypto":
+                continue
 
             if not self._is_effective_auto_enabled_for_symbol(
                 runtime=runtime,
@@ -2886,6 +3328,9 @@ class AITradingBrainService:
 
             volume_1m_current = 0.0
             volume_1m_previous_closed = 0.0
+            volume_1m_current_usd = 0.0
+            volume_5m_sum_usd = 0.0
+            volume_15m_sum_usd = 0.0
 
             snapshot_rows = list(reversed([
                 {
@@ -2904,6 +3349,8 @@ class AITradingBrainService:
             closed_1m = [float(row.get("volume", 0.0) or 0.0) for row in minute_bars_desc[1:61]]
             volume_5m_sum = sum(closed_1m[:5])
             volume_15m_sum = sum(closed_1m[:15])
+            volume_5m_sum_usd = latest_price * volume_5m_sum
+            volume_15m_sum_usd = latest_price * volume_15m_sum
             avg_volume_1m_20 = sum(closed_1m[:20]) / max(len(closed_1m[:20]), 1)
 
             trade_volume_status = "OK"
@@ -2913,11 +3360,14 @@ class AITradingBrainService:
                 trades_1m = self.market_data.get_recent_trade_stats(symbol=symbol, lookback_seconds=60, limit=5000)
                 trades_5m = self.market_data.get_recent_trade_stats(symbol=symbol, lookback_seconds=300, limit=5000)
                 trades_15m = self.market_data.get_recent_trade_stats(symbol=symbol, lookback_seconds=900, limit=5000)
-                volume_1m_current = float(trades_1m.get("volume_usd", trades_1m.get("volume", 0.0)) or 0.0)
+                volume_1m_current = float(trades_1m.get("volume", 0.0) or 0.0)
+                volume_1m_current_usd = float(trades_1m.get("volume_usd", 0.0) or 0.0)
                 trade_count_1m = int(trades_1m.get("count", 0) or 0)
                 volume_1m_previous_closed = volume_1m_current
-                volume_5m_sum = float(trades_5m.get("volume_usd", trades_5m.get("volume", 0.0)) or 0.0)
-                volume_15m_sum = float(trades_15m.get("volume_usd", trades_15m.get("volume", 0.0)) or 0.0)
+                volume_5m_sum = float(trades_5m.get("volume", 0.0) or 0.0)
+                volume_15m_sum = float(trades_15m.get("volume", 0.0) or 0.0)
+                volume_5m_sum_usd = float(trades_5m.get("volume_usd", 0.0) or 0.0)
+                volume_15m_sum_usd = float(trades_15m.get("volume_usd", 0.0) or 0.0)
             except Exception as ex:
                 trade_volume_status = "ERROR"
                 trade_volume_error = str(ex)
@@ -2928,7 +3378,7 @@ class AITradingBrainService:
 
             relative_volume_1m = (volume_1m_previous_closed / avg_volume_1m_20) if avg_volume_1m_20 > 0 else 0.0
             relative_volume_5m = (volume_5m_sum / avg_volume_5m_20) if avg_volume_5m_20 > 0 else 0.0
-            dollar_volume_5m = latest_price * volume_5m_sum
+            dollar_volume_5m = volume_5m_sum_usd if volume_5m_sum_usd > 0.0 else latest_price * volume_5m_sum
 
             now_iso = self._now_iso()
             day_ago_iso = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
@@ -2995,6 +3445,9 @@ class AITradingBrainService:
                             "volume_1m_previous_closed": volume_1m_previous_closed,
                             "volume_5m_sum": volume_5m_sum,
                             "volume_15m_sum": volume_15m_sum,
+                            "volume_1m_usd": volume_1m_current_usd,
+                            "volume_5m_usd": volume_5m_sum_usd,
+                            "volume_15m_usd": volume_15m_sum_usd,
                             "recent_trade_volume": recent_trade_volume,
                             "recent_trade_count": recent_trade_count,
                             "recent_trade_window_seconds": recent_trade_window_seconds,
@@ -3029,11 +3482,31 @@ class AITradingBrainService:
                 symbol=symbol,
                 limit=20,
             )
+            news_sentiment_weighted = 0.0
+            news_weight_sum = 0.0
             if recent_news:
                 top_news_influence = max(float(row.get("influence_score", 0.0) or 0.0) for row in recent_news)
                 news_score = max(0.0, min(20.0, top_news_influence * 20.0))
+                for row in recent_news:
+                    influence = max(float(row.get("influence_score", 0.0) or 0.0), 0.0)
+                    sentiment = float(row.get("sentiment_score", 0.0) or 0.0)
+                    news_sentiment_weighted += (sentiment * influence)
+                    news_weight_sum += influence
             else:
                 news_score = 0.0
+            news_bias = (news_sentiment_weighted / news_weight_sum) if news_weight_sum > 0 else 0.0
+
+            rsi_now = float(latest.get("rsi", 50.0) or 50.0)
+            pct1 = float(latest.get("percent_change_1m", 0.0) or 0.0)
+            pct5 = float(latest.get("percent_change_5m", 0.0) or 0.0)
+            pct15 = float(latest.get("percent_change_15m", 0.0) or 0.0)
+            vwap_now = float(latest.get("vwap", price) or price)
+            bullish_technical = (pct1 > 0 and pct5 > 0) or (price >= vwap_now and rsi_now >= 52.0 and pct15 > -0.15)
+            bearish_technical = (pct1 < 0 and pct5 < 0) or (price < vwap_now and rsi_now <= 48.0 and pct15 < 0.15)
+            bullish_news = news_bias >= 0.10
+            bearish_news = news_bias <= -0.10
+            long_confirmed = (bullish_technical if futures_require_technical else True) and (bullish_news if futures_require_news else True)
+            short_confirmed = (bearish_technical if futures_require_technical else True) and (bearish_news if futures_require_news else True)
 
             risk_score = max(
                 0.0,
@@ -3053,8 +3526,6 @@ class AITradingBrainService:
                 spread * 2.0,
                 target_profit_per_unit * 0.5,
             )
-            if recent_high_15m + reachable_buffer < target_take_profit:
-                blocked_reasons.append("Target IA no alcanzable ahora")
 
             model_version = "worker_scanner_v1"
             actual_decision_engine = scanner_engine
@@ -3114,8 +3585,95 @@ class AITradingBrainService:
                 else:
                     action = "BUY"
 
-            if action in {"BUY", "BUY_SMALL"} and any("Target IA no alcanzable ahora" == reason for reason in blocked_reasons):
-                action = "WATCH"
+            watch_resolution_note = ""
+            if asset_type.lower() == "crypto":
+                directional_action = action
+                if final_score >= 60.0:
+                    if long_confirmed and futures_enable_long and not short_confirmed:
+                        directional_action = "BUY_SMALL" if final_score < 75.0 else "BUY"
+                    elif short_confirmed and futures_enable_short and not long_confirmed:
+                        directional_action = "SELL_SHORT"
+                    else:
+                        directional_action = "WATCH"
+                        if futures_require_technical and not (bullish_technical or bearish_technical):
+                            blocked_reasons.append("Sin confirmacion tecnica para long/short")
+                        if futures_require_news and not (bullish_news or bearish_news):
+                            blocked_reasons.append("Sin confirmacion de noticias para long/short")
+                else:
+                    directional_action = "AVOID" if final_score < 45.0 else "WATCH"
+                action = directional_action
+
+            # Evidence-based WATCH resolution (IA + technical + news + CryptoPanic when available).
+            # This avoids arbitrary conversions and allows directional outcome when evidence is strong.
+            if action == "WATCH" and asset_type.lower() == "crypto" and bool(getattr(self.settings, "ai_watch_as_buy_small", False)):
+                min_exec_confidence = float(getattr(self.settings, "ai_min_execution_confidence", 60.0) or 60.0)
+                min_evidence = max(int(getattr(self.settings, "ai_watch_resolution_min_evidence", 2) or 2), 1)
+                min_edge = max(int(getattr(self.settings, "ai_watch_resolution_min_edge", 1) or 1), 0)
+                min_volume_1m_usd = float(getattr(self.settings, "ai_watch_resolution_min_volume_1m_usd", 1000.0) or 1000.0)
+                tie_news_bias = float(getattr(self.settings, "ai_watch_resolution_tie_news_bias", 0.12) or 0.12)
+                cryptopanic_rows = [
+                    row for row in recent_news
+                    if "cryptopanic" in str(row.get("source", "") or "").strip().lower()
+                ]
+                cp_weight = 0.0
+                cp_sent_weighted = 0.0
+                for row in cryptopanic_rows:
+                    influence = max(float(row.get("influence_score", 0.0) or 0.0), 0.0)
+                    sentiment = float(row.get("sentiment_score", 0.0) or 0.0)
+                    cp_weight += influence
+                    cp_sent_weighted += (sentiment * influence)
+                cp_bias = (cp_sent_weighted / cp_weight) if cp_weight > 0.0 else 0.0
+                cp_available = bool(cryptopanic_rows)
+
+                long_evidence = 0
+                short_evidence = 0
+                if bullish_technical:
+                    long_evidence += 2
+                if bearish_technical:
+                    short_evidence += 2
+                if pct1 > 0 and pct5 > 0:
+                    long_evidence += 1
+                if pct1 < 0 and pct5 < 0:
+                    short_evidence += 1
+                if bullish_news:
+                    long_evidence += 1
+                if bearish_news:
+                    short_evidence += 1
+                if news_bias >= 0.10:
+                    long_evidence += 1
+                if news_bias <= -0.10:
+                    short_evidence += 1
+                if cp_available and cp_bias >= 0.05:
+                    long_evidence += 1
+                if cp_available and cp_bias <= -0.05:
+                    short_evidence += 1
+
+                volume_ok = (trade_volume_status in {"OK", "FALLBACK_USED"}) and (volume_1m_current_usd >= min_volume_1m_usd)
+                score_ok = final_score >= min_exec_confidence
+
+                if score_ok and volume_ok:
+                    long_wins = long_evidence >= (short_evidence + min_edge)
+                    short_wins = short_evidence >= (long_evidence + min_edge)
+
+                    # Technical/news tie-breaker when evidence count is equal.
+                    if (not long_wins and not short_wins) and long_evidence == short_evidence:
+                        if news_bias >= tie_news_bias:
+                            long_wins = True
+                        elif news_bias <= (-1.0 * tie_news_bias):
+                            short_wins = True
+
+                    if futures_enable_long and long_evidence >= min_evidence and long_wins:
+                        action = "BUY_SMALL"
+                        watch_resolution_note = (
+                            f"watch_to_buy_small(score={final_score:.2f}; long_ev={long_evidence}; short_ev={short_evidence}; "
+                            f"cp_available={int(cp_available)}; cp_bias={cp_bias:.3f}; min_ev={min_evidence}; min_edge={min_edge})"
+                        )
+                    elif futures_enable_short and short_evidence >= min_evidence and short_wins:
+                        action = "SELL_SHORT"
+                        watch_resolution_note = (
+                            f"watch_to_sell_short(score={final_score:.2f}; long_ev={long_evidence}; short_ev={short_evidence}; "
+                            f"cp_available={int(cp_available)}; cp_bias={cp_bias:.3f}; min_ev={min_evidence}; min_edge={min_edge})"
+                        )
 
             metrics = self.calculate_average_cost(symbol=symbol, account_id=account_id)
             average_cost = float(metrics.get("average_cost", 0.0) or 0.0)
@@ -3124,9 +3682,12 @@ class AITradingBrainService:
             reason = (
                 f"price_action={price_action_score:.2f}; volume={volume_score:.2f}; liquidity={liquidity_score:.2f}; "
                 f"news={news_score:.2f}; risk={risk_score:.2f}; final={final_score:.2f}; "
+                f"news_bias={news_bias:.4f}; bullish_technical={int(bullish_technical)}; bearish_technical={int(bearish_technical)}; "
+                f"bullish_news={int(bullish_news)}; bearish_news={int(bearish_news)}; "
                 f"decision_engine={actual_decision_engine}; requested_engine={scanner_engine}; "
                 f"volume_1m_current={volume_1m_current:.2f}; volume_1m_previous_closed={volume_1m_previous_closed:.2f}; "
                 f"volume_5m_sum={volume_5m_sum:.2f}; volume_15m_sum={volume_15m_sum:.2f}; "
+                f"volume_1m_usd={volume_1m_current_usd:.2f}; volume_5m_usd={volume_5m_sum_usd:.2f}; volume_15m_usd={volume_15m_sum_usd:.2f}; "
                 f"avg_volume_1m_20={avg_volume_1m_20:.2f}; avg_volume_5m_20={avg_volume_5m_20:.2f}; "
                 f"relative_volume_1m={relative_volume_1m:.2f}; relative_volume_5m={relative_volume_5m:.2f}; "
                 f"dollar_volume_5m={dollar_volume_5m:.2f}; volume_24h_usd={volume_24h_usd:.2f}"
@@ -3135,6 +3696,8 @@ class AITradingBrainService:
                 reason += f"; global_volume_24h_usd={global_volume_24h_usd:.2f}; global_volume_status={global_volume_status}"
                 if global_volume_warning:
                     reason += f"; global_volume_warning={global_volume_warning}"
+            if watch_resolution_note:
+                reason += f"; {watch_resolution_note}"
             if blocked_reasons:
                 reason += " | blocked_reason: " + " | ".join(dict.fromkeys(blocked_reasons))
             if quantity_owned > 0 and average_cost > 0 and price < average_cost:
@@ -3168,6 +3731,11 @@ class AITradingBrainService:
                 "volume_score": volume_score,
                 "liquidity_score": liquidity_score,
                 "news_score": news_score,
+                "news_bias": news_bias,
+                "bullish_technical": 1 if bullish_technical else 0,
+                "bearish_technical": 1 if bearish_technical else 0,
+                "bullish_news": 1 if bullish_news else 0,
+                "bearish_news": 1 if bearish_news else 0,
                 "risk_score": risk_score,
                 "composite_score": final_score,
                 "average_cost": average_cost,
@@ -3175,6 +3743,9 @@ class AITradingBrainService:
                 "volume_1m_previous_closed": volume_1m_previous_closed,
                 "volume_5m_sum": volume_5m_sum,
                 "volume_15m_sum": volume_15m_sum,
+                "volume_1m_usd": volume_1m_current_usd,
+                "volume_5m_usd": volume_5m_sum_usd,
+                "volume_15m_usd": volume_15m_sum_usd,
                 "avg_volume_1m_20": avg_volume_1m_20,
                 "avg_volume_5m_20": avg_volume_5m_20,
                 "relative_volume_1m": relative_volume_1m,
@@ -3267,6 +3838,54 @@ class AITradingBrainService:
                         }
                     )
                     self.logger.info("Auto-ejecucion bloqueada para %s: %s", symbol, ex)
+
+            if action == "SELL_SHORT" and new_signal_id > 0:
+                try:
+                    short_result = self.place_limit_short(
+                        signal_id=new_signal_id,
+                        account_name=account_name,
+                        manual_approved=True,
+                        initiated_by="bot_auto",
+                    )
+                    short_status = str(short_result.get("status", "unknown") or "unknown")
+                    self.database.insert_decision_log(
+                        {
+                            "timestamp": self._now_iso(),
+                            "symbol": symbol,
+                            "decision": "AUTO_SHORT_SUBMITTED",
+                            "reason": f"status={short_status}; signal_id={new_signal_id}",
+                            "blocked_reason": "" if short_status == "submitted" else short_status,
+                            "raw_context_json": {
+                                "account_name": account_name,
+                                "asset_type": asset_type,
+                                "signal_id": new_signal_id,
+                                "result": short_result,
+                            },
+                        }
+                    )
+                    self.logger.info(
+                        "Auto-ejecucion IA SHORT | %s | score=%.2f | result=%s",
+                        symbol,
+                        final_score,
+                        short_status,
+                    )
+                except Exception as ex:
+                    err_text = str(ex or "unknown_error")
+                    self.database.insert_decision_log(
+                        {
+                            "timestamp": self._now_iso(),
+                            "symbol": symbol,
+                            "decision": "AUTO_SHORT_BLOCKED",
+                            "reason": f"signal_id={new_signal_id}",
+                            "blocked_reason": err_text,
+                            "raw_context_json": {
+                                "account_name": account_name,
+                                "asset_type": asset_type,
+                                "signal_id": new_signal_id,
+                            },
+                        }
+                    )
+                    self.logger.info("Auto-short bloqueado para %s: %s", symbol, ex)
 
             self.database.insert_decision_log(
                 {
@@ -3406,6 +4025,9 @@ class AITradingBrainService:
 
     def _stream_subscription_symbols(self, account_name: str) -> dict[str, list[str]]:
         symbols = self._symbols_for_collection(account_name)
+        focus = self._focus_for_account(account_name)
+        focus_stocks = set(focus.get("stocks_symbols", set()))
+        focus_cryptos = set(focus.get("cryptos_symbols", set()))
         stock_symbols: list[str] = []
         crypto_symbols: list[str] = []
         seen: set[str] = set()
@@ -3421,7 +4043,13 @@ class AITradingBrainService:
                 stock_symbols.append(symbol)
 
         default_symbol = str(self.settings.default_symbol).upper().strip()
-        if default_symbol and default_symbol not in seen:
+        default_is_crypto = bool("/" in default_symbol or default_symbol.endswith("USD"))
+        allow_default = True
+        if default_is_crypto and focus_cryptos:
+            allow_default = any(self._symbol_key(default_symbol) == self._symbol_key(candidate) for candidate in focus_cryptos)
+        if not default_is_crypto and focus_stocks:
+            allow_default = default_symbol in focus_stocks
+        if default_symbol and default_symbol not in seen and allow_default:
             if "/" in default_symbol or default_symbol.endswith("USD"):
                 crypto_symbols.append(default_symbol)
             else:
@@ -3431,14 +4059,28 @@ class AITradingBrainService:
 
     def _symbols_for_collection(self, account_name: str) -> list[dict[str, str]]:
         symbols: dict[str, dict[str, str]] = {}
+        is_binance_provider = str(getattr(self.broker, "provider", "") or "").strip().lower() == "binance"
+        focus = self._focus_for_account(account_name)
+        focus_stocks_only = bool(focus.get("stocks_only", False))
+        focus_cryptos_only = bool(focus.get("cryptos_only", False))
+        focus_stocks = {str(token).upper().strip() for token in set(focus.get("stocks_symbols", set())) if str(token).strip()}
+        focus_cryptos = {
+            self._normalize_crypto_symbol_input(str(token))
+            for token in set(focus.get("cryptos_symbols", set()))
+            if str(token).strip()
+        }
+        focus_cryptos = {token for token in focus_cryptos if token}
 
         for asset in self.database.list_watchlist_assets(active_only=True):
             symbol = str(asset.get("symbol", "")).upper().strip()
             if not symbol:
                 continue
+            asset_type = str(asset.get("asset_type", "stock") or "stock").lower().strip()
+            if is_binance_provider and asset_type != "crypto":
+                continue
             symbols[self._symbol_key(symbol)] = {
                 "symbol": symbol,
-                "asset_type": str(asset.get("asset_type", "stock")),
+                "asset_type": asset_type,
             }
 
         try:
@@ -3455,6 +4097,8 @@ class AITradingBrainService:
             self._last_api_error = str(ex)
 
         default_symbol = str(self.settings.default_symbol).upper().strip()
+        if is_binance_provider and not ("/" in default_symbol or default_symbol.endswith("USD") or default_symbol.endswith("USDT") or default_symbol.endswith("USDC")):
+            default_symbol = "SOL/USD"
         if default_symbol:
             symbols.setdefault(
                 self._symbol_key(default_symbol),
@@ -3463,6 +4107,47 @@ class AITradingBrainService:
                     "asset_type": "crypto" if "/" in default_symbol or default_symbol.endswith("USD") else "stock",
                 },
             )
+
+        # If user defined a focus list, force evaluation to those symbols for that asset type.
+        # This keeps collector/scanner aligned with "Enfoque de evaluacion IA".
+        if focus_stocks:
+            focus_stock_keys = {self._symbol_key(item) for item in focus_stocks}
+            symbols = {
+                key: value
+                for key, value in symbols.items()
+                if not (str(value.get("asset_type", "")).lower().strip() == "stock")
+                or key in focus_stock_keys
+            }
+
+        if focus_cryptos:
+            focus_crypto_keys = {self._symbol_key(item) for item in focus_cryptos}
+            symbols = {
+                key: value
+                for key, value in symbols.items()
+                if not (str(value.get("asset_type", "")).lower().strip() == "crypto")
+                or key in focus_crypto_keys
+            }
+            for symbol in sorted(focus_cryptos):
+                symbols.setdefault(
+                    self._symbol_key(symbol),
+                    {
+                        "symbol": symbol,
+                        "asset_type": "crypto",
+                    },
+                )
+
+        if focus_stocks_only:
+            symbols = {
+                key: value
+                for key, value in symbols.items()
+                if str(value.get("asset_type", "")).lower().strip() == "stock"
+            }
+        if focus_cryptos_only:
+            symbols = {
+                key: value
+                for key, value in symbols.items()
+                if str(value.get("asset_type", "")).lower().strip() == "crypto"
+            }
 
         return list(symbols.values())
 
@@ -3717,6 +4402,8 @@ class AITradingBrainService:
         return _merge_events(stock_news, yahoo_news)
 
     def _fetch_alpaca_news_events(self, symbol: str) -> list[dict[str, str]]:
+        if str(getattr(self.broker, "provider", "") or "").strip().lower() == "binance":
+            return []
         key = self._symbol_key(symbol)
         cache_key = f"alpaca_news:{key}"
         cooldown_key = f"alpaca_news:{key}"
@@ -4147,6 +4834,10 @@ class AITradingBrainService:
             return "Kill switch activo"
         if not bool(funds.get("enabled", 0)):
             return "Bot desactivado"
+        if float(funds.get("available_capital", 0.0) or 0.0) <= 0:
+            return "No hay fondos asignados"
+        if float(funds.get("max_position_size", 0.0) or 0.0) <= 0:
+            return "Max position size invalido"
         price = float(features.get("price", 0.0) or 0.0)
         spread = float(features.get("spread", 0.0) or 0.0)
         asset_type = "crypto" if "/" in symbol or symbol.endswith("USD") else "stock"
@@ -4155,10 +4846,6 @@ class AITradingBrainService:
         if asset_type != "crypto":
             if float(features.get("volume", 0.0) or 0.0) < float(self.settings.ai_min_volume_required):
                 return "Volumen inválido"
-        if float(funds.get("available_capital", 0.0) or 0.0) <= 0:
-            return "No hay fondos asignados"
-        if float(funds.get("max_position_size", 0.0) or 0.0) <= 0:
-            return "Max position size invalido"
         dashboard = self.database.dashboard_summary(account_id)
         account_daily_pnl = float(dashboard.get("daily_pnl", 0.0) or 0.0)
         if not self.risk_manager.can_trade(current_daily_pnl=account_daily_pnl):
@@ -4268,7 +4955,11 @@ class AITradingBrainService:
 
     @staticmethod
     def _symbol_key(symbol: str) -> str:
-        return str(symbol or "").upper().replace(" ", "").replace("/", "")
+        normalized = str(symbol or "").upper().replace(" ", "").replace("/", "")
+        for quote in ("USDC", "USDT"):
+            if normalized.endswith(quote) and len(normalized) > len(quote):
+                return f"{normalized[:-len(quote)]}USD"
+        return normalized
 
     @staticmethod
     def _now_iso() -> str:
