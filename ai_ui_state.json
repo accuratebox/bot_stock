@@ -1,5 +1,6 @@
 {
-  "account": "Paper 2",
+  "account": "Binance Demo",
+  "ai_automation_account": "Binance Demo",
   "ai_focus": {
     "stocks_only": false,
     "cryptos_only": true,
@@ -12,6 +13,18 @@
       "cryptos_only": true,
       "stocks_symbols": "",
       "cryptos_symbols": "SOL/USD"
+    },
+    "Odalis2786": {
+      "stocks_only": false,
+      "cryptos_only": true,
+      "stocks_symbols": "",
+      "cryptos_symbols": "SOL/USD"
+    },
+    "Binance Demo": {
+      "stocks_only": false,
+      "cryptos_only": true,
+      "stocks_symbols": "",
+      "cryptos_symbols": "SOL/USD"
     }
   },
   "ai_diag_by_account": {
@@ -19,12 +32,22 @@
       "signal_only": false,
       "auto_stocks": false,
       "auto_cryptos": true
+    },
+    "Odalis2786": {
+      "signal_only": false,
+      "auto_stocks": false,
+      "auto_cryptos": true
+    },
+    "Binance Demo": {
+      "signal_only": false,
+      "auto_stocks": false,
+      "auto_cryptos": true
     }
   },
   "ai_diag": {
-    "account": "Paper 2",
+    "account": "Binance Demo",
     "market": "Cryptos",
-    "symbol": "SOL/USDC",
+    "symbol": "SOL/USD",
     "max_spread": "8",
     "min_volume": "1000.0",
     "min_confidence": "60.0",

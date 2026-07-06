@@ -1,0 +1,24 @@
+{
+  "model_path": "models/futures/futures_model_20260706_043002.pkl",
+  "metadata": {
+    "model_name": "futures_model",
+    "version": "futures_model_20260706_043002",
+    "trained_at": "2026-07-06T04:30:02.922051+00:00",
+    "symbol": "BTCUSDT",
+    "samples_train": 448,
+    "samples_test": 112,
+    "feature_count": 46,
+    "accuracy": 0.7857142857142857,
+    "backtest": {
+      "win_rate": 0.8043478260869565,
+      "profit_factor": 4.2904907000607775,
+      "max_drawdown": 0.004293929919602972,
+      "average_win": 0.0009666675665393307,
+      "average_loss": -0.0009262525084821386,
+      "expectancy": 0.000596313638817739,
+      "number_of_trades": 46,
+      "no_trade_pct": 58.92857142857143,
+      "approved": true
+    }
+  }
+}

@@ -214,6 +214,12 @@ class TradingBrainDatabase:
                 auto_trade_stocks_enabled INTEGER NOT NULL DEFAULT 1,
                 auto_trade_cryptos_enabled INTEGER NOT NULL DEFAULT 1,
                 scanner_decision_engine TEXT NOT NULL DEFAULT 'heuristic',
+                futures_only_mode INTEGER NOT NULL DEFAULT 1,
+                futures_leverage INTEGER NOT NULL DEFAULT 1,
+                futures_require_technical INTEGER NOT NULL DEFAULT 1,
+                futures_require_news INTEGER NOT NULL DEFAULT 0,
+                futures_enable_long INTEGER NOT NULL DEFAULT 1,
+                futures_enable_short INTEGER NOT NULL DEFAULT 1,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL,
                 FOREIGN KEY(account_id) REFERENCES accounts(id)
@@ -319,6 +325,12 @@ class TradingBrainDatabase:
         self._ensure_column_exists(connection, "ai_runtime_settings", "auto_trade_stocks_enabled", "INTEGER NOT NULL DEFAULT 1")
         self._ensure_column_exists(connection, "ai_runtime_settings", "auto_trade_cryptos_enabled", "INTEGER NOT NULL DEFAULT 1")
         self._ensure_column_exists(connection, "ai_runtime_settings", "scanner_decision_engine", "TEXT NOT NULL DEFAULT 'heuristic'")
+        self._ensure_column_exists(connection, "ai_runtime_settings", "futures_only_mode", "INTEGER NOT NULL DEFAULT 1")
+        self._ensure_column_exists(connection, "ai_runtime_settings", "futures_leverage", "INTEGER NOT NULL DEFAULT 1")
+        self._ensure_column_exists(connection, "ai_runtime_settings", "futures_require_technical", "INTEGER NOT NULL DEFAULT 1")
+        self._ensure_column_exists(connection, "ai_runtime_settings", "futures_require_news", "INTEGER NOT NULL DEFAULT 0")
+        self._ensure_column_exists(connection, "ai_runtime_settings", "futures_enable_long", "INTEGER NOT NULL DEFAULT 1")
+        self._ensure_column_exists(connection, "ai_runtime_settings", "futures_enable_short", "INTEGER NOT NULL DEFAULT 1")
         self._ensure_column_exists(connection, "trades", "initiated_by", "TEXT NOT NULL DEFAULT 'unknown'")
         self._ensure_column_exists(connection, "crypto_volume_records", "local_volume_1m_usd", "REAL NOT NULL DEFAULT 0")
         self._ensure_column_exists(connection, "crypto_volume_records", "local_volume_5m_usd", "REAL NOT NULL DEFAULT 0")
@@ -472,6 +484,12 @@ class TradingBrainDatabase:
         auto_trade_stocks_enabled: bool,
         auto_trade_cryptos_enabled: bool,
         scanner_decision_engine: str = "heuristic",
+        futures_only_mode: bool = True,
+        futures_leverage: int = 1,
+        futures_require_technical: bool = True,
+        futures_require_news: bool = False,
+        futures_enable_long: bool = True,
+        futures_enable_short: bool = True,
     ) -> None:
         now = self._now_iso()
         with self.connect() as connection:
@@ -482,6 +500,7 @@ class TradingBrainDatabase:
             engine = str(scanner_decision_engine or "heuristic").strip().lower()
             if engine not in {"heuristic", "model"}:
                 engine = "heuristic"
+            leverage = max(int(futures_leverage or 1), 1)
             payload = (
                 1 if signal_only_mode else 0,
                 1 if paper_trading else 0,
@@ -491,6 +510,12 @@ class TradingBrainDatabase:
                 1 if auto_trade_stocks_enabled else 0,
                 1 if auto_trade_cryptos_enabled else 0,
                 engine,
+                1 if futures_only_mode else 0,
+                leverage,
+                1 if futures_require_technical else 0,
+                1 if futures_require_news else 0,
+                1 if futures_enable_long else 0,
+                1 if futures_enable_short else 0,
                 now,
             )
             if row is None:
@@ -499,8 +524,11 @@ class TradingBrainDatabase:
                     INSERT INTO ai_runtime_settings (
                         account_id, signal_only_mode, paper_trading, live_trading_enabled,
                         manual_approval_required, kill_switch, auto_trade_stocks_enabled,
-                        auto_trade_cryptos_enabled, scanner_decision_engine, created_at, updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        auto_trade_cryptos_enabled, scanner_decision_engine,
+                        futures_only_mode, futures_leverage, futures_require_technical,
+                        futures_require_news, futures_enable_long, futures_enable_short,
+                        created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (account_id, *payload, now),
                 )
@@ -512,6 +540,8 @@ class TradingBrainDatabase:
                 SET signal_only_mode = ?, paper_trading = ?, live_trading_enabled = ?,
                     manual_approval_required = ?, kill_switch = ?,
                     auto_trade_stocks_enabled = ?, auto_trade_cryptos_enabled = ?, scanner_decision_engine = ?,
+                    futures_only_mode = ?, futures_leverage = ?, futures_require_technical = ?,
+                    futures_require_news = ?, futures_enable_long = ?, futures_enable_short = ?,
                     updated_at = ?
                 WHERE account_id = ?
                 """,
@@ -1122,7 +1152,7 @@ class TradingBrainDatabase:
                     int(payload.get("trade_count_5m", 0) or 0),
                     int(payload.get("trade_count_15m", 0) or 0),
                     float(payload.get("global_volume_24h_usd", 0.0) or 0.0),
-                    float(payload.get("alpaca_24h_volume", 0.0) or 0.0),
+                    float(payload.get("binance_24h_volume", payload.get("alpaca_24h_volume", 0.0)) or 0.0),
                     str(payload.get("volume_source", "unknown") or "unknown"),
                     str(payload.get("global_volume_source", "unknown") or "unknown"),
                     str(payload.get("volume_status", "UNKNOWN") or "UNKNOWN"),

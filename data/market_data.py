@@ -1,6 +1,7 @@
 import time
 from datetime import datetime, timedelta, timezone
 from typing import Any
+from urllib.parse import urlsplit
 
 import requests
 
@@ -18,14 +19,22 @@ class MarketDataService:
         self._cache_ttl_seconds = 30.0
         self._max_retries = 3
         self._http_timeout_seconds = int(getattr(settings, "http_timeout_alpaca_seconds", 10) or 10)
-        self.endpoint = settings.alpaca_endpoint
-        self.api_key = settings.alpaca_api_key
-        self.api_secret = settings.alpaca_api_secret
+        self.provider = str(getattr(settings, "broker_provider", "alpaca") or "alpaca").lower()
+        if self.provider == "binance":
+            self.endpoint = str(getattr(settings, "binance_demo_endpoint", "https://testnet.binancefuture.com") or "https://testnet.binancefuture.com")
+            self.api_key = str(getattr(settings, "binance_demo_key", "") or "")
+            self.api_secret = str(getattr(settings, "binance_demo_secret", "") or "")
+        else:
+            self.endpoint = settings.alpaca_endpoint
+            self.api_key = settings.alpaca_api_key
+            self.api_secret = settings.alpaca_api_secret
         self.account_name = account_name or self.endpoint
         self.runtime_state = runtime_state or AlpacaRuntimeState()
 
     def set_connection(self, endpoint: str, api_key: str, api_secret: str) -> None:
         self.endpoint = endpoint.rstrip("/")
+        host = str(urlsplit(self.endpoint).netloc or "").lower()
+        self.provider = "binance" if "binance" in host else "alpaca"
         self.api_key = api_key
         self.api_secret = api_secret
         self.account_name = self.account_name or self.endpoint
@@ -49,6 +58,12 @@ class MarketDataService:
             self._cache[normalized] = (time.time(), float(shared_price))
             return float(shared_price)
 
+        if self.provider == "binance":
+            value = self._get_crypto_price_binance(normalized)
+            self._cache[normalized] = (time.time(), value)
+            self.runtime_state.set_latest_price_value(self.account_name, normalized, value)
+            return value
+
         if self._is_crypto_symbol(normalized):
             value = self._get_crypto_price_alpaca(normalized)
         else:
@@ -64,6 +79,32 @@ class MarketDataService:
             cached_at, cached_quote = cached
             if (time.time() - cached_at) <= self._cache_ttl_seconds:
                 return cached_quote
+
+        if self.provider == "binance":
+            symbol_for_data = self._to_binance_symbol(normalized)
+            payload = self._request_json_with_retry(
+                url=f"{self.endpoint}/fapi/v1/ticker/bookTicker",
+                params={"symbol": symbol_for_data},
+                headers=self._auth_headers(),
+            )
+            bid = float(payload.get("bidPrice", 0.0) or 0.0)
+            ask = float(payload.get("askPrice", 0.0) or 0.0)
+            bid_size = float(payload.get("bidQty", 0.0) or 0.0)
+            ask_size = float(payload.get("askQty", 0.0) or 0.0)
+            result = {
+                "bid": bid,
+                "ask": ask,
+                "bid_size": bid_size,
+                "ask_size": ask_size,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+            spread = max(result["ask"] - result["bid"], 0.0)
+            mid = (result["ask"] + result["bid"]) / 2 if result["ask"] and result["bid"] else 0.0
+            result["spread"] = spread
+            result["spread_pct"] = (spread / mid * 100.0) if mid > 0 else 0.0
+            self._quote_cache[normalized] = (time.time(), result)
+            self.runtime_state.set_quote(self.account_name, normalized, result)
+            return result
 
         if self._is_crypto_symbol(normalized):
             url = "https://data.alpaca.markets/v1beta3/crypto/us/latest/quotes"
@@ -107,6 +148,18 @@ class MarketDataService:
 
     def get_latest_trade(self, symbol: str) -> dict:
         normalized = symbol.upper().replace(" ", "")
+        if self.provider == "binance":
+            payload = self._request_json_with_retry(
+                url=f"{self.endpoint}/fapi/v1/trades",
+                params={"symbol": self._to_binance_symbol(normalized), "limit": "1"},
+                headers=self._auth_headers(),
+            )
+            trade = payload[0] if isinstance(payload, list) and payload else {}
+            return {
+                "price": float(trade.get("price", 0.0) or 0.0),
+                "size": float(trade.get("qty", 0.0) or 0.0),
+                "timestamp": trade.get("time"),
+            }
         if self._is_crypto_symbol(normalized):
             url = "https://data.alpaca.markets/v1beta3/crypto/us/latest/trades"
             params = {"symbols": self._to_crypto_data_symbol(normalized)}
@@ -132,6 +185,39 @@ class MarketDataService:
         start_iso = start_utc.isoformat().replace("+00:00", "Z")
         end_iso = now_utc.isoformat().replace("+00:00", "Z")
         request_limit = max(min(int(limit or 1000), 10000), 1)
+
+        if self.provider == "binance":
+            symbol_for_data = self._to_binance_symbol(normalized)
+            params = {
+                "symbol": symbol_for_data,
+                "startTime": str(int(start_utc.timestamp() * 1000)),
+                "endTime": str(int(now_utc.timestamp() * 1000)),
+                "limit": str(min(request_limit, 1000)),
+            }
+            trades = self._request_json_with_retry(
+                url=f"{self.endpoint}/fapi/v1/aggTrades",
+                params=params,
+                headers=self._auth_headers(),
+            )
+            if not isinstance(trades, list):
+                trades = []
+            volume = 0.0
+            volume_usd = 0.0
+            for trade in trades:
+                size = float(trade.get("q", 0.0) or 0.0)
+                price = float(trade.get("p", 0.0) or 0.0)
+                volume += size
+                volume_usd += size * price
+            return {
+                "symbol": symbol_for_data,
+                "lookback_seconds": max(int(lookback_seconds or 60), 1),
+                "count": len(trades),
+                "volume": volume,
+                "volume_usd": volume_usd,
+                "start": start_iso,
+                "end": end_iso,
+                "source": "binance_agg_trades",
+            }
 
         if self._is_crypto_symbol(normalized):
             symbol_for_data = self._to_crypto_data_symbol(normalized)
@@ -191,6 +277,35 @@ class MarketDataService:
                 return cached_bars
 
         timeframe = self._timeframe_for_interval(interval)
+        if self.provider == "binance":
+            timeframe = self._timeframe_for_interval_binance(interval)
+            payload = self._request_json_with_retry(
+                url=f"{self.endpoint}/fapi/v1/klines",
+                params={
+                    "symbol": self._to_binance_symbol(normalized),
+                    "interval": timeframe,
+                    "limit": str(max(min(int(limit or 100), 1000), 1)),
+                },
+                headers=self._auth_headers(),
+            )
+            bars: list[dict[str, Any]] = []
+            if isinstance(payload, list):
+                for row in payload:
+                    if not isinstance(row, list) or len(row) < 6:
+                        continue
+                    bars.append(
+                        {
+                            "open": float(row[1] or 0.0),
+                            "high": float(row[2] or 0.0),
+                            "low": float(row[3] or 0.0),
+                            "close": float(row[4] or 0.0),
+                            "volume": float(row[5] or 0.0),
+                            "timestamp": datetime.fromtimestamp(float(row[0]) / 1000.0, tz=timezone.utc).isoformat(),
+                        }
+                    )
+            self._bars_cache[cache_key] = (time.time(), bars)
+            return bars
+
         if self._is_crypto_symbol(normalized):
             url = "https://data.alpaca.markets/v1beta3/crypto/us/bars"
             params = {"timeframe": timeframe, "limit": str(limit), "symbols": self._to_crypto_data_symbol(normalized)}
@@ -253,6 +368,12 @@ class MarketDataService:
         return float(price)
 
     def _auth_headers(self) -> dict[str, str]:
+        if self.provider == "binance":
+            headers = {"Accept": "application/json"}
+            if self.api_key:
+                headers["X-MBX-APIKEY"] = self.api_key
+            return headers
+
         if not self.api_key or not self.api_secret:
             raise ValueError("Credenciales de Alpaca no disponibles para market data")
 
@@ -274,12 +395,24 @@ class MarketDataService:
         }
         return mapping.get(interval.lower(), "1Min")
 
+    @staticmethod
+    def _timeframe_for_interval_binance(interval: str) -> str:
+        mapping = {
+            "1m": "1m",
+            "1min": "1m",
+            "5m": "5m",
+            "5min": "5m",
+            "15m": "15m",
+            "15min": "15m",
+        }
+        return mapping.get(interval.lower(), "1m")
+
     def _request_json_with_retry(
         self,
         url: str,
         params: dict[str, str],
         headers: dict[str, str] | None = None,
-    ) -> dict:
+    ) -> Any:
         last_error: Exception | None = None
         for attempt in range(self._max_retries):
             try:
@@ -321,6 +454,31 @@ class MarketDataService:
     @staticmethod
     def _is_crypto_symbol(symbol: str) -> bool:
         return "/" in symbol or symbol.endswith("USD")
+
+    @staticmethod
+    def _to_binance_symbol(symbol: str) -> str:
+        normalized = symbol.upper().replace(" ", "")
+        normalized = normalized.replace("/USDC", "/USDT").replace("/USD", "/USDT")
+        if "/" in normalized:
+            base, quote = normalized.split("/", 1)
+            quote = "USDT" if quote in {"USD", "USDC", "USDT"} else quote
+            return f"{base}{quote}"
+        if normalized.endswith("USD") and len(normalized) > 3:
+            return normalized[:-3] + "USDT"
+        if normalized.endswith("USDC") and len(normalized) > 4:
+            return normalized[:-4] + "USDT"
+        return normalized
+
+    def _get_crypto_price_binance(self, symbol: str) -> float:
+        payload = self._request_json_with_retry(
+            url=f"{self.endpoint}/fapi/v1/ticker/price",
+            params={"symbol": self._to_binance_symbol(symbol)},
+            headers=self._auth_headers(),
+        )
+        price = payload.get("price") if isinstance(payload, dict) else None
+        if price is None:
+            raise ValueError(f"Sin trade reciente en Binance para {symbol}")
+        return float(price)
 
     @staticmethod
     def _to_crypto_data_symbol(symbol: str) -> str:

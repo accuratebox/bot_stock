@@ -135,7 +135,20 @@ class ModelRegistry:
 
     def prune_old_versions(self, keep_last: int) -> None:
         versions = self.available_versions()
-        for version in versions[keep_last:]:
+        state = self._load_state()
+        protected_versions = {
+            str(state.get("approved", "") or ""),
+            str(state.get("latest", "") or ""),
+            str(state.get("frozen_candidate", "") or ""),
+        }
+        protected_versions.discard("")
+        kept_unprotected = 0
+        for version in versions:
+            if version in protected_versions:
+                continue
+            kept_unprotected += 1
+            if kept_unprotected <= int(keep_last):
+                continue
             model_path = self.path / f"{version}.pkl"
             if model_path.exists():
                 model_path.unlink()

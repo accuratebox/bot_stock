@@ -22,10 +22,20 @@ def main() -> None:
     logger.info("Iniciando trading bot UI")
     runtime_state = AlpacaRuntimeState()
 
+    provider = str(getattr(settings, "broker_provider", "alpaca") or "alpaca").lower()
+    if provider == "binance":
+        endpoint = str(getattr(settings, "binance_demo_endpoint", "https://testnet.binancefuture.com") or "https://testnet.binancefuture.com")
+        api_key = str(getattr(settings, "binance_demo_key", "") or "")
+        api_secret = str(getattr(settings, "binance_demo_secret", "") or "")
+    else:
+        endpoint = settings.alpaca_endpoint
+        api_key = settings.alpaca_api_key
+        api_secret = settings.alpaca_api_secret
+
     broker = AlpacaBrokerClient(
-        endpoint=settings.alpaca_endpoint,
-        api_key=settings.alpaca_api_key,
-        api_secret=settings.alpaca_api_secret,
+        endpoint=endpoint,
+        api_key=api_key,
+        api_secret=api_secret,
         logger=logger,
         account_name="main",
         runtime_state=runtime_state,

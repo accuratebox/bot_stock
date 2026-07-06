@@ -2,11 +2,11 @@
   {
     "symbol": "SOL/USD",
     "asset_type": "crypto",
-    "account": "Paper 2",
+    "account": "Binance Demo",
     "bot_actor": "ia",
-    "mode": "waiting",
+    "mode": "tracking",
     "auto_rebuy": false,
-    "rebuy_capital": 20000.0,
-    "target_profit_per_share": 0.5
+    "rebuy_capital": "4000.0",
+    "target_profit_per_share": "0.5"
   }
 ]

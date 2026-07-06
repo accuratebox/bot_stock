@@ -105,8 +105,16 @@ class CryptoVolumeManager:
                 }
             )
 
-    def build_snapshot(self, symbol: str, price: float, alpaca_24h_volume: float = 0.0) -> dict[str, Any]:
+    def build_snapshot(
+        self,
+        symbol: str,
+        price: float,
+        binance_24h_volume: float = 0.0,
+        alpaca_24h_volume: float | None = None,
+    ) -> dict[str, Any]:
         normalized_symbol = self.normalize_symbol(symbol)
+        if alpaca_24h_volume is not None and float(binance_24h_volume or 0.0) <= 0.0:
+            binance_24h_volume = float(alpaca_24h_volume or 0.0)
         now_utc = datetime.now(timezone.utc)
         if not normalized_symbol or "/" not in normalized_symbol:
             snapshot = self._build_error_snapshot(
@@ -204,29 +212,37 @@ class CryptoVolumeManager:
                     },
                 }
 
-        vol_1m_base = self._sum_last_minutes_volume_base(bars_1m, 1)
-        vol_5m_base = self._sum_last_minutes_volume_base(bars_1m, 5)
-        vol_15m_base = self._sum_last_minutes_volume_base(bars_1m, 15)
-        vol_1m_usd = self._sum_last_minutes_volume_usd(bars_1m, 1)
-        vol_5m_usd = self._sum_last_minutes_volume_usd(bars_1m, 5)
-        vol_15m_usd = self._sum_last_minutes_volume_usd(bars_1m, 15)
+        vol_1m_base = self._sum_last_minutes_volume_base(bars_1m, 1, now_utc)
+        vol_5m_base = self._sum_last_minutes_volume_base(bars_1m, 5, now_utc)
+        vol_15m_base = self._sum_last_minutes_volume_base(bars_1m, 15, now_utc)
+        vol_1m_usd = self._sum_last_minutes_volume_usd(bars_1m, 1, now_utc)
+        vol_5m_usd = self._sum_last_minutes_volume_usd(bars_1m, 5, now_utc)
+        vol_15m_usd = self._sum_last_minutes_volume_usd(bars_1m, 15, now_utc)
 
         if vol_1m_base <= 0.0 and trade_stats[60]["volume"] > 0.0:
             vol_1m_base = trade_stats[60]["volume"]
+        if vol_5m_base <= 0.0 and trade_stats[300]["volume"] > 0.0:
+            vol_5m_base = trade_stats[300]["volume"]
+        if vol_15m_base <= 0.0 and trade_stats[900]["volume"] > 0.0:
+            vol_15m_base = trade_stats[900]["volume"]
         if vol_1m_usd <= 0.0 and trade_stats[60]["volume_usd"] > 0.0:
             vol_1m_usd = trade_stats[60]["volume_usd"]
+        if vol_5m_usd <= 0.0 and trade_stats[300]["volume_usd"] > 0.0:
+            vol_5m_usd = trade_stats[300]["volume_usd"]
+        if vol_15m_usd <= 0.0 and trade_stats[900]["volume_usd"] > 0.0:
+            vol_15m_usd = trade_stats[900]["volume_usd"]
 
         global_payload = self._global_volume(normalized_symbol)
         global_volume = float(global_payload.get("total_volume", 0.0) or 0.0)
         global_source = self._normalize_global_source(global_payload.get("source", "coingecko"))
         global_status = str(global_payload.get("status", "UNKNOWN") or "UNKNOWN")
 
-        alpaca_24h_status = "OK"
+        binance_24h_status = "OK"
         warning = ""
-        if float(alpaca_24h_volume or 0.0) <= 0.0:
-            alpaca_24h_status = "UNAVAILABLE"
-            warning = "Alpaca 24h volume returned 0.00, ignored"
-            self.logger.warning("Alpaca 24h volume returned 0.00, ignored")
+        if float(binance_24h_volume or 0.0) <= 0.0:
+            binance_24h_status = "UNAVAILABLE"
+            warning = "Binance 24h volume returned 0.00, ignored"
+            self.logger.warning("Binance 24h volume returned 0.00, ignored")
 
         status, reason = self._evaluate_status(
             ws_connected=ws_connected,
@@ -257,6 +273,18 @@ class CryptoVolumeManager:
             volume_source=volume_source,
             volume_has_clear_unit=volume_has_clear_unit,
         )
+        if (
+            not volume_valid_for_live_analysis
+            and used_rest_fallback
+            and volume_has_clear_unit
+            and int(trade_stats[300]["count"]) > 0
+            and float(trade_stats[300]["volume"]) > 0.0
+        ):
+            volume_valid_for_live_analysis = True
+            warning_messages.append("REST trades valid for 5m live analysis despite stale bars")
+            warning_text = " | ".join(msg for msg in warning_messages if str(msg or "").strip())
+            final_error_message = self._append_message(error_message, warning)
+            final_error_message = self._append_message(final_error_message, warning_text)
 
         snapshot = {
             "timestamp": now_utc.isoformat(),
@@ -278,8 +306,10 @@ class CryptoVolumeManager:
             "trade_count_5m": int(trade_stats[300]["count"]),
             "trade_count_15m": int(trade_stats[900]["count"]),
             "global_volume_24h_usd": float(global_volume),
-            "alpaca_24h_volume": float(alpaca_24h_volume or 0.0),
-            "alpaca_24h_volume_status": alpaca_24h_status,
+            "binance_24h_volume": float(binance_24h_volume or 0.0),
+            "binance_24h_volume_status": binance_24h_status,
+            "alpaca_24h_volume": float(binance_24h_volume or 0.0),
+            "alpaca_24h_volume_status": binance_24h_status,
             "volume_source": volume_source,
             "local_volume_source": volume_source,
             "global_volume_source": global_source,
@@ -432,10 +462,11 @@ class CryptoVolumeManager:
             return False
         return True
 
-    def _sum_last_minutes_volume_base(self, bars: list[dict[str, Any]], minutes: int) -> float:
+    def _sum_last_minutes_volume_base(self, bars: list[dict[str, Any]], minutes: int, now_utc: datetime) -> float:
         if minutes <= 0:
             return 0.0
-        return sum(float(row.get("volume", 0.0) or 0.0) for row in bars[-minutes:])
+        selected = self._bars_inside_window(bars, minutes, now_utc)
+        return sum(float(row.get("volume", 0.0) or 0.0) for row in selected)
 
     def _bars_from_websocket(self, symbol: str) -> list[dict[str, Any]]:
         with self._lock:
@@ -493,13 +524,24 @@ class CryptoVolumeManager:
             self.logger.warning(message)
             return {"count": 0, "volume": 0.0, "volume_usd": 0.0}, message
 
-    def _sum_last_minutes_volume_usd(self, bars: list[dict[str, Any]], minutes: int) -> float:
+    def _sum_last_minutes_volume_usd(self, bars: list[dict[str, Any]], minutes: int, now_utc: datetime) -> float:
         if minutes <= 0:
             return 0.0
+        selected = self._bars_inside_window(bars, minutes, now_utc)
         return sum(
             float(row.get("volume", 0.0) or 0.0) * float(row.get("close", 0.0) or 0.0)
-            for row in bars[-minutes:]
+            for row in selected
         )
+
+    def _bars_inside_window(self, bars: list[dict[str, Any]], minutes: int, now_utc: datetime) -> list[dict[str, Any]]:
+        cutoff = now_utc - timedelta(minutes=int(minutes))
+        selected: list[dict[str, Any]] = []
+        for row in bars:
+            ts = self._parse_timestamp(row.get("timestamp"))
+            if ts is None or ts < cutoff or ts > now_utc + timedelta(seconds=5):
+                continue
+            selected.append(row)
+        return selected
 
     def _normalize_minute_bars(self, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         ordered = sorted(rows, key=lambda item: str(item.get("timestamp", "")))
@@ -628,8 +670,8 @@ class CryptoVolumeManager:
             "trade_count_5m": 0,
             "trade_count_15m": 0,
             "global_volume_24h_usd": 0.0,
-            "alpaca_24h_volume": 0.0,
-            "alpaca_24h_volume_status": "UNAVAILABLE",
+            "binance_24h_volume": 0.0,
+            "binance_24h_volume_status": "UNAVAILABLE",
             "volume_source": "none",
             "local_volume_source": "none",
             "global_volume_source": "CoinGecko",

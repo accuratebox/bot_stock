@@ -38,6 +38,9 @@ class FakeRiskManager:
 
 class FakeBroker:
     def __init__(self):
+        self.endpoint = "https://paper-api.alpaca.markets/v2"
+        self.api_key = "paper-key"
+        self.api_secret = "paper-secret"
         self.positions = []
         self.supported = [{"symbol": "SOL/USD"}, {"symbol": "AAPL"}]
 
@@ -127,6 +130,9 @@ class FakeSettings:
         self.manual_approval_required = True
         self.alpaca_api_key = "paper-key"
         self.alpaca_api_secret = "paper-secret"
+        self.require_nordvpn_before_trading = False
+        self.required_vpn_provider = "NordVPN"
+        self.required_vpn_country = "Dominican Republic"
 
     def account_profiles(self):
         return {
@@ -249,6 +255,25 @@ class AITradingBrainTests(unittest.TestCase):
         predictor = SignalPredictor(registry=registry, logger=self.logger)
         result = predictor.predict_signal({"composite_score": 86.0, "distance_from_average_cost": 1.0})
         self.assertIn(result["action"], {"AVOID", "WATCH", "BUY_SMALL", "BUY", "HOLD", "SELL_ALLOWED"})
+
+    def test_crypto_symbol_key_treats_usdc_as_usd_pair(self):
+        self.assertEqual(AITradingBrainService._symbol_key("SOL/USDC"), "SOLUSD")
+        self.assertEqual(AITradingBrainService._symbol_key("SOL/USD"), "SOLUSD")
+        self.assertEqual(AITradingBrainService._symbol_key("SOLUSD"), "SOLUSD")
+
+    def test_model_pruning_keeps_approved_model(self):
+        registry = ModelRegistry(self.settings.ai_models_dir)
+        versions = [f"general_model_20260706_00000{index}" for index in range(8)]
+        for version in versions:
+            registry.save_model(model={"version": version}, version=version, metadata={"model_version": version})
+
+        approved_version = versions[0]
+        registry.approve_model(approved_version)
+        registry.prune_old_versions(keep_last=5)
+
+        self.assertTrue((Path(self.settings.ai_models_dir) / f"{approved_version}.pkl").exists())
+        self.assertTrue(registry.approved_model_available())
+        self.assertNotIn(versions[1], registry.available_versions())
 
     def test_database_stores_signals_and_trades(self):
         signal = self.service.generate_signal("SOL/USD", "crypto", "Paper")

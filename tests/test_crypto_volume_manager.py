@@ -81,7 +81,7 @@ def test_symbol_error_status() -> None:
         global_fetcher=lambda _symbol: {"total_volume": 0.0, "source": "coingecko", "status": "OK"},
         websocket_connected=lambda: True,
     )
-    row = manager.build_snapshot(symbol="INVALID", price=100.0, alpaca_24h_volume=0.0)
+    row = manager.build_snapshot(symbol="INVALID", price=100.0, binance_24h_volume=0.0)
     assert row["volume_status"] == "SYMBOL_ERROR"
 
 
@@ -97,12 +97,12 @@ def test_api_error_when_rest_fails() -> None:
         global_fetcher=lambda _symbol: {"total_volume": 1.0, "source": "coingecko", "status": "OK"},
         websocket_connected=lambda: False,
     )
-    row = manager.build_snapshot(symbol="SOL/USD", price=100.0, alpaca_24h_volume=0.0)
+    row = manager.build_snapshot(symbol="SOL/USD", price=100.0, binance_24h_volume=0.0)
     assert row["volume_status"] == "API_ERROR"
     assert "API timeout" in row["error_message"] or "API 500" in row["error_message"]
 
 
-def test_alpaca_24h_zero_marked_unavailable() -> None:
+def test_binance_24h_zero_marked_unavailable() -> None:
     manager = CryptoVolumeManager(
         database=FakeDatabase(),
         market_data=FakeMarketData(),
@@ -112,8 +112,8 @@ def test_alpaca_24h_zero_marked_unavailable() -> None:
     )
     for i in range(15):
         manager.handle_websocket_event("b", {"S": "SOL/USD", "t": _minute_bar(14 - i, 0.0)["timestamp"], "c": 100.0, "v": float(i + 1)})
-    row = manager.build_snapshot(symbol="SOL/USD", price=100.0, alpaca_24h_volume=0.0)
-    assert row["alpaca_24h_volume_status"] == "UNAVAILABLE"
+    row = manager.build_snapshot(symbol="SOL/USD", price=100.0, binance_24h_volume=0.0)
+    assert row["binance_24h_volume_status"] == "UNAVAILABLE"
 
 
 def test_websocket_disconnected_status() -> None:
@@ -124,7 +124,7 @@ def test_websocket_disconnected_status() -> None:
         global_fetcher=lambda _symbol: {"total_volume": 12.0, "source": "coingecko", "status": "OK"},
         websocket_connected=lambda: False,
     )
-    row = manager.build_snapshot(symbol="SOL/USD", price=100.0, alpaca_24h_volume=10.0)
+    row = manager.build_snapshot(symbol="SOL/USD", price=100.0, binance_24h_volume=10.0)
     assert row["volume_status"] == "WEBSOCKET_DISCONNECTED"
 
 
@@ -138,7 +138,7 @@ def test_insufficient_bars_status() -> None:
         global_fetcher=lambda _symbol: {"total_volume": 12.0, "source": "coingecko", "status": "OK"},
         websocket_connected=lambda: True,
     )
-    row = manager.build_snapshot(symbol="SOL/USD", price=100.0, alpaca_24h_volume=10.0)
+    row = manager.build_snapshot(symbol="SOL/USD", price=100.0, binance_24h_volume=10.0)
     assert row["volume_status"] == "INSUFFICIENT_DATA"
 
 
@@ -154,7 +154,7 @@ def test_volume_5m_15m_calculation_from_minute_bars() -> None:
     for i in range(15):
         ts = (base + timedelta(minutes=i)).isoformat()
         manager.handle_websocket_event("b", {"S": "SOL/USD", "t": ts, "c": 100.0 + i, "v": float(i + 1)})
-    row = manager.build_snapshot(symbol="SOL/USD", price=101.0, alpaca_24h_volume=50.0)
+    row = manager.build_snapshot(symbol="SOL/USD", price=101.0, binance_24h_volume=50.0)
     expected_5m_base = sum(float(v) for v in [11, 12, 13, 14, 15])
     expected_15m_base = sum(float(i + 1) for i in range(15))
     expected_5m_usd = sum(float(v) * float(c) for v, c in [(11, 110), (12, 111), (13, 112), (14, 113), (15, 114)])
@@ -176,10 +176,48 @@ def test_data_stale_and_live_validation_flags() -> None:
         global_fetcher=lambda _symbol: {"total_volume": 100.0, "source": "coingecko", "status": "OK"},
         websocket_connected=lambda: False,
     )
-    row = manager.build_snapshot(symbol="SOL/USD", price=100.0, alpaca_24h_volume=10.0)
+    row = manager.build_snapshot(symbol="SOL/USD", price=100.0, binance_24h_volume=10.0)
     assert bool(row["data_stale"]) is True
     assert bool(row["websocket_stale"]) is True
     assert bool(row["volume_valid_for_live_analysis"]) is False
+
+
+def test_old_rest_bars_do_not_count_as_current_windows() -> None:
+    market = FakeMarketData()
+    market.bars = [_minute_bar(minutes_ago=30 - i, volume=float(i + 1), close=100.0) for i in range(15)]
+    manager = CryptoVolumeManager(
+        database=FakeDatabase(),
+        market_data=market,
+        logger=FakeLogger(),
+        global_fetcher=lambda _symbol: {"total_volume": 100.0, "source": "coingecko", "status": "OK"},
+        websocket_connected=lambda: False,
+    )
+    row = manager.build_snapshot(symbol="SOL/USD", price=100.0, binance_24h_volume=10.0)
+    assert float(row["local_volume_5m"]) == 0.0
+    assert float(row["local_volume_15m"]) == 0.0
+
+
+def test_trade_fallback_populates_5m_and_15m_when_bars_are_stale() -> None:
+    market = FakeMarketData()
+    market.bars = [_minute_bar(minutes_ago=30 - i, volume=0.0, close=100.0) for i in range(15)]
+    market.trade_stats_by_window = {
+        60: {"count": 1, "volume": 0.25, "volume_usd": 25.0},
+        300: {"count": 2, "volume": 3.65, "volume_usd": 295.0},
+        900: {"count": 6, "volume": 11.75, "volume_usd": 952.0},
+    }
+    manager = CryptoVolumeManager(
+        database=FakeDatabase(),
+        market_data=market,
+        logger=FakeLogger(),
+        global_fetcher=lambda _symbol: {"total_volume": 100.0, "source": "coingecko", "status": "OK"},
+        websocket_connected=lambda: False,
+    )
+    row = manager.build_snapshot(symbol="SOL/USDC", price=100.0, binance_24h_volume=10.0)
+    assert float(row["local_volume_1m"]) == 0.25
+    assert float(row["local_volume_5m"]) == 3.65
+    assert float(row["local_volume_15m"]) == 11.75
+    assert float(row["local_volume_5m_usd"]) == 295.0
+    assert float(row["local_volume_15m_usd"]) == 952.0
 
 
 def test_coingecko_failure_sets_api_error_status_global() -> None:
@@ -192,7 +230,7 @@ def test_coingecko_failure_sets_api_error_status_global() -> None:
     )
     for i in range(15):
         manager.handle_websocket_event("b", {"S": "SOL/USD", "t": _minute_bar(14 - i, float(i + 1))["timestamp"], "c": 100.0, "v": float(i + 1)})
-    row = manager.build_snapshot(symbol="SOL/USD", price=100.0, alpaca_24h_volume=1.0)
+    row = manager.build_snapshot(symbol="SOL/USD", price=100.0, binance_24h_volume=1.0)
     assert row["global_volume_status"] == "API_ERROR"
 
 
@@ -211,7 +249,7 @@ def test_fallback_rest_used_successfully() -> None:
         global_fetcher=lambda _symbol: {"total_volume": 999.0, "source": "coingecko", "status": "OK"},
         websocket_connected=lambda: False,
     )
-    row = manager.build_snapshot(symbol="SOL/USDC", price=99.0, alpaca_24h_volume=0.0)
+    row = manager.build_snapshot(symbol="SOL/USDC", price=99.0, binance_24h_volume=0.0)
     assert row["volume_status"] == "FALLBACK_USED"
     assert "rest" in str(row["volume_source"]).lower()
     assert int(row["trade_count_5m"]) == 5

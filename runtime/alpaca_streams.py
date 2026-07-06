@@ -367,7 +367,7 @@ class AlpacaStreamManager:
     def _is_auth_success(payload: dict[str, Any]) -> bool:
         if str(payload.get("T", "")).lower().strip() == "success":
             msg = str(payload.get("msg", "")).lower().strip()
-            return msg in {"connected", "authenticated"}
+            return msg == "authenticated"
         if str(payload.get("stream", "")).lower().strip() == "authorization":
             data = payload.get("data", {})
             if isinstance(data, dict):
