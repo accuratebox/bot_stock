@@ -57,18 +57,63 @@ def _heartbeat_age_seconds(path: Path) -> float | None:
 
 
 def _launch_bot(python_executable: str, main_path: str, working_dir: str) -> bool:
-    try:
-        subprocess.Popen(
-            [python_executable, main_path],
-            cwd=working_dir,
-            start_new_session=True,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            text=True,
-        )
+    if _main_instance_count(main_path) > 0:
+        print("[helper] Ya existe una instancia main.py activa. No se lanza duplicado.", file=sys.stderr, flush=True)
         return True
-    except Exception:
-        return False
+
+    candidates = [
+        [python_executable, main_path],
+        [sys.executable, main_path],
+        ["python3", main_path],
+    ]
+
+    for command in candidates:
+        try:
+            process = subprocess.Popen(
+                command,
+                cwd=working_dir,
+                start_new_session=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                text=True,
+            )
+            time.sleep(1.5)
+            if process.poll() is None:
+                print(f"[helper] Reinicio OK con comando: {' '.join(command)}", file=sys.stderr, flush=True)
+                return True
+            if _main_instance_count(main_path) > 0:
+                print("[helper] Main ya activo tras intento de reinicio.", file=sys.stderr, flush=True)
+                return True
+            print(
+                f"[helper] Proceso reiniciado terminó inmediatamente (rc={process.poll()}) con comando: {' '.join(command)}",
+                file=sys.stderr,
+                flush=True,
+            )
+        except Exception as ex:
+            print(
+                f"[helper] Error intentando reiniciar con comando {' '.join(command)}: {ex}",
+                file=sys.stderr,
+                flush=True,
+            )
+
+    return False
+
+
+def _main_instance_count(main_path: str) -> int:
+    target = str(Path(main_path).resolve())
+    count = 0
+    for proc_cmdline in Path("/proc").glob("[0-9]*/cmdline"):
+        try:
+            raw = proc_cmdline.read_bytes()
+            if not raw:
+                continue
+            parts = [item.decode("utf-8", errors="ignore") for item in raw.split(b"\x00") if item]
+            joined = " ".join(parts)
+            if target in joined and "main.py" in joined and "emergency_close_helper.py" not in joined:
+                count += 1
+        except Exception:
+            continue
+    return count
 
 
 def main() -> int:
@@ -104,6 +149,7 @@ def main() -> int:
     restarting = False
     started_at = time.time()
     stale_hits = 0
+    missing_heartbeat_hits = 0
 
     root = tk.Tk()
     root.title("Cierre de emergencia")
@@ -138,9 +184,20 @@ def main() -> int:
         status_var.set(reason)
 
         def worker() -> None:
+            nonlocal restarting
             _kill_target(target_pid)
+            launched = False
             if allow_restart:
-                _launch_bot(restart_python, restart_main, restart_cwd)
+                launched = _launch_bot(restart_python, restart_main, restart_cwd)
+
+            if allow_restart and not launched:
+                restarting = False
+                try:
+                    root.after(0, status_var.set, "No se pudo reiniciar. Revisa runtime/emergency_helper.log")
+                except tk.TclError:
+                    pass
+                return
+
             try:
                 root.after(0, root.destroy)
             except tk.TclError:
@@ -152,7 +209,7 @@ def main() -> int:
         restart_bot("Reiniciando bot...")
 
     def watchdog_loop() -> None:
-        nonlocal stale_hits
+        nonlocal stale_hits, missing_heartbeat_hits
         if restarting:
             return
         if not _target_alive(target_pid):
@@ -164,6 +221,7 @@ def main() -> int:
 
         age = _heartbeat_age_seconds(heartbeat_path)
         if age is not None:
+            missing_heartbeat_hits = 0
             status_var.set(f"Heartbeat: {age:.1f}s")
             if age >= heartbeat_timeout:
                 stale_hits += 1
@@ -177,8 +235,13 @@ def main() -> int:
             else:
                 stale_hits = 0
         else:
-            stale_hits = 0
-            status_var.set("Heartbeat no disponible")
+            # Missing heartbeat file or unreadable payload can also indicate a stuck UI.
+            uptime = max(time.time() - started_at, 0.0)
+            missing_heartbeat_hits += 1
+            status_var.set(f"Heartbeat no disponible ({missing_heartbeat_hits})")
+            if uptime >= min_uptime_before_restart_seconds and missing_heartbeat_hits >= stale_checks_required:
+                restart_bot("Heartbeat ausente, reiniciando...")
+                return
         root.after(1000, watchdog_loop)
 
     button = tk.Button(

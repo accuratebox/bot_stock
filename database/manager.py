@@ -1363,8 +1363,18 @@ class TradingBrainDatabase:
             "win_rate": win_rate,
         }
 
-    def load_training_samples(self) -> list[dict[str, Any]]:
+    def load_training_samples(self, label_type: str = "result_15m_fallback_30m") -> list[dict[str, Any]]:
         samples: list[dict[str, Any]] = []
+        label_type_norm = str(label_type or "result_15m_fallback_30m").strip().lower()
+        supported = {
+            "result_5m",
+            "result_5m_fallback_15m",
+            "result_15m",
+            "result_15m_fallback_30m",
+            "final_label",
+        }
+        if label_type_norm not in supported:
+            label_type_norm = "result_15m_fallback_30m"
         with self.connect() as connection:
             rows = connection.execute(
                 """
@@ -1373,32 +1383,72 @@ class TradingBrainDatabase:
                     s.confidence_score,
                     s.timestamp,
                     o.final_label,
+                    o.result_5m,
                     o.result_15m,
                     o.result_30m,
+                    o.max_profit_5m,
+                    o.max_drawdown_5m,
                     o.max_profit_15m,
                     o.max_drawdown_15m,
                     o.max_profit_30m,
                     o.max_drawdown_30m
                 FROM signals AS s
                 INNER JOIN signal_outcomes AS o ON o.signal_id = s.id
-                WHERE o.final_label IS NOT NULL
                 ORDER BY s.timestamp ASC
                 """
             ).fetchall()
         for row in rows:
             features = json.loads(str(row["features_json"]))
-            final_label = str(row["final_label"] or "neutral").strip().lower()
-            label = 1 if final_label == "win" else 0
-            if final_label not in {"win", "loss", "neutral"}:
+            if label_type_norm == "result_5m":
+                selected_label = str(row["result_5m"] or "").strip().lower()
+                label_source = "result_5m"
+                max_profit = float(row["max_profit_5m"] or 0.0)
+                max_drawdown = float(row["max_drawdown_5m"] or 0.0)
+            elif label_type_norm == "result_5m_fallback_15m":
+                if row["result_5m"] is not None:
+                    selected_label = str(row["result_5m"] or "").strip().lower()
+                    label_source = "result_5m"
+                    max_profit = float(row["max_profit_5m"] or 0.0)
+                    max_drawdown = float(row["max_drawdown_5m"] or 0.0)
+                else:
+                    selected_label = str(row["result_15m"] or "").strip().lower()
+                    label_source = "result_15m"
+                    max_profit = float(row["max_profit_15m"] or 0.0)
+                    max_drawdown = float(row["max_drawdown_15m"] or 0.0)
+            elif label_type_norm == "result_15m":
+                selected_label = str(row["result_15m"] or "").strip().lower()
+                label_source = "result_15m"
+                max_profit = float(row["max_profit_15m"] or 0.0)
+                max_drawdown = float(row["max_drawdown_15m"] or 0.0)
+            elif label_type_norm == "final_label":
+                selected_label = str(row["final_label"] or "").strip().lower()
+                if row["result_15m"] is not None:
+                    label_source = "result_15m"
+                    max_profit = float(row["max_profit_15m"] or 0.0)
+                    max_drawdown = float(row["max_drawdown_15m"] or 0.0)
+                else:
+                    label_source = "result_30m"
+                    max_profit = float(row["max_profit_30m"] or 0.0)
+                    max_drawdown = float(row["max_drawdown_30m"] or 0.0)
+            else:
+                selected_label = str(row["result_15m"] or row["result_30m"] or "").strip().lower()
+                if row["result_15m"] is not None:
+                    label_source = "result_15m"
+                    max_profit = float(row["max_profit_15m"] or 0.0)
+                    max_drawdown = float(row["max_drawdown_15m"] or 0.0)
+                else:
+                    label_source = "result_30m"
+                    max_profit = float(row["max_profit_30m"] or 0.0)
+                    max_drawdown = float(row["max_drawdown_30m"] or 0.0)
+
+            if selected_label not in {"win", "loss", "neutral"}:
                 continue
-            label_source = "result_15m" if row["result_15m"] is not None else "result_30m"
-            max_profit = float(row["max_profit_15m"] or 0.0) if label_source == "result_15m" else float(row["max_profit_30m"] or 0.0)
-            max_drawdown = float(row["max_drawdown_15m"] or 0.0) if label_source == "result_15m" else float(row["max_drawdown_30m"] or 0.0)
+            label = 1 if selected_label == "win" else 0
             samples.append(
                 {
                     "features": features,
                     "label": label,
-                    "final_label": final_label,
+                    "final_label": selected_label,
                     "label_source": label_source,
                     "timestamp": str(row["timestamp"] or ""),
                     "confidence_score": float(row["confidence_score"] or 0.0),

@@ -163,7 +163,145 @@ class PositionManager:
         self.logger = logger
         self.settings = settings
         self.journal = journal or TradeJournal()
+        self.target_mode = self._target_mode()
+        self.target_total_usd = float(getattr(settings, "target_total_usd", settings.target_profit_per_share))
+        self.target_price_delta = float(getattr(settings, "target_price_delta", 0.0) or 0.0)
         self.target_profit_per_share = float(settings.target_profit_per_share)
+
+    def _target_mode(self) -> str:
+        mode = str(getattr(self.settings, "target_mode", "TOTAL_USD") or "TOTAL_USD").strip().upper()
+        return mode if mode in {"TOTAL_USD", "PERCENT", "PRICE_DELTA"} else "TOTAL_USD"
+
+    @staticmethod
+    def _exit_side_for_position(side: str) -> str:
+        return "buy" if str(side or "").lower().strip() == "short" else "sell"
+
+    def _fees_and_slippage_buffer_usd(self) -> float:
+        fees_buffer = max(float(getattr(self.settings, "ai_fees_buffer", 0.0) or 0.0), 0.0)
+        slippage_buffer = max(float(getattr(self.settings, "ai_slippage_buffer", 0.0) or 0.0), 0.0)
+        return fees_buffer + slippage_buffer
+
+    def _build_target_plan(
+        self,
+        *,
+        side: str,
+        entry_price: float,
+        current_price: float,
+        qty: float,
+        target_mode: str | None = None,
+        target_total_usd: float | None = None,
+        target_price_delta: float | None = None,
+    ) -> dict[str, Any]:
+        side_key = str(side or "long").lower().strip()
+        if side_key not in {"long", "short"}:
+            side_key = "long"
+
+        entry_price = float(entry_price or 0.0)
+        current_price = float(current_price or 0.0)
+        qty = float(qty or 0.0)
+        mode = str(target_mode or self._target_mode() or "TOTAL_USD").strip().upper()
+        if mode not in {"TOTAL_USD", "PERCENT", "PRICE_DELTA"}:
+            mode = "TOTAL_USD"
+
+        configured_total_usd = max(float(target_total_usd or 0.0), 0.0)
+        configured_price_delta = max(float(target_price_delta or 0.0), 0.0)
+        if mode == "PRICE_DELTA":
+            target_price_delta_value = configured_price_delta or configured_total_usd or float(self.target_price_delta) or float(self.target_profit_per_share)
+            expected_gross_profit_usd = max(target_price_delta_value, 0.0) * qty
+        elif mode == "PERCENT":
+            percent_value = configured_total_usd or float(self.target_total_usd) or float(self.target_profit_per_share)
+            expected_gross_profit_usd = max(entry_price * qty * (percent_value / 100.0), 0.0)
+            target_price_delta_value = expected_gross_profit_usd / qty if qty > 0 else 0.0
+        else:
+            expected_gross_profit_usd = configured_total_usd or float(self.target_total_usd) or float(self.target_profit_per_share)
+            target_price_delta_value = expected_gross_profit_usd / qty if qty > 0 else 0.0
+
+        total_buffer_usd = self._fees_and_slippage_buffer_usd()
+        expected_net_profit_usd = expected_gross_profit_usd - total_buffer_usd
+        target_price_delta_with_buffer = target_price_delta_value + (total_buffer_usd / qty if qty > 0 else 0.0)
+
+        if side_key == "short":
+            target_price = entry_price - target_price_delta_with_buffer
+        else:
+            target_price = entry_price + target_price_delta_with_buffer
+
+        take_profit_available = False
+        if side_key == "short" and current_price > 0:
+            take_profit_available = current_price <= target_price
+        elif side_key == "long" and current_price > 0:
+            take_profit_available = current_price >= target_price
+
+        warnings: list[str] = []
+        if qty <= 0 or entry_price <= 0:
+            return {
+                "valid": False,
+                "status": "INVALID_INPUT",
+                "warnings": ["qty_or_entry_invalid"],
+            }
+        if target_price <= 0:
+            return {
+                "valid": False,
+                "status": "TARGET_PRICE_NON_POSITIVE",
+                "warnings": ["target_price_non_positive"],
+            }
+        if side_key == "short" and target_price >= entry_price:
+            return {
+                "valid": False,
+                "status": "TARGET_DIRECTION_INVALID",
+                "warnings": ["short_target_above_entry"],
+            }
+        if side_key == "long" and target_price <= entry_price:
+            return {
+                "valid": False,
+                "status": "TARGET_DIRECTION_INVALID",
+                "warnings": ["long_target_below_entry"],
+            }
+        if entry_price > 0 and target_price_delta_value > (entry_price * 0.10):
+            return {
+                "valid": False,
+                "status": "TARGET_TOO_FAR",
+                "warnings": ["target_delta_gt_10pct"],
+            }
+        if expected_net_profit_usd <= 0:
+            warnings.append("target_does_not_cover_fees_and_slippage")
+
+        return {
+            "valid": True,
+            "status": "TAKE_PROFIT_AVAILABLE" if take_profit_available else "TARGET_READY",
+            "side": side_key,
+            "target_mode": mode,
+            "target_total_usd": expected_gross_profit_usd,
+            "target_price_delta": target_price_delta_with_buffer,
+            "target_price": target_price,
+            "expected_gross_profit_usd": expected_gross_profit_usd,
+            "expected_net_profit_usd": expected_net_profit_usd,
+            "take_profit_available": take_profit_available,
+            "warnings": warnings,
+        }
+
+    def get_target_total_usd_for_symbol(self, symbol: str) -> float:
+        entry = self.journal.get_open_entry_by_symbol(symbol)
+        if entry is not None:
+            for key in ("target_total_usd", "target_profit_total", "target_profit_per_share"):
+                try:
+                    value = float(entry.get(key, 0.0) or 0.0)
+                    if value > 0:
+                        return value
+                except (TypeError, ValueError):
+                    continue
+        return float(self.target_total_usd)
+
+    def get_target_plan_for_symbol(self, symbol: str, side: str, entry_price: float, current_price: float, qty: float) -> dict[str, Any]:
+        entry = self.journal.get_open_entry_by_symbol(symbol) or {}
+        return self._build_target_plan(
+            side=side,
+            entry_price=entry_price,
+            current_price=current_price,
+            qty=qty,
+            target_mode=str(entry.get("target_mode", "") or self._target_mode()),
+            target_total_usd=float(entry.get("target_total_usd", entry.get("target_profit_total", 0.0)) or self.get_target_total_usd_for_symbol(symbol)),
+            target_price_delta=float(entry.get("target_price_delta", 0.0) or 0.0),
+        )
 
     def set_target_profit_per_share(self, value: float) -> None:
         if value <= 0:
@@ -218,7 +356,7 @@ class PositionManager:
         repaired_limits = sum(
             1
             for action in repaired_actions
-            if str(action.get("action", "")) in {"LIMIT_SELL_PLACED", "LIMIT_SELL_PENDING"}
+            if str(action.get("action", "")) in {"LIMIT_EXIT_PLACED", "LIMIT_EXIT_PENDING"}
         )
 
         if synced > 0:
@@ -285,7 +423,7 @@ class PositionManager:
             if snapshot.qty <= 0:
                 continue
 
-            existing_order = self._find_pending_sell_order(snapshot.symbol)
+            existing_order = self._find_pending_exit_order(snapshot.symbol, side=snapshot.side)
             if existing_order is not None:
                 continue
 
@@ -295,10 +433,11 @@ class PositionManager:
                     qty=snapshot.qty,
                     avg_entry_price=snapshot.avg_entry_price,
                     current_price=snapshot.current_price,
+                    side=snapshot.side,
                     reason_sell="reconcile_missing_target_limit",
                 )
                 action = str(result.get("action", "") or "")
-                if action in {"LIMIT_SELL_PLACED", "LIMIT_SELL_PENDING"}:
+                if action in {"LIMIT_EXIT_PLACED", "LIMIT_EXIT_PENDING"}:
                     actions.append(result)
             except Exception as ex:
                 if "Notional insuficiente" in str(ex):
@@ -385,9 +524,9 @@ class PositionManager:
 
         current_price = self.market_data.get_last_price(symbol)
         quote = self.market_data.get_latest_quote(symbol)
-        configured_target_total = max(float(target_profit_total or 0.0), 0.0)
-        configured_target_profit_per_share = float(target_profit_per_share or self.target_profit_per_share)
-        if configured_target_profit_per_share <= 0:
+        configured_target_total = max(float(target_profit_total or target_profit_per_share or self.target_total_usd), 0.0)
+        configured_target_price_delta = max(float(target_profit_per_share or self.target_price_delta), 0.0)
+        if configured_target_total <= 0 and configured_target_price_delta <= 0:
             raise ValueError("El target de ganancia debe ser mayor que cero")
         entry_tif = "gtc"
         if self._is_crypto_symbol(symbol):
@@ -437,11 +576,19 @@ class PositionManager:
             or current_price
         )
         entry_cost = filled_price * filled_qty
-        if self._is_crypto_symbol(symbol) and configured_target_profit_per_share <= 0.0:
-            crypto_target_profit = self._crypto_target_profit_amount(symbol, filled_price)
-            effective_target_profit_per_share = max(configured_target_profit_per_share, crypto_target_profit)
-        else:
-            effective_target_profit_per_share = configured_target_profit_per_share
+        target_plan = self._build_target_plan(
+            side="long",
+            entry_price=filled_price,
+            current_price=current_price,
+            qty=filled_qty,
+            target_total_usd=configured_target_total,
+            target_price_delta=configured_target_price_delta,
+        )
+        if not bool(target_plan.get("valid", False)):
+            raise ValueError(", ".join(target_plan.get("warnings", []) or [str(target_plan.get("status", "target_invalid"))]))
+        effective_target_total_usd = float(target_plan.get("target_total_usd", configured_target_total) or configured_target_total)
+        effective_target_price_delta = float(target_plan.get("target_price_delta", 0.0) or 0.0)
+        effective_target_price = float(target_plan.get("target_price", 0.0) or 0.0)
         trade_id = str(uuid.uuid4())
         slippage = abs(filled_price - current_price)
         self.journal.record(
@@ -460,7 +607,12 @@ class PositionManager:
                 "reason_sell": "",
                 "duration_seconds": 0,
                 "order_type": "market",
-                "target_profit_per_share": effective_target_profit_per_share,
+                "side": "long",
+                "target_mode": str(target_plan.get("target_mode", self._target_mode())),
+                "target_total_usd": effective_target_total_usd,
+                "target_price_delta": effective_target_price_delta,
+                "target_price": effective_target_price,
+                "target_profit_per_share": effective_target_price_delta,
                 "slippage_estimated": slippage,
                 "spread_at_entry": quote.get("spread", 0.0),
                 "spread_pct_at_entry": quote.get("spread_pct", spread_pct),
@@ -483,8 +635,10 @@ class PositionManager:
                 qty=filled_qty,
                 avg_entry_price=filled_price,
                 current_price=current_price,
+                side="long",
                 reason_sell="target_immediate_after_buy",
-                target_profit_per_share=effective_target_profit_per_share,
+                target_total_usd=effective_target_total_usd,
+                target_price_delta=effective_target_price_delta,
             )
             elapsed_ms = (time.monotonic() - buy_submitted_at) * 1000.0
             self.logger.info("Latency buy->limit %s %.0fms", symbol, elapsed_ms)
@@ -500,7 +654,11 @@ class PositionManager:
             "partial_fill": filled_qty < (requested_qty - 1e-8),
             "entry_cost": entry_cost,
             "current_price": current_price,
-            "target_profit_per_share": effective_target_profit_per_share,
+            "target_mode": str(target_plan.get("target_mode", self._target_mode())),
+            "target_total_usd": effective_target_total_usd,
+            "target_price_delta": effective_target_price_delta,
+            "target_price": effective_target_price,
+            "target_profit_per_share": effective_target_price_delta,
             "spread_pct": quote.get("spread_pct", spread_pct),
             "immediate_exit": immediate_exit,
         }
@@ -526,9 +684,9 @@ class PositionManager:
 
         current_price = self.market_data.get_last_price(symbol)
         quote = self.market_data.get_latest_quote(symbol)
-        _ = max(float(target_profit_total or 0.0), 0.0)
-        configured_target_profit_per_share = float(target_profit_per_share or self.target_profit_per_share)
-        if configured_target_profit_per_share <= 0:
+        configured_target_total = max(float(target_profit_total or target_profit_per_share or self.target_total_usd), 0.0)
+        configured_target_price_delta = max(float(target_profit_per_share or self.target_price_delta), 0.0)
+        if configured_target_total <= 0 and configured_target_price_delta <= 0:
             raise ValueError("El target de ganancia debe ser mayor que cero")
 
         entry_tif = "gtc"
@@ -589,11 +747,19 @@ class PositionManager:
             or limit_price
         )
         entry_cost = filled_price * filled_qty
-        if self._is_crypto_symbol(symbol) and configured_target_profit_per_share <= 0.0:
-            crypto_target_profit = self._crypto_target_profit_amount(symbol, filled_price)
-            effective_target_profit_per_share = max(configured_target_profit_per_share, crypto_target_profit)
-        else:
-            effective_target_profit_per_share = configured_target_profit_per_share
+        target_plan = self._build_target_plan(
+            side="long",
+            entry_price=filled_price,
+            current_price=current_price,
+            qty=filled_qty,
+            target_total_usd=configured_target_total,
+            target_price_delta=configured_target_price_delta,
+        )
+        if not bool(target_plan.get("valid", False)):
+            raise ValueError(", ".join(target_plan.get("warnings", []) or [str(target_plan.get("status", "target_invalid"))]))
+        effective_target_total_usd = float(target_plan.get("target_total_usd", configured_target_total) or configured_target_total)
+        effective_target_price_delta = float(target_plan.get("target_price_delta", 0.0) or 0.0)
+        effective_target_price = float(target_plan.get("target_price", 0.0) or 0.0)
         trade_id = str(uuid.uuid4())
         slippage = abs(filled_price - current_price)
         self.journal.record(
@@ -612,7 +778,11 @@ class PositionManager:
                 "reason_sell": "",
                 "duration_seconds": 0,
                 "order_type": "limit",
-                "target_profit_per_share": effective_target_profit_per_share,
+                "target_mode": str(target_plan.get("target_mode", self._target_mode())),
+                "target_total_usd": effective_target_total_usd,
+                "target_price_delta": effective_target_price_delta,
+                "target_price": effective_target_price,
+                "target_profit_per_share": effective_target_price_delta,
                 "slippage_estimated": slippage,
                 "spread_at_entry": quote.get("spread", 0.0),
                 "spread_pct_at_entry": quote.get("spread_pct", spread_pct),
@@ -636,8 +806,10 @@ class PositionManager:
                 qty=filled_qty,
                 avg_entry_price=filled_price,
                 current_price=current_price,
+                side="long",
                 reason_sell="target_immediate_after_buy",
-                target_profit_per_share=effective_target_profit_per_share,
+                target_total_usd=effective_target_total_usd,
+                target_price_delta=effective_target_price_delta,
             )
             elapsed_ms = (time.monotonic() - buy_submitted_at) * 1000.0
             self.logger.info("Latency buy-limit->limit %s %.0fms", symbol, elapsed_ms)
@@ -653,7 +825,11 @@ class PositionManager:
             "partial_fill": filled_qty < (requested_qty - 1e-8),
             "entry_cost": entry_cost,
             "current_price": current_price,
-            "target_profit_per_share": effective_target_profit_per_share,
+            "target_mode": str(target_plan.get("target_mode", self._target_mode())),
+            "target_total_usd": effective_target_total_usd,
+            "target_price_delta": effective_target_price_delta,
+            "target_price": effective_target_price,
+            "target_profit_per_share": effective_target_price_delta,
             "spread_pct": quote.get("spread_pct", spread_pct),
             "immediate_exit": immediate_exit,
             "requested_limit_price": limit_price,
@@ -665,8 +841,10 @@ class PositionManager:
         qty: float,
         avg_entry_price: float,
         current_price: float,
+        side: str,
         reason_sell: str,
-        target_profit_per_share: float | None = None,
+        target_total_usd: float | None = None,
+        target_price_delta: float | None = None,
     ) -> dict[str, Any]:
         if qty <= 0:
             return {
@@ -675,26 +853,32 @@ class PositionManager:
                 "reason": "qty_zero",
             }
 
-        existing_order = self._find_pending_sell_order(symbol)
+        existing_order = self._find_pending_exit_order(symbol, side=side)
         if existing_order is not None:
             return {
                 "symbol": symbol,
-                "action": "LIMIT_SELL_PENDING",
+                "action": "LIMIT_EXIT_PENDING",
                 "reason": reason_sell,
                 "order_id": str(existing_order.get("id", "")),
                 "limit_price": float(existing_order.get("limit_price", current_price) or current_price),
             }
 
-        effective_target = float(target_profit_per_share or self.get_target_profit_per_share_for_symbol(symbol))
-        limit_price = self._suggest_limit_exit_price(
+        target_plan = self._build_target_plan(
+            side=side,
+            entry_price=avg_entry_price,
             current_price=current_price,
-            avg_entry_price=avg_entry_price,
-            target_profit_per_share=effective_target,
+            qty=qty,
+            target_total_usd=target_total_usd if target_total_usd is not None else self.get_target_total_usd_for_symbol(symbol),
+            target_price_delta=target_price_delta,
         )
+        if not bool(target_plan.get("valid", False)):
+            raise ValueError(", ".join(target_plan.get("warnings", []) or [str(target_plan.get("status", "target_invalid"))]))
+        limit_price = float(target_plan.get("target_price", 0.0) or 0.0)
+        order_side = self._exit_side_for_position(side)
         order = self.order_manager.create_limit_order(
             symbol=symbol,
             qty=float(qty),
-            side="sell",
+            side=order_side,
             limit_price=limit_price,
             time_in_force="gtc",
         )
@@ -707,11 +891,20 @@ class PositionManager:
         )
         return {
             "symbol": symbol,
-            "action": "LIMIT_SELL_PLACED",
+            "action": "LIMIT_EXIT_PLACED",
             "reason": reason_sell,
             "order_id": str(order.get("id", "")),
             "limit_price": float(order.get("limit_price", limit_price) or limit_price),
+            "side": order_side,
             "qty": float(qty),
+            "target_mode": str(target_plan.get("target_mode", self._target_mode())),
+            "target_total_usd": float(target_plan.get("target_total_usd", 0.0) or 0.0),
+            "target_price_delta": float(target_plan.get("target_price_delta", 0.0) or 0.0),
+            "target_price": float(target_plan.get("target_price", limit_price) or limit_price),
+            "expected_gross_profit_usd": float(target_plan.get("expected_gross_profit_usd", 0.0) or 0.0),
+            "expected_net_profit_usd": float(target_plan.get("expected_net_profit_usd", 0.0) or 0.0),
+            "take_profit_available": bool(target_plan.get("take_profit_available", False)),
+            "warnings": list(target_plan.get("warnings", []) or []),
         }
 
     def _wait_order_fill(
@@ -789,40 +982,61 @@ class PositionManager:
         if snapshot.state == "LOSS" and self.settings.never_sell_at_loss:
             return {"symbol": snapshot.symbol, "action": "HOLD", "reason": "never_sell_at_loss"}
 
-        existing_order = self._find_pending_sell_order(snapshot.symbol)
+        existing_order = self._find_pending_exit_order(snapshot.symbol, side=snapshot.side)
         if existing_order is not None:
             return {
                 "symbol": snapshot.symbol,
-                "action": "LIMIT_SELL_PENDING",
+                "action": "LIMIT_EXIT_PENDING",
                 "reason": reason_sell,
                 "order_id": str(existing_order.get("id", "")),
                 "limit_price": float(existing_order.get("limit_price", snapshot.current_price) or snapshot.current_price),
             }
 
-        target_profit_per_share = self.get_target_profit_per_share_for_symbol(snapshot.symbol)
-        limit_price = self._suggest_limit_exit_price(
+        target_plan = self._build_target_plan(
+            side=snapshot.side,
+            entry_price=snapshot.avg_entry_price,
             current_price=snapshot.current_price,
-            avg_entry_price=snapshot.avg_entry_price,
-            target_profit_per_share=target_profit_per_share,
+            qty=snapshot.qty,
+            target_total_usd=self.get_target_total_usd_for_symbol(snapshot.symbol),
+            target_price_delta=self.target_price_delta,
         )
+        if not bool(target_plan.get("valid", False)):
+            return {
+                "symbol": snapshot.symbol,
+                "action": "HOLD",
+                "reason": str(target_plan.get("status", "target_invalid")),
+                "warnings": list(target_plan.get("warnings", []) or []),
+            }
+        limit_price = float(target_plan.get("target_price", 0.0) or 0.0)
+        order_side = self._exit_side_for_position(snapshot.side)
         order = self.order_manager.create_limit_order(
             symbol=snapshot.symbol,
             qty=snapshot.qty,
-            side="sell",
+            side=order_side,
             limit_price=limit_price,
             time_in_force="gtc",
         )
         return {
             "symbol": snapshot.symbol,
-            "action": "LIMIT_SELL_PLACED",
+            "action": "LIMIT_EXIT_PLACED",
             "reason": reason_sell,
             "order_id": str(order.get("id", "")),
             "limit_price": float(order.get("limit_price", limit_price) or limit_price),
+            "side": order_side,
             "qty": snapshot.qty,
+            "target_mode": str(target_plan.get("target_mode", self._target_mode())),
+            "target_total_usd": float(target_plan.get("target_total_usd", 0.0) or 0.0),
+            "target_price_delta": float(target_plan.get("target_price_delta", 0.0) or 0.0),
+            "target_price": float(target_plan.get("target_price", limit_price) or limit_price),
+            "expected_gross_profit_usd": float(target_plan.get("expected_gross_profit_usd", 0.0) or 0.0),
+            "expected_net_profit_usd": float(target_plan.get("expected_net_profit_usd", 0.0) or 0.0),
+            "take_profit_available": bool(target_plan.get("take_profit_available", False)),
+            "warnings": list(target_plan.get("warnings", []) or []),
         }
 
-    def _find_pending_sell_order(self, symbol: str, *, suppress_errors: bool = True) -> dict[str, Any] | None:
+    def _find_pending_exit_order(self, symbol: str, *, side: str, suppress_errors: bool = True) -> dict[str, Any] | None:
         target = self._symbol_key(symbol)
+        order_side = self._exit_side_for_position(side)
         pending_statuses = {
             "new",
             "accepted",
@@ -843,15 +1057,18 @@ class PositionManager:
         for order in orders:
             side = str(order.get("side", "")).lower().strip()
             status = str(order.get("status", "")).lower().strip()
-            if side != "sell" or status not in pending_statuses:
+            if side != order_side or status not in pending_statuses:
                 continue
             if self._symbol_key(str(order.get("symbol", ""))) != target:
                 continue
             return order
         return None
 
+    def get_pending_exit_order(self, symbol: str, *, side: str, suppress_errors: bool = True) -> dict[str, Any] | None:
+        return self._find_pending_exit_order(symbol, side=side, suppress_errors=suppress_errors)
+
     def get_pending_sell_order(self, symbol: str, *, suppress_errors: bool = True) -> dict[str, Any] | None:
-        return self._find_pending_sell_order(symbol, suppress_errors=suppress_errors)
+        return self.get_pending_exit_order(symbol, side="long", suppress_errors=suppress_errors)
 
     def _suggest_limit_entry_price(self, symbol: str, current_price: float, quote: dict[str, Any] | None) -> float:
         ask_price = 0.0
@@ -872,13 +1089,27 @@ class PositionManager:
         buffer_abs = max(reference_price * buffer_pct, spread * 1.25, 0.01)
         return round(reference_price + buffer_abs, 6)
 
-    @staticmethod
-    def _suggest_limit_exit_price(current_price: float, avg_entry_price: float, target_profit_per_share: float) -> float:
-        # Never place an automatic sell limit below the configured target-profit threshold.
-        current = float(current_price)
-        min_target_price = float(avg_entry_price) + float(target_profit_per_share)
-        limit_price = max(current, min_target_price)
-        return round(limit_price, 6)
+    def _suggest_limit_exit_price(
+        self,
+        *,
+        side: str,
+        current_price: float,
+        avg_entry_price: float,
+        qty: float,
+        target_total_usd: float | None = None,
+        target_price_delta: float | None = None,
+    ) -> float:
+        target_plan = self._build_target_plan(
+            side=side,
+            entry_price=avg_entry_price,
+            current_price=current_price,
+            qty=qty,
+            target_total_usd=target_total_usd,
+            target_price_delta=target_price_delta,
+        )
+        if not bool(target_plan.get("valid", False)):
+            raise ValueError(", ".join(target_plan.get("warnings", []) or [str(target_plan.get("status", "target_invalid"))]))
+        return round(float(target_plan.get("target_price", 0.0) or 0.0), 6)
 
     @staticmethod
     def _suggest_force_limit_exit_price(current_price: float, quote: dict[str, Any] | None) -> float:
@@ -914,7 +1145,8 @@ class PositionManager:
             if not trade_id:
                 continue
 
-            matched_order = self._latest_filled_sell_order_for_symbol(symbol=symbol, orders=orders)
+            entry_side = str(entry.get("side", "long") or "long").lower().strip()
+            matched_order = self._latest_filled_exit_order_for_symbol(symbol=symbol, orders=orders, side=entry_side)
             if matched_order is None:
                 continue
 
@@ -924,7 +1156,7 @@ class PositionManager:
             if qty <= 0 or exit_price <= 0:
                 continue
 
-            realized_pnl = (exit_price - entry_price) * qty
+            realized_pnl = (exit_price - entry_price) * qty if entry_side != "short" else (entry_price - exit_price) * qty
             duration_seconds = self._duration_seconds(str(entry.get("entry_time", "")))
             exit_time = str(matched_order.get("filled_at", "") or matched_order.get("updated_at", "") or self._now_iso())
 
@@ -944,6 +1176,7 @@ class PositionManager:
                     "state": "PROFIT" if realized_pnl > 0 else "LOSS" if realized_pnl < 0 else "EVEN",
                     "reason_buy": str(entry.get("reason_buy", "")),
                     "reason_sell": "limit_exit_filled",
+                    "side": entry_side,
                     "duration_seconds": duration_seconds,
                     "order_type": "limit",
                     "slippage_estimated": abs(exit_price - float(matched_order.get("limit_price", exit_price) or exit_price)),
@@ -955,7 +1188,7 @@ class PositionManager:
             actions.append(
                 {
                     "symbol": symbol,
-                    "action": "SELL",
+                    "action": "BUY" if entry_side == "short" else "SELL",
                     "reason": "limit_exit_filled",
                     "trigger_price": float(matched_order.get("limit_price", exit_price) or exit_price),
                     "exit_price": exit_price,
@@ -967,12 +1200,13 @@ class PositionManager:
 
         return actions
 
-    def _latest_filled_sell_order_for_symbol(self, symbol: str, orders: list[dict[str, Any]]) -> dict[str, Any] | None:
+    def _latest_filled_exit_order_for_symbol(self, symbol: str, orders: list[dict[str, Any]], side: str) -> dict[str, Any] | None:
         symbol_key = self._symbol_key(symbol)
+        order_side = self._exit_side_for_position(side)
         candidates = [
             order
             for order in orders
-            if str(order.get("side", "")).lower().strip() == "sell"
+            if str(order.get("side", "")).lower().strip() == order_side
             and str(order.get("status", "")).lower().strip() == "filled"
             and self._symbol_key(str(order.get("symbol", ""))) == symbol_key
         ]
@@ -999,7 +1233,11 @@ class PositionManager:
         if filled_qty <= 1e-8:
             filled_qty = float(snapshot.qty)
         exit_price = self._resolve_exit_price(close_result=close_result, close_order_id=close_order_id, fallback_price=trigger_price)
-        realized_pnl = (exit_price - snapshot.avg_entry_price) * filled_qty
+        realized_pnl = (
+            (exit_price - snapshot.avg_entry_price) * filled_qty
+            if snapshot.side != "short"
+            else (snapshot.avg_entry_price - exit_price) * filled_qty
+        )
         duration_seconds = self._duration_seconds(snapshot.entry_time)
         trade_id = self._trade_id_for_symbol(snapshot.symbol) or str(uuid.uuid4())
         self.journal.record(
@@ -1016,6 +1254,7 @@ class PositionManager:
                 "current_price": snapshot.current_price,
                 "floating_pnl": snapshot.unrealized_pl,
                 "state": snapshot.state,
+                "side": snapshot.side,
                 "reason_buy": snapshot.reason_buy,
                 "reason_sell": reason_sell,
                 "duration_seconds": duration_seconds,
@@ -1029,7 +1268,7 @@ class PositionManager:
         self.logger.info("Salida registrada %s pnl=%s", snapshot.symbol, realized_pnl)
         return {
             "symbol": snapshot.symbol,
-            "action": "SELL",
+            "action": "BUY" if snapshot.side == "short" else "SELL",
             "reason": reason_sell,
             "trigger_price": trigger_price,
             "exit_price": exit_price,
@@ -1144,6 +1383,13 @@ class PositionManager:
         entry = self.journal.get_open_entry_by_symbol(symbol)
         if entry is not None:
             try:
+                qty = float(entry.get("qty", 0.0) or 0.0)
+                delta = float(entry.get("target_price_delta", 0.0) or 0.0)
+                if delta > 0:
+                    return delta
+                total = float(entry.get("target_total_usd", entry.get("target_profit_total", 0.0)) or 0.0)
+                if total > 0 and qty > 0:
+                    return total / qty
                 value = float(entry.get("target_profit_per_share", 0.0) or 0.0)
                 if value > 0:
                     return value
@@ -1188,9 +1434,9 @@ class PositionManager:
                 return None
 
         # ===== TARGET PROFIT (both stocks and crypto) =====
-        target_profit_per_share = self.get_target_profit_per_share_for_symbol(snapshot.symbol)
-        if snapshot.pnl_per_share >= target_profit_per_share:
-            return "target_profit_per_share"
+        target_total_usd = self.get_target_total_usd_for_symbol(snapshot.symbol)
+        if snapshot.unrealized_pl >= target_total_usd:
+            return "take_profit_available"
 
         # ===== STOCKS: Market close logic (stocks only) =====
         if not is_crypto and minutes_to_close <= self.settings.stop_new_trades_minutes_before_close:

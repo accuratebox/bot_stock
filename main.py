@@ -1,5 +1,8 @@
 import faulthandler
+import fcntl
 import signal
+from pathlib import Path
+from typing import Any
 
 from ai_trading_brain import AITradingBrainService
 import requests
@@ -16,9 +19,39 @@ from ui.bot_window import BotControlWindow
 from utils.logger import get_logger
 
 
+_SINGLE_INSTANCE_LOCK = None
+
+
+def _acquire_single_instance_lock(logger: Any) -> object | None:
+    lock_path = Path(__file__).resolve().parent / "runtime" / "trading_bot_main.lock"
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    handle = open(lock_path, "w", encoding="utf-8")
+    try:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        try:
+            logger.warning("Otra instancia del bot ya está activa. Cancelando segundo arranque.")
+        except Exception:
+            pass
+        try:
+            handle.close()
+        except Exception:
+            pass
+        return None
+
+    handle.write(str(Path(__file__).resolve()))
+    handle.write("\n")
+    handle.flush()
+    return handle
+
+
 def main() -> None:
+    global _SINGLE_INSTANCE_LOCK
     faulthandler.register(signal.SIGUSR1, all_threads=True)
     logger = get_logger("trading_bot")
+    _SINGLE_INSTANCE_LOCK = _acquire_single_instance_lock(logger)
+    if _SINGLE_INSTANCE_LOCK is None:
+        return
     logger.info("Iniciando trading bot UI")
     runtime_state = AlpacaRuntimeState()
 
@@ -105,6 +138,7 @@ def main() -> None:
         ai_trading_brain=ai_trading_brain,
         logger=logger,
     )
+    ai_trading_brain.set_post_trade_update_hook(app._sync_ai_watch_tabs_from_recent_trades_async)
     app.run()
 
 

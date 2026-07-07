@@ -123,6 +123,10 @@ class FakeSettings:
         self.ai_snapshots_5m_days = 365
         self.ai_logs_retention_days = 90
         self.ai_keep_model_versions = 5
+        self.target_mode = "TOTAL_USD"
+        self.target_total_usd = 0.50
+        self.target_price_delta = 0.0
+        self.target_profit_per_share = 0.50
         self.openai_api_key = ""
         self.openai_model = "gpt-4.1-mini"
         self.paper_trading = True

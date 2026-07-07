@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import deque
 from dataclasses import dataclass
+import os
 import threading
 import time
 from typing import Any
@@ -37,6 +38,7 @@ class AlpacaRuntimeState:
         self._assets_cache: dict[tuple[str, str, bool], _CacheEntry] = {}
         self._latest_price_cache: dict[tuple[str, str], _CacheEntry] = {}
         self._quotes_cache: dict[tuple[str, str], _CacheEntry] = {}
+        self._acquire_max_wait_seconds = max(float(os.getenv("ALPACA_ACQUIRE_MAX_WAIT_SECONDS", "2.5") or 2.5), 0.2)
 
     def _prune(self, timestamps: deque[float], now: float) -> None:
         cutoff = now - self.window_seconds
@@ -45,10 +47,16 @@ class AlpacaRuntimeState:
 
     def acquire(self, account_key: str) -> None:
         key = str(account_key or "default")
+        started_at = time.monotonic()
         while True:
             wait_seconds = 0.0
             with self._lock:
                 now = time.monotonic()
+                waited = max(now - started_at, 0.0)
+                if waited >= self._acquire_max_wait_seconds:
+                    # Fail-open after bounded wait: avoid piling up worker threads forever.
+                    self._last_sync_at[key] = now
+                    return
                 cooldown_until = self._cooldowns.get(key, 0.0)
                 if cooldown_until > now:
                     wait_seconds = cooldown_until - now

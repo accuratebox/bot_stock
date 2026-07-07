@@ -1,42 +1,22 @@
 [
   {
-    "symbol": "SOL/USD",
-    "asset_type": "crypto",
-    "account": "Binance Demo",
-    "bot_actor": "ia",
-    "mode": "waiting",
-    "auto_rebuy": false,
-    "rebuy_capital": "4000.0",
-    "target_profit_per_share": "0.5"
-  },
-  {
-    "symbol": "DOGE/USD",
-    "asset_type": "crypto",
-    "account": "Binance Demo",
-    "bot_actor": "normal",
-    "mode": "tracking",
-    "auto_rebuy": false,
-    "rebuy_capital": "1000.0",
-    "target_profit_per_share": "0.5"
-  },
-  {
-    "symbol": "LTC/USD",
-    "asset_type": "crypto",
-    "account": "Binance Demo",
-    "bot_actor": "normal",
-    "mode": "tracking",
-    "auto_rebuy": false,
-    "rebuy_capital": "1000.0",
-    "target_profit_per_share": "0.5"
-  },
-  {
-    "symbol": "ZIL/USD",
+    "symbol": "AVAX/USD",
     "asset_type": "crypto",
     "account": "Binance Demo",
     "bot_actor": "ia",
     "mode": "tracking",
     "auto_rebuy": false,
     "rebuy_capital": "1000.0",
-    "target_profit_per_share": "0.5"
+    "target_profit_per_share": "0.2"
+  },
+  {
+    "symbol": "KAVA/USD",
+    "asset_type": "crypto",
+    "account": "Binance Demo",
+    "bot_actor": "ia",
+    "mode": "tracking",
+    "auto_rebuy": false,
+    "rebuy_capital": "1000.0",
+    "target_profit_per_share": "0.2"
   }
 ]

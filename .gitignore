@@ -1,3 +1,5 @@
 .env
 __pycache__/
 *.pyc
+ai_trading_brain.sqlite
+ai_trading_brain.backup_before_5m_cleanup_*.sqlite

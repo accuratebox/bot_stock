@@ -13,7 +13,7 @@ import unicodedata
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import resource
-from typing import Any
+from typing import Any, Callable
 from xml.etree import ElementTree
 
 import requests
@@ -96,7 +96,10 @@ class AITradingBrainService:
         self._focus_by_account: dict[str, dict[str, Any]] = {}
         self._recent_api_calls: deque[dict[str, Any]] = deque(maxlen=500)
         self._recent_errors: deque[dict[str, Any]] = deque(maxlen=500)
+        self._automation_status_cache_lock = threading.Lock()
+        self._automation_status_cache: dict[str, tuple[float, dict[str, Any]]] = {}
         self._last_health_snapshot: dict[str, Any] = {}
+        self._post_trade_update_hook: Callable[[], None] | None = None
         self._health_lock = threading.Lock()
         self._health_stop_event = threading.Event()
         self._health_thread: threading.Thread | None = None
@@ -208,6 +211,24 @@ class AITradingBrainService:
         self._install_database_write_queue()
         self._db_writer.start()
         self.initialize()
+
+    def set_post_trade_update_hook(self, callback: Callable[[], None] | None) -> None:
+        self._post_trade_update_hook = callback
+
+    def _request_post_trade_sync(self, delay_seconds: float = 2.0) -> None:
+        callback = self._post_trade_update_hook
+        if callback is None:
+            return
+
+        def worker() -> None:
+            try:
+                callback()
+            except Exception as ex:
+                self.logger.warning("No se pudo disparar sync de pestañas tras trade update: %s", ex)
+
+        timer = threading.Timer(max(float(delay_seconds or 0.0), 0.0), worker)
+        timer.daemon = True
+        timer.start()
 
     def _install_database_write_queue(self) -> None:
         write_methods = {
@@ -859,6 +880,16 @@ class AITradingBrainService:
         return self.get_automation_status(self._active_account_for_workers)
 
     def get_automation_status(self, account_name: str) -> dict[str, Any]:
+        cache_key = str(account_name or "").strip().lower() or "default"
+        cache_ttl_seconds = max(float(os.getenv("AUTOMATION_STATUS_CACHE_SECONDS", "2.5") or 2.5), 0.5)
+        now_monotonic = time.monotonic()
+        with self._automation_status_cache_lock:
+            cached = self._automation_status_cache.get(cache_key)
+            if cached is not None:
+                cached_ts, cached_payload = cached
+                if (now_monotonic - float(cached_ts or 0.0)) <= cache_ttl_seconds:
+                    return dict(cached_payload)
+
         self._reset_daily_counters_if_needed()
         approved_model = self.registry.approved_version() or ""
         approved_model_available = bool(self.registry.approved_model_available())
@@ -899,7 +930,7 @@ class AITradingBrainService:
         broker_open_positions_leverage: list[str] = []
         try:
             try:
-                live_positions = self.broker.get_positions(force_refresh=True)
+                live_positions = self.broker.get_positions(force_refresh=False)
             except TypeError:
                 live_positions = self.broker.get_positions()
             for row in live_positions:
@@ -959,7 +990,7 @@ class AITradingBrainService:
             1,
         )
 
-        return {
+        payload = {
             "collector": "Running" if self.data_collector_worker.running else "Stopped",
             "scanner": "Running" if self.signal_scanner_worker.running else "Stopped",
             "labeler": "Running" if self.outcome_labeler_worker.running else "Stopped",
@@ -1014,6 +1045,9 @@ class AITradingBrainService:
             "emergency_mode": self._emergency_mode,
             "emergency_reason": self._emergency_reason,
         }
+        with self._automation_status_cache_lock:
+            self._automation_status_cache[cache_key] = (time.monotonic(), dict(payload))
+        return payload
 
     def get_dashboard(self, account_name: str) -> dict[str, Any]:
         account = self.refresh_account_context(account_name)
@@ -2688,12 +2722,6 @@ class AITradingBrainService:
         quantity_owned = 0.0
         total_cost_basis = 0.0
         realized_pnl = 0.0
-        executed_statuses = {
-            "filled",
-            "partially_filled",
-            "done_for_day",
-            "calculated",
-        }
         for trade in reversed(trades):
             if self._symbol_key(str(trade.get("symbol", ""))) != symbol_key:
                 continue
@@ -2702,7 +2730,7 @@ class AITradingBrainService:
             filled_price = float(trade.get("filled_price", 0.0) or 0.0)
             limit_price = float(trade.get("limit_price", 0.0) or 0.0)
             # Ignore non-executed orders (pending/new/submitted) so they don't create fake positions.
-            if filled_price <= 0.0 and status and status not in executed_statuses:
+            if status and not self._is_executed_trade_status(status):
                 continue
             price = filled_price if filled_price > 0.0 else limit_price
             if price <= 0.0:
@@ -2726,6 +2754,16 @@ class AITradingBrainService:
             "total_cost_basis": total_cost_basis,
             "average_cost": average_cost,
             "realized_pnl": realized_pnl,
+        }
+
+    @staticmethod
+    def _is_executed_trade_status(status: str) -> bool:
+        normalized = str(status or "").strip().lower()
+        return normalized in {
+            "filled",
+            "partially_filled",
+            "done_for_day",
+            "calculated",
         }
 
     def place_limit_buy(
@@ -2807,6 +2845,10 @@ class AITradingBrainService:
         self._ensure_vpn_ready_for_trading("Buy order")
 
         order = self.order_manager.create_limit_order(symbol=str(signal["symbol"]), qty=qty, side="buy", limit_price=limit_price, time_in_force="gtc")
+        order_status = str(order.get("status", "submitted") or "submitted")
+        filled_price = float(order.get("filled_avg_price", 0.0) or 0.0)
+        if not self._is_executed_trade_status(order_status):
+            filled_price = 0.0
         self.database.insert_trade(
             {
                 "timestamp": self._now_iso(),
@@ -2817,9 +2859,9 @@ class AITradingBrainService:
                 "order_type": "limit",
                 "qty": qty,
                 "limit_price": limit_price,
-                "filled_price": float(order.get("filled_avg_price", 0.0) or 0.0),
+                "filled_price": filled_price,
                 "fees": 0.0,
-                "status": str(order.get("status", "submitted")),
+                "status": order_status,
                 "initiated_by": initiated_by,
                 "broker_order_id": str(order.get("id", "")),
                 "signal_id": int(signal_id),
@@ -2876,6 +2918,11 @@ class AITradingBrainService:
 
         signal_type = str(signal.get("signal_type", "")).upper().strip()
         asset_type = str(signal.get("asset_type", "")).lower().strip()
+        if self._emergency_mode:
+            return {
+                "status": "emergency_mode",
+                "reason": self._emergency_reason or "Entradas pausadas por estabilidad",
+            }
         if signal_type != "SELL_SHORT":
             raise ValueError(f"IA no ejecuta short para senales tipo {signal_type or 'N/A'}")
         if asset_type != "crypto":
@@ -2900,6 +2947,15 @@ class AITradingBrainService:
         min_confidence = float(getattr(self.settings, "ai_min_execution_confidence", 60.0) or 60.0)
         if confidence < min_confidence:
             raise ValueError(f"Confianza insuficiente para ejecutar short ({confidence:.2f} < {min_confidence:.2f})")
+
+        blocked = self._blocked_buy_reason(
+            symbol=str(signal["symbol"]),
+            account_id=account_id,
+            features=signal.get("features_json") or {},
+            account_name=account_name,
+        )
+        if blocked:
+            raise ValueError(blocked)
         if bool(runtime.get("kill_switch", 0)):
             raise ValueError("Kill switch activo")
         if bool(runtime.get("manual_approval_required", 1)) and not manual_approved:
@@ -2940,6 +2996,10 @@ class AITradingBrainService:
             limit_price=limit_price,
             time_in_force="gtc",
         )
+        order_status = str(order.get("status", "submitted") or "submitted")
+        filled_price = float(order.get("filled_avg_price", 0.0) or 0.0)
+        if not self._is_executed_trade_status(order_status):
+            filled_price = 0.0
         self.database.insert_trade(
             {
                 "timestamp": self._now_iso(),
@@ -2950,9 +3010,9 @@ class AITradingBrainService:
                 "order_type": "limit",
                 "qty": qty,
                 "limit_price": limit_price,
-                "filled_price": float(order.get("filled_avg_price", 0.0) or 0.0),
+                "filled_price": filled_price,
                 "fees": 0.0,
-                "status": str(order.get("status", "submitted")),
+                "status": order_status,
                 "initiated_by": initiated_by,
                 "broker_order_id": str(order.get("id", "")),
                 "signal_id": int(signal_id),
@@ -3023,6 +3083,10 @@ class AITradingBrainService:
             limit_price=limit_price,
             time_in_force="gtc",
         )
+        sell_status = str(sell_order.get("status", "submitted") or "submitted")
+        sell_filled_price = float(sell_order.get("filled_avg_price", 0.0) or 0.0)
+        if not self._is_executed_trade_status(sell_status):
+            sell_filled_price = 0.0
         self.database.insert_trade(
             {
                 "timestamp": self._now_iso(),
@@ -3033,9 +3097,9 @@ class AITradingBrainService:
                 "order_type": "limit",
                 "qty": float(filled_qty),
                 "limit_price": limit_price,
-                "filled_price": float(sell_order.get("filled_avg_price", 0.0) or 0.0),
+                "filled_price": sell_filled_price,
                 "fees": 0.0,
-                "status": str(sell_order.get("status", "submitted")),
+                "status": sell_status,
                 "initiated_by": f"{initiated_by}_target_immediate",
                 "broker_order_id": str(sell_order.get("id", "")),
                 "signal_id": None,
@@ -3304,6 +3368,10 @@ class AITradingBrainService:
             limit_price=limit_price,
             time_in_force="gtc",
         )
+        order_status = str(order.get("status", "submitted") or "submitted")
+        filled_price = float(order.get("filled_avg_price", 0.0) or 0.0)
+        if not self._is_executed_trade_status(order_status):
+            filled_price = 0.0
         self.database.insert_trade(
             {
                 "timestamp": self._now_iso(),
@@ -3314,9 +3382,9 @@ class AITradingBrainService:
                 "order_type": "limit",
                 "qty": float(position["qty"]),
                 "limit_price": limit_price,
-                "filled_price": float(order.get("filled_avg_price", 0.0) or 0.0),
+                "filled_price": filled_price,
                 "fees": 0.0,
-                "status": str(order.get("status", "submitted")),
+                "status": order_status,
                 "initiated_by": initiated_by,
                 "broker_order_id": str(order.get("id", "")),
                 "signal_id": None,
@@ -4653,7 +4721,7 @@ class AITradingBrainService:
             "order_type": str(order.get("order_type", "") or "market").lower().strip(),
             "qty": float(order.get("qty", order.get("filled_qty", 0.0)) or 0.0),
             "limit_price": float(order.get("limit_price", 0.0) or 0.0),
-            "filled_price": float(order.get("filled_avg_price", payload.get("price", 0.0)) or payload.get("price", 0.0) or 0.0),
+            "filled_price": 0.0,
             "fees": 0.0,
             "status": str(order.get("status", event or "unknown") or event or "unknown"),
             "initiated_by": "trade_updates",
@@ -4661,6 +4729,9 @@ class AITradingBrainService:
             "signal_id": None,
             "created_at": str(order.get("created_at", payload.get("timestamp", self._now_iso()))),
         }
+        stream_filled_price = float(order.get("filled_avg_price", payload.get("price", 0.0)) or payload.get("price", 0.0) or 0.0)
+        if self._is_executed_trade_status(str(order_payload.get("status", "") or "")):
+            order_payload["filled_price"] = stream_filled_price
         if not order_payload["broker_order_id"]:
             return
 
@@ -4673,6 +4744,9 @@ class AITradingBrainService:
                 self.position_manager.synchronize_open_positions()
             except Exception as ex:
                 self._last_api_error = str(ex)
+
+        if event in {"fill", "partial_fill"}:
+            self._request_post_trade_sync(delay_seconds=2.0)
 
     def _should_collect_symbol(self, symbol: str, asset_type: str) -> bool:
         key = self._symbol_key(symbol)

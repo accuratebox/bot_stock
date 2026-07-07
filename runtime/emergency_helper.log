@@ -22,3 +22,4 @@ Traceback (most recent call last):
     def __call__(self, *args):
 
 KeyboardInterrupt
+X connection to :0 broken (explicit kill or server shutdown).

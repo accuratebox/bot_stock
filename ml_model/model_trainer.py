@@ -20,6 +20,7 @@ class ModelTrainer:
         self.settings = settings
 
     def train_general_model(self) -> dict[str, Any]:
+        label_type = str(getattr(self.settings, "ai_training_label_type", "result_15m_fallback_30m") or "result_15m_fallback_30m")
         evaluated_outcomes = int(self.database.count_evaluated_outcomes() or 0)
         if evaluated_outcomes < 200:
             return {
@@ -28,7 +29,7 @@ class ModelTrainer:
                 "number_of_samples": evaluated_outcomes,
             }
 
-        samples = self.database.load_training_samples()
+        samples = self.database.load_training_samples(label_type=label_type)
         if len(samples) < 20:
             return {
                 "trained": False,
@@ -80,7 +81,6 @@ class ModelTrainer:
         profit_factor = float(gross_profit / gross_loss) if gross_loss > 0 else float(gross_profit)
         max_drawdown = min(float(sample.get("max_drawdown_pct", 0.0) or 0.0) for sample in predicted_trades)
 
-        label_type = str(getattr(self.settings, "ai_training_label_type", "result_15m_fallback_30m") or "result_15m_fallback_30m")
         version = f"general_model_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
 
         metadata = {
@@ -111,7 +111,7 @@ class ModelTrainer:
                 "max_drawdown": max_drawdown,
                 "approved_for_paper": False,
                 "approved_for_live": False,
-                "notes": "Entrenamiento con outcomes reales (result_15m fallback result_30m)",
+                "notes": f"Entrenamiento con outcomes reales (label_type={label_type})",
             }
         )
         self.registry.prune_old_versions(keep_last=5)

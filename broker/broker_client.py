@@ -4,6 +4,8 @@ import hashlib
 import hmac
 import json
 import math
+import os
+import threading
 from typing import Any
 import time
 from urllib.parse import quote, urlsplit, urlunsplit
@@ -36,6 +38,10 @@ class AlpacaBrokerClient:
         self._crypto_cache: dict[tuple[str, bool], tuple[float, list[dict]]] = {}
         self._all_crypto_cache: tuple[float, list[dict]] | None = None
         self._binance_symbol_rules_cache: dict[str, tuple[float, dict[str, float]]] = {}
+        self._binance_margin_mode_cache: dict[str, tuple[float, str]] = {}
+        self._binance_margin_mode_fail_cache: dict[str, tuple[float, str]] = {}
+        self._positions_fetch_lock = threading.Lock()
+        self._positions_fetch_inflight: dict[str, threading.Event] = {}
         self._binance_time_offset_ms: int = 0
         self._binance_time_offset_last_sync: float = 0.0
         self._stocks_cache_ttl_seconds = 900.0
@@ -149,6 +155,14 @@ class AlpacaBrokerClient:
     def send_market_order(self, symbol: str, qty: float, side: str, time_in_force: str | None = None) -> dict:
         if self.provider == "binance":
             binance_symbol = self._to_binance_symbol(symbol)
+            side_value = str(side or "").upper().strip()
+            reduce_only_intent = self._is_binance_reduce_only_intent(binance_symbol, side_value)
+            margin_ready = self._ensure_binance_margin_mode(binance_symbol)
+            if not margin_ready and not reduce_only_intent:
+                raise ValueError(
+                    f"No se pudo confirmar marginType=ISOLATED para {binance_symbol}. "
+                    "Entrada bloqueada para evitar abrir en CROSS."
+                )
             rules = self._binance_symbol_rules(binance_symbol)
             quantity = self._normalize_binance_quantity(float(qty or 0.0), rules)
             if quantity <= 0.0:
@@ -158,7 +172,7 @@ class AlpacaBrokerClient:
                 "/fapi/v1/order",
                 params={
                     "symbol": binance_symbol,
-                    "side": str(side or "").upper(),
+                    "side": side_value,
                     "type": "MARKET",
                     "quantity": self._fmt_qty(quantity),
                 },
@@ -194,6 +208,14 @@ class AlpacaBrokerClient:
     ) -> dict:
         if self.provider == "binance":
             binance_symbol = self._to_binance_symbol(symbol)
+            side_value = str(side or "").upper().strip()
+            reduce_only_intent = self._is_binance_reduce_only_intent(binance_symbol, side_value)
+            margin_ready = self._ensure_binance_margin_mode(binance_symbol)
+            if not margin_ready and not reduce_only_intent:
+                raise ValueError(
+                    f"No se pudo confirmar marginType=ISOLATED para {binance_symbol}. "
+                    "Entrada bloqueada para evitar abrir en CROSS."
+                )
             rules = self._binance_symbol_rules(binance_symbol)
             normalized_price = self._normalize_binance_price(float(limit_price or 0.0), rules)
             normalized_qty = self._normalize_binance_quantity(float(qty or 0.0), rules)
@@ -207,7 +229,6 @@ class AlpacaBrokerClient:
                     f"Notional insuficiente para {binance_symbol}: {normalized_price * normalized_qty:.6f} < {min_notional:.6f}"
                 )
             tif_value = (str(time_in_force).upper().strip() if time_in_force else "GTC")
-            side_value = str(side or "").upper()
             try:
                 response = self._request_binance(
                     "POST",
@@ -322,46 +343,72 @@ class AlpacaBrokerClient:
         cached = None if force_refresh else self.runtime_state.get_cached("_positions_cache", self.account_name, 20.0)
         if cached is not None:
             return list(cached)
-        if self.provider == "binance":
-            response = self._request_binance("GET", "/fapi/v2/positionRisk", signed=True)
-            rows = list(self._response_json(response) or [])
-            positions: list[dict[str, Any]] = []
-            for row in rows:
-                symbol_raw = str(row.get("symbol", "") or "").upper().strip()
-                if not symbol_raw.endswith("USDT"):
-                    continue
-                qty_signed = float(row.get("positionAmt", 0.0) or 0.0)
-                qty = abs(qty_signed)
-                if qty <= 0.0:
-                    continue
-                symbol = self._from_binance_symbol(symbol_raw)
-                current_price = float(row.get("markPrice", 0.0) or 0.0)
-                avg_entry = float(row.get("entryPrice", 0.0) or 0.0)
-                leverage = max(float(row.get("leverage", 1.0) or 1.0), 1.0)
-                market_value = qty * current_price
-                unrealized = float(row.get("unRealizedProfit", 0.0) or 0.0)
-                basis = qty * avg_entry
-                unrealized_plpc = (unrealized / basis) if basis > 0 else 0.0
-                side = "long" if qty_signed > 0 else "short"
-                positions.append(
-                    {
-                        "symbol": symbol,
-                        "qty": str(qty),
-                        "avg_entry_price": str(avg_entry),
-                        "leverage": leverage,
-                        "current_price": str(current_price),
-                        "market_value": str(market_value),
-                        "unrealized_pl": str(unrealized),
-                        "unrealized_plpc": str(unrealized_plpc),
-                        "side": side,
-                    }
-                )
-            self.runtime_state.set_cached("_positions_cache", self.account_name, positions)
-            return positions
-        response = self._request("GET", f"{self.endpoint}/positions")
-        payload = self._response_json(response)
-        self.runtime_state.set_cached("_positions_cache", self.account_name, payload)
-        return payload
+
+        account_key = str(self.account_name or "default")
+        is_leader = False
+        inflight_event: threading.Event | None = None
+        with self._positions_fetch_lock:
+            inflight_event = self._positions_fetch_inflight.get(account_key)
+            if inflight_event is None:
+                inflight_event = threading.Event()
+                self._positions_fetch_inflight[account_key] = inflight_event
+                is_leader = True
+
+        if not is_leader and inflight_event is not None:
+            inflight_event.wait(timeout=1.5)
+            cached_after_wait = self.runtime_state.get_cached("_positions_cache", self.account_name, 20.0)
+            if cached_after_wait is not None:
+                return list(cached_after_wait)
+            stale_fallback = self.runtime_state.get_cached("_positions_cache", self.account_name, 90.0)
+            if stale_fallback is not None:
+                return list(stale_fallback)
+
+        try:
+            if self.provider == "binance":
+                response = self._request_binance("GET", "/fapi/v2/positionRisk", signed=True)
+                rows = list(self._response_json(response) or [])
+                positions: list[dict[str, Any]] = []
+                for row in rows:
+                    symbol_raw = str(row.get("symbol", "") or "").upper().strip()
+                    if not symbol_raw.endswith("USDT"):
+                        continue
+                    qty_signed = float(row.get("positionAmt", 0.0) or 0.0)
+                    qty = abs(qty_signed)
+                    if qty <= 0.0:
+                        continue
+                    symbol = self._from_binance_symbol(symbol_raw)
+                    current_price = float(row.get("markPrice", 0.0) or 0.0)
+                    avg_entry = float(row.get("entryPrice", 0.0) or 0.0)
+                    leverage = max(float(row.get("leverage", 1.0) or 1.0), 1.0)
+                    market_value = qty * current_price
+                    unrealized = float(row.get("unRealizedProfit", 0.0) or 0.0)
+                    basis = qty * avg_entry
+                    unrealized_plpc = (unrealized / basis) if basis > 0 else 0.0
+                    side = "long" if qty_signed > 0 else "short"
+                    positions.append(
+                        {
+                            "symbol": symbol,
+                            "qty": str(qty),
+                            "avg_entry_price": str(avg_entry),
+                            "leverage": leverage,
+                            "current_price": str(current_price),
+                            "market_value": str(market_value),
+                            "unrealized_pl": str(unrealized),
+                            "unrealized_plpc": str(unrealized_plpc),
+                            "side": side,
+                        }
+                    )
+                self.runtime_state.set_cached("_positions_cache", self.account_name, positions)
+                return positions
+            response = self._request("GET", f"{self.endpoint}/positions")
+            payload = self._response_json(response)
+            self.runtime_state.set_cached("_positions_cache", self.account_name, payload)
+            return payload
+        finally:
+            if is_leader and inflight_event is not None:
+                inflight_event.set()
+                with self._positions_fetch_lock:
+                    self._positions_fetch_inflight.pop(account_key, None)
 
     def get_position(self, symbol: str) -> dict:
         if self.provider == "binance":
@@ -393,6 +440,7 @@ class AlpacaBrokerClient:
     def set_futures_leverage(self, symbol: str, leverage: int) -> dict[str, Any]:
         if self.provider != "binance":
             return {}
+        self._ensure_binance_margin_mode(self._to_binance_symbol(symbol))
         target = max(int(leverage or 1), 1)
         response = self._request_binance(
             "POST",
@@ -404,6 +452,102 @@ class AlpacaBrokerClient:
             signed=True,
         )
         return self._response_json(response)
+
+    def _ensure_binance_margin_mode(self, binance_symbol: str) -> bool:
+        if self.provider != "binance":
+            return True
+        desired_mode = str(getattr(settings, "crypto_futures_margin_type", "ISOLATED") or "ISOLATED").upper().strip()
+        if desired_mode not in {"ISOLATED", "CROSSED"}:
+            desired_mode = "ISOLATED"
+        enforce_isolated = str(os.getenv("BINANCE_ENFORCE_ISOLATED", "true") or "true").strip().lower() == "true"
+        if not enforce_isolated and desired_mode == "ISOLATED":
+            return True
+
+        symbol = str(binance_symbol or "").upper().strip()
+        now = time.monotonic()
+        cached = self._binance_margin_mode_cache.get(symbol)
+        if cached is not None:
+            cached_ts, cached_mode = cached
+            if cached_mode == desired_mode and (now - float(cached_ts or 0.0)) <= 3600.0:
+                return True
+
+        fail_cached = self._binance_margin_mode_fail_cache.get(symbol)
+        if fail_cached is not None:
+            fail_ts, fail_reason = fail_cached
+            if (now - float(fail_ts or 0.0)) <= 30.0:
+                self.logger.warning(
+                    "marginType=%s sigue sin confirmar para %s (%s). Bloqueando entradas nuevas.",
+                    desired_mode,
+                    symbol,
+                    fail_reason,
+                )
+                return False
+
+        response = self._request_binance(
+            "POST",
+            "/fapi/v1/marginType",
+            params={
+                "symbol": symbol,
+                "marginType": desired_mode,
+            },
+            signed=True,
+        )
+
+        if response.status_code >= 400:
+            text = str(getattr(response, "text", "") or "")
+            if '"code":-4046' in text or "No need to change margin type" in text:
+                self._binance_margin_mode_cache[symbol] = (now, desired_mode)
+                self._binance_margin_mode_fail_cache.pop(symbol, None)
+                return True
+            code = self._extract_binance_error_code(text)
+            reason = f"code={code if code is not None else 'unknown'}"
+            try:
+                response.raise_for_status()
+            except Exception as ex:
+                self.logger.warning(
+                    "No se pudo forzar marginType=%s para %s: %s | body=%s",
+                    desired_mode,
+                    symbol,
+                    ex,
+                    text.strip()[:220],
+                )
+                self._binance_margin_mode_fail_cache[symbol] = (now, reason)
+                return False
+
+        self._binance_margin_mode_cache[symbol] = (now, desired_mode)
+        self._binance_margin_mode_fail_cache.pop(symbol, None)
+        return True
+
+    def _is_binance_reduce_only_intent(self, binance_symbol: str, side: str) -> bool:
+        if self.provider != "binance":
+            return False
+        side_value = str(side or "").upper().strip()
+        if side_value not in {"BUY", "SELL"}:
+            return False
+        try:
+            risk = self.get_binance_position_risk(binance_symbol)
+            qty_signed = float((risk or {}).get("positionAmt", 0.0) or 0.0)
+        except Exception:
+            return False
+        if qty_signed > 0.0:
+            return side_value == "SELL"
+        if qty_signed < 0.0:
+            return side_value == "BUY"
+        return False
+
+    @staticmethod
+    def _extract_binance_error_code(body_text: str) -> int | None:
+        raw = str(body_text or "").strip()
+        if not raw:
+            return None
+        try:
+            payload = json.loads(raw)
+        except Exception:
+            return None
+        try:
+            return int(payload.get("code"))
+        except Exception:
+            return None
 
     def get_binance_position_risk(self, symbol: str) -> dict[str, Any]:
         if self.provider != "binance":

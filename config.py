@@ -17,11 +17,12 @@ def _load_local_env_file() -> None:
                 continue
             key, value = line.split("=", 1)
             key = key.strip()
-            if not key or key in os.environ:
+            if not key:
                 continue
             value = value.strip()
             if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
                 value = value[1:-1]
+            # Keep .env as source of truth on every app start.
             os.environ[key] = value
     except Exception:
         # Ignore malformed local env files and keep process env as source of truth.
@@ -94,6 +95,10 @@ class Settings:
     max_daily_loss: float = float(os.getenv("BOT_MAX_DAILY_LOSS", "200.0"))
 
     max_open_positions: int = int(os.getenv("MAX_OPEN_POSITIONS", "5"))
+    target_mode: str = _env("TARGET_MODE", default="TOTAL_USD").upper()
+    target_total_usd: float = float(_env("TARGET_TOTAL_USD", default=_env("TARGET_PROFIT_PER_SHARE", default="0.50")))
+    target_price_delta: float = float(_env("TARGET_PRICE_DELTA", default="0.0"))
+    # Legacy field kept for compatibility with older call sites and saved data.
     target_profit_per_share: float = float(os.getenv("TARGET_PROFIT_PER_SHARE", "0.50"))
     auto_sell_only_if_profitable: bool = os.getenv("AUTO_SELL_ONLY_IF_PROFITABLE", "True").lower() == "true"
     never_sell_at_loss: bool = os.getenv("NEVER_SELL_AT_LOSS", "True").lower() == "true"
@@ -193,6 +198,7 @@ class Settings:
     crypto_allow_short_signals: bool = _env_bool("CRYPTO_ALLOW_SHORT_SIGNALS", default=True)
     crypto_allow_short_execution: bool = _env_bool("CRYPTO_ALLOW_SHORT_EXECUTION", default=False)
     crypto_futures_only_mode: bool = _env_bool("CRYPTO_FUTURES_ONLY_MODE", default=True)
+    crypto_futures_margin_type: str = _env("CRYPTO_FUTURES_MARGIN_TYPE", default="ISOLATED").upper()
     crypto_futures_default_leverage: int = int(_env("CRYPTO_FUTURES_DEFAULT_LEVERAGE", default="1"))
     crypto_futures_max_leverage: int = int(_env("CRYPTO_FUTURES_MAX_LEVERAGE", default="20"))
     ai_futures_require_technical: bool = _env_bool("AI_FUTURES_REQUIRE_TECHNICAL", default=True)
