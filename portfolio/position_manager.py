@@ -13,6 +13,8 @@ from config import Settings
 class PositionSnapshot:
     symbol: str
     qty: float
+    side: str
+    leverage: float
     avg_entry_price: float
     current_price: float
     unrealized_pl: float
@@ -299,11 +301,18 @@ class PositionManager:
                 if action in {"LIMIT_SELL_PLACED", "LIMIT_SELL_PENDING"}:
                     actions.append(result)
             except Exception as ex:
-                self.logger.warning(
-                    "No se pudo reconciliar salida limit faltante para %s: %s",
-                    snapshot.symbol,
-                    ex,
-                )
+                if "Notional insuficiente" in str(ex):
+                    self.logger.info(
+                        "Reconcile limit omitido para %s por notional minimo: %s",
+                        snapshot.symbol,
+                        ex,
+                    )
+                else:
+                    self.logger.warning(
+                        "No se pudo reconciliar salida limit faltante para %s: %s",
+                        snapshot.symbol,
+                        ex,
+                    )
         return actions
 
     def can_open_new_trade(self, symbol: str, ignore_close_window: bool = False) -> tuple[bool, str]:
@@ -1230,9 +1239,18 @@ class PositionManager:
     def _build_snapshot(self, position: dict[str, Any]) -> PositionSnapshot:
         symbol = str(position.get("symbol", "")).upper()
         qty = float(position.get("qty", 0.0) or 0.0)
+        side = str(position.get("side", "long") or "long").lower().strip()
+        if side not in {"long", "short"}:
+            side = "long"
+        leverage = float(position.get("leverage", 1.0) or 1.0)
+        if leverage <= 0:
+            leverage = 1.0
         avg_entry_price = float(position.get("avg_entry_price", 0.0) or 0.0)
         current_price = float(self.market_data.get_last_price(symbol))
-        unrealized_pl = (current_price - avg_entry_price) * qty
+        if side == "short":
+            unrealized_pl = (avg_entry_price - current_price) * qty
+        else:
+            unrealized_pl = (current_price - avg_entry_price) * qty
         unrealized_plpc = (unrealized_pl / (avg_entry_price * qty)) if avg_entry_price > 0 and qty > 0 else 0.0
         state = "HOLD" if unrealized_pl < 0 else "PROFIT" if unrealized_pl > 0 else "EVEN"
         entry_record = self.journal.get_open_entry_by_symbol(symbol) or {}
@@ -1242,6 +1260,8 @@ class PositionManager:
         return PositionSnapshot(
             symbol=symbol,
             qty=qty,
+            side=side,
+            leverage=leverage,
             avg_entry_price=avg_entry_price,
             current_price=current_price,
             unrealized_pl=unrealized_pl,

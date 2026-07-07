@@ -6078,3 +6078,770 @@ ValueError: No hay posicion activa para vender
 2026-07-06 08:19:46 | WARNING | trading_bot | No se pudo reconciliar salida limit faltante para SOL/USD: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
 2026-07-06 08:19:46 | WARNING | trading_bot | No se pudo reconciliar salida limit faltante para SOL/USD: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
 2026-07-06 08:19:47 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:20:17 | WARNING | trading_bot | No se pudo reconciliar salida limit faltante para SOL/USD: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:20:17 | WARNING | trading_bot | No se pudo reconciliar salida limit faltante para SOL/USD: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:20:17 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:20:46 | WARNING | trading_bot | No se pudo reconciliar salida limit faltante para SOL/USD: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:20:47 | WARNING | trading_bot | No se pudo reconciliar salida limit faltante para SOL/USD: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:20:47 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:21:17 | WARNING | trading_bot | No se pudo reconciliar salida limit faltante para SOL/USD: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:21:17 | WARNING | trading_bot | No se pudo reconciliar salida limit faltante para SOL/USD: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:21:17 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:21:46 | WARNING | trading_bot | No se pudo reconciliar salida limit faltante para SOL/USD: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:21:47 | WARNING | trading_bot | No se pudo reconciliar salida limit faltante para SOL/USD: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:21:47 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:22:16 | WARNING | trading_bot | No se pudo reconciliar salida limit faltante para SOL/USD: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:22:16 | WARNING | trading_bot | No se pudo reconciliar salida limit faltante para SOL/USD: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:22:16 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:22:46 | WARNING | trading_bot | No se pudo reconciliar salida limit faltante para SOL/USD: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:22:46 | WARNING | trading_bot | No se pudo reconciliar salida limit faltante para SOL/USD: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:22:47 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:23:17 | WARNING | trading_bot | No se pudo reconciliar salida limit faltante para SOL/USD: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:23:17 | WARNING | trading_bot | No se pudo reconciliar salida limit faltante para SOL/USD: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:23:17 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:23:45 | WARNING | trading_bot | Forzando cierre de la aplicacion por solicitud del usuario.
+2026-07-06 08:23:55 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:23:57 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 08:23:57 | WARNING | trading_bot | Using fallback REST bars for AVAX/USD
+2026-07-06 08:24:02 | WARNING | trading_bot | Using fallback REST bars for BTC/USD
+2026-07-06 08:24:07 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 08:24:07 | WARNING | trading_bot | Using fallback REST bars for DOGE/USD
+2026-07-06 08:24:13 | WARNING | trading_bot | Using fallback REST bars for ETH/USD
+2026-07-06 08:24:18 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 08:24:18 | WARNING | trading_bot | Using fallback REST bars for LINK/USD
+2026-07-06 08:24:23 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:24:23 | WARNING | trading_bot | Using fallback REST bars for SOL/USD
+2026-07-06 08:24:28 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 08:24:28 | WARNING | trading_bot | Using fallback REST bars for XRP/USD
+2026-07-06 08:24:54 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:25:11 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 08:25:11 | WARNING | trading_bot | Using fallback REST bars for SOL/USD
+2026-07-06 08:25:23 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:25:54 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:26:22 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:26:53 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:27:22 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:27:26 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 08:27:26 | WARNING | trading_bot | Using fallback REST bars for AVAX/USD
+2026-07-06 08:27:33 | WARNING | trading_bot | Using fallback REST bars for BTC/USD
+2026-07-06 08:27:38 | WARNING | trading_bot | Forzando cierre de la aplicacion por solicitud del usuario.
+2026-07-06 08:27:44 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 08:27:48 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 08:27:49 | WARNING | trading_bot | Using fallback REST bars for AVAX/USD
+2026-07-06 08:27:54 | WARNING | trading_bot | Using fallback REST bars for BTC/USD
+2026-07-06 08:27:58 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 08:28:01 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 08:28:01 | WARNING | trading_bot | Using fallback REST bars for DOGE/USD
+2026-07-06 08:28:03 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+2026-07-06 08:28:07 | WARNING | trading_bot | Using fallback REST bars for ETH/USD
+2026-07-06 08:28:13 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 08:28:14 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 08:28:15 | WARNING | trading_bot | Using fallback REST bars for LINK/USD
+2026-07-06 08:28:15 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:28:19 | WARNING | trading_bot | Using fallback REST bars for SOL/USD
+2026-07-06 08:28:24 | WARNING | trading_bot | Using fallback REST bars for XRP/USD
+2026-07-06 08:28:46 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:29:14 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:29:45 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:30:10 | WARNING | trading_bot | Forzando cierre de la aplicacion por solicitud del usuario.
+2026-07-06 08:30:21 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 08:30:27 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 08:30:29 | WARNING | trading_bot | Using fallback REST bars for AVAX/USD
+2026-07-06 08:30:32 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 08:30:37 | WARNING | trading_bot | Using fallback REST bars for BTC/USD
+2026-07-06 08:30:38 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 08:30:39 | WARNING | trading_bot | Using fallback REST bars for SOL/USD
+2026-07-06 08:30:40 | WARNING | trading_bot | Sin conexion durante monitoreo general (ReadTimeout). Reintentando automaticamente...
+2026-07-06 08:30:40 | WARNING | trading_bot | Sin conexion durante monitoreo general (ReadTimeout). Reintentando automaticamente...
+2026-07-06 08:30:43 | WARNING | trading_bot | Using fallback REST bars for DOGE/USD
+2026-07-06 08:30:51 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 08:30:51 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 08:30:51 | WARNING | trading_bot | Using fallback REST bars for ETH/USD
+2026-07-06 08:30:54 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:30:57 | WARNING | trading_bot | Using fallback REST bars for LINK/USD
+2026-07-06 08:31:03 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 08:31:03 | WARNING | trading_bot | Using fallback REST bars for SOL/USD
+2026-07-06 08:31:16 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 08:31:16 | WARNING | trading_bot | Using fallback REST bars for XRP/USD
+2026-07-06 08:31:26 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:31:52 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:32:23 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:32:51 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:32:54 | WARNING | trading_bot | Forzando cierre de la aplicacion por solicitud del usuario.
+2026-07-06 08:33:18 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 08:33:19 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-06 08:33:21 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:33:23 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 08:33:24 | WARNING | trading_bot | Using fallback REST bars for AVAX/USD
+2026-07-06 08:33:29 | WARNING | trading_bot | Using fallback REST bars for BTC/USD
+2026-07-06 08:33:34 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 08:33:38 | WARNING | trading_bot | Using fallback REST bars for DOGE/USD
+2026-07-06 08:33:39 | WARNING | trading_bot | Using fallback REST bars for SOL/USD
+2026-07-06 08:33:44 | WARNING | trading_bot | Using fallback REST bars for ETH/USD
+2026-07-06 08:33:48 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 08:33:50 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 08:33:50 | WARNING | trading_bot | Using fallback REST bars for LINK/USD
+2026-07-06 08:33:50 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:33:53 | WARNING | trading_bot | Using fallback REST bars for SOL/USD
+2026-07-06 08:33:58 | WARNING | trading_bot | Using fallback REST bars for XRP/USD
+2026-07-06 08:34:21 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:34:49 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:35:18 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:35:50 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:36:18 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:36:50 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:37:19 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:37:49 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:38:18 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:38:49 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:39:20 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:39:49 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:40:19 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:40:48 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:41:19 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:41:50 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:42:19 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:42:50 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:43:19 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:43:49 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:44:19 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:44:50 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:45:19 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:45:49 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:46:19 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:46:50 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:47:18 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:47:50 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:48:19 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:48:49 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:49:18 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:49:49 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:50:18 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:50:50 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:51:18 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:51:49 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:52:20 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:52:48 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:53:20 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:53:48 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:54:21 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:54:49 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:55:19 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:55:50 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:56:18 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:56:50 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:57:18 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:57:49 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:58:18 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:58:50 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:59:19 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 08:59:49 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:00:18 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:00:49 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:01:18 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:01:50 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:02:19 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:02:49 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:03:20 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:03:48 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:04:20 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:04:48 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:05:19 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:05:48 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:06:19 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:06:48 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:07:20 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:07:49 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:08:19 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:08:49 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:09:18 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:09:50 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:10:18 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:10:50 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:11:19 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:11:48 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:12:20 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:12:49 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:13:20 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:13:48 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:14:20 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:14:48 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:15:19 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:15:48 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:16:19 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:16:48 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:17:20 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:17:48 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:18:20 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:18:48 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:19:20 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:19:50 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:20:18 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:20:49 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:21:19 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:21:50 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:22:18 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:22:49 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:23:18 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:23:49 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:24:19 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:24:49 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:25:20 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:25:49 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:26:20 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:26:50 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:27:19 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:27:50 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:28:18 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:28:50 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:29:18 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:29:50 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:30:18 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:30:49 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:31:21 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:31:48 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:32:20 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:32:48 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:33:20 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:33:49 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:34:20 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:34:48 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:35:21 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:35:49 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:36:20 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:36:50 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:37:19 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:37:50 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:38:18 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:38:49 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:39:18 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:39:50 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:40:18 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:40:50 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:41:19 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:41:49 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:42:18 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:42:50 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:43:19 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:43:49 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:44:19 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:44:49 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:45:18 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:45:49 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:46:18 | WARNING | trading_bot | CRYPTO AAVE/USD: Opening position with max_hold_time=30 minutes. Stop loss enabled.
+2026-07-06 09:46:21 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:46:50 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:47:18 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:47:48 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:48:18 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:48:49 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:49:18 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:49:49 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:50:20 | WARNING | trading_bot | CRYPTO AAVE/USD: Opening position with max_hold_time=30 minutes. Stop loss enabled.
+2026-07-06 09:50:22 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:50:50 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:51:18 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:51:50 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:52:18 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:52:49 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:53:20 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:53:48 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:54:19 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:54:49 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:55:18 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 09:55:48 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: Notional insuficiente para SOLUSDT: 1.619000 < 5.000000
+2026-07-06 11:10:49 | WARNING | trading_bot | CRYPTO AAVE/USD: Opening position with max_hold_time=30 minutes. Stop loss enabled.
+2026-07-06 11:51:49 | WARNING | trading_bot | CRYPTO AAVE/USD: Opening position with max_hold_time=30 minutes. Stop loss enabled.
+2026-07-06 12:25:49 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 13:30:40 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 13:30:40 | WARNING | trading_bot | Using fallback REST bars for SOL/USD
+2026-07-06 13:39:15 | WARNING | trading_bot | Forzando cierre de la aplicacion por solicitud del usuario.
+2026-07-06 13:39:22 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 13:39:28 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 13:39:29 | WARNING | trading_bot | Using fallback REST bars for AVAX/USD
+2026-07-06 13:39:33 | WARNING | trading_bot | Using fallback REST bars for BTC/USD
+2026-07-06 13:39:41 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 13:39:41 | WARNING | trading_bot | Using fallback REST bars for DOGE/USD
+2026-07-06 13:39:41 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+2026-07-06 13:39:41 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 13:39:50 | WARNING | trading_bot | Using fallback REST bars for ETH/USD
+2026-07-06 13:39:51 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 13:39:58 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 13:39:58 | WARNING | trading_bot | Using fallback REST bars for LINK/USD
+2026-07-06 13:40:04 | WARNING | trading_bot | Using fallback REST bars for SOL/USD
+2026-07-06 13:40:09 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 13:40:09 | WARNING | trading_bot | Using fallback REST bars for XRP/USD
+2026-07-06 13:42:07 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 13:42:08 | WARNING | trading_bot | Using fallback REST bars for AVAX/USD
+2026-07-06 13:42:12 | WARNING | trading_bot | Using fallback REST bars for BTC/USD
+2026-07-06 13:42:13 | WARNING | trading_bot | Using fallback REST bars for SOL/USD
+2026-07-06 13:42:16 | WARNING | trading_bot | Using fallback REST bars for DOGE/USD
+2026-07-06 13:42:21 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 13:42:21 | WARNING | trading_bot | Using fallback REST bars for ETH/USD
+2026-07-06 13:42:25 | WARNING | trading_bot | Using fallback REST bars for LINK/USD
+2026-07-06 13:42:28 | WARNING | trading_bot | Using fallback REST bars for SOL/USD
+2026-07-06 13:42:32 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 13:42:32 | WARNING | trading_bot | Using fallback REST bars for XRP/USD
+2026-07-06 13:43:12 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 13:43:13 | WARNING | trading_bot | Using fallback REST bars for SOL/USD
+2026-07-06 13:48:31 | WARNING | trading_bot | Forzando cierre de la aplicacion por solicitud del usuario.
+2026-07-06 13:48:47 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 13:48:47 | WARNING | trading_bot | Using fallback REST bars for AVAX/USD
+2026-07-06 13:48:52 | WARNING | trading_bot | Using fallback REST bars for BTC/USD
+2026-07-06 13:48:58 | WARNING | trading_bot | Using fallback REST bars for DOGE/USD
+2026-07-06 13:49:02 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 13:49:03 | WARNING | trading_bot | Using fallback REST bars for ETH/USD
+2026-07-06 13:49:06 | WARNING | trading_bot | Using fallback REST bars for LINK/USD
+2026-07-06 13:49:10 | WARNING | trading_bot | Using fallback REST bars for SOL/USD
+2026-07-06 13:49:14 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 13:49:15 | WARNING | trading_bot | Using fallback REST bars for XRP/USD
+2026-07-06 13:52:14 | WARNING | trading_bot | Forzando cierre de la aplicacion por solicitud del usuario.
+2026-07-06 13:52:23 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 13:52:23 | WARNING | trading_bot | Using fallback REST bars for AVAX/USD
+2026-07-06 13:52:28 | WARNING | trading_bot | Using fallback REST bars for BTC/USD
+2026-07-06 13:52:33 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 13:52:33 | WARNING | trading_bot | Using fallback REST bars for DOGE/USD
+2026-07-06 13:52:38 | WARNING | trading_bot | Using fallback REST bars for ETH/USD
+2026-07-06 13:52:44 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 13:52:45 | WARNING | trading_bot | Using fallback REST bars for LINK/USD
+2026-07-06 13:52:49 | WARNING | trading_bot | Using fallback REST bars for SOL/USD
+2026-07-06 13:52:54 | WARNING | trading_bot | Using fallback REST bars for XRP/USD
+2026-07-06 13:54:34 | WARNING | trading_bot | Forzando cierre de la aplicacion por solicitud del usuario.
+2026-07-06 13:54:45 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 13:54:46 | WARNING | trading_bot | Using fallback REST bars for AVAX/USD
+2026-07-06 13:54:51 | WARNING | trading_bot | Using fallback REST bars for BTC/USD
+2026-07-06 13:54:59 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 13:55:00 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 13:55:00 | WARNING | trading_bot | Using fallback REST bars for DOGE/USD
+2026-07-06 13:55:00 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 13:55:00 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+2026-07-06 13:55:05 | WARNING | trading_bot | Using fallback REST bars for ETH/USD
+2026-07-06 13:55:09 | WARNING | trading_bot | Using fallback REST bars for LINK/USD
+2026-07-06 13:55:11 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 13:55:12 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 13:55:12 | WARNING | trading_bot | Using fallback REST bars for SOL/USD
+2026-07-06 13:55:17 | WARNING | trading_bot | Using fallback REST bars for XRP/USD
+2026-07-06 13:56:42 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 13:56:42 | WARNING | trading_bot | Using fallback REST bars for SOL/USD
+2026-07-06 14:03:19 | WARNING | trading_bot | Forzando cierre de la aplicacion por solicitud del usuario.
+2026-07-06 14:03:37 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 14:03:37 | WARNING | trading_bot | Using fallback REST bars for AVAX/USD
+2026-07-06 14:03:43 | WARNING | trading_bot | Using fallback REST bars for BTC/USD
+2026-07-06 14:03:45 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 14:03:45 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 14:03:45 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 14:03:47 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 14:03:48 | WARNING | trading_bot | Using fallback REST bars for DOGE/USD
+2026-07-06 14:03:51 | WARNING | trading_bot | Using fallback REST bars for ETH/USD
+2026-07-06 14:03:54 | WARNING | trading_bot | Using fallback REST bars for LINK/USD
+2026-07-06 14:03:57 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+2026-07-06 14:04:37 | WARNING | trading_bot | Sin conexion durante monitoreo general (HTTPError). Reintentando automaticamente...
+2026-07-06 14:04:37 | WARNING | trading_bot | Sin conexion durante monitoreo general (HTTPError). Reintentando automaticamente...
+2026-07-06 14:04:47 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 14:04:47 | WARNING | trading_bot | Using fallback REST bars for SOL/USD
+2026-07-06 14:04:52 | WARNING | trading_bot | Using fallback REST bars for XRP/USD
+2026-07-06 14:06:34 | WARNING | trading_bot | Sin conexion durante monitoreo general (HTTPError). Reintentando automaticamente...
+2026-07-06 14:09:33 | WARNING | trading_bot | Sin conexion durante monitoreo general (HTTPError). Reintentando automaticamente...
+2026-07-06 14:09:33 | WARNING | trading_bot | Sin conexion durante monitoreo general (HTTPError). Reintentando automaticamente...
+2026-07-06 14:09:45 | WARNING | trading_bot | Forzando cierre de la aplicacion por solicitud del usuario.
+2026-07-06 14:09:52 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 14:09:58 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 14:09:59 | WARNING | trading_bot | Using fallback REST bars for AVAX/USD
+2026-07-06 14:10:03 | WARNING | trading_bot | Using fallback REST bars for BTC/USD
+2026-07-06 14:10:08 | WARNING | trading_bot | Using fallback REST bars for DOGE/USD
+2026-07-06 14:10:11 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 14:10:11 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 14:10:13 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 14:10:13 | WARNING | trading_bot | Using fallback REST bars for ETH/USD
+2026-07-06 14:10:51 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 14:10:52 | WARNING | trading_bot | Using fallback REST bars for LINK/USD
+2026-07-06 14:11:03 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 14:11:05 | WARNING | trading_bot | Using fallback REST bars for SOL/USD
+2026-07-06 14:11:13 | WARNING | trading_bot | Using fallback REST bars for XRP/USD
+2026-07-06 14:11:51 | WARNING | trading_bot | EMERGENCY MODE ACTIVADO: Health monitor detecto estado ERROR
+2026-07-06 14:12:57 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 14:12:59 | WARNING | trading_bot | Using fallback REST bars for SOL/USD
+2026-07-06 14:13:01 | WARNING | trading_bot | Using fallback REST bars for SOL/USD
+2026-07-06 14:13:03 | WARNING | trading_bot | Using fallback REST bars for SOL/USD
+2026-07-06 14:14:51 | WARNING | trading_bot | EMERGENCY MODE ACTIVADO: Health monitor detecto estado ERROR
+2026-07-06 14:19:51 | WARNING | trading_bot | EMERGENCY MODE ACTIVADO: Health monitor detecto estado ERROR
+2026-07-06 14:23:51 | WARNING | trading_bot | EMERGENCY MODE ACTIVADO: Health monitor detecto estado ERROR
+2026-07-06 14:25:51 | WARNING | trading_bot | EMERGENCY MODE ACTIVADO: Health monitor detecto estado ERROR
+2026-07-06 14:27:51 | WARNING | trading_bot | EMERGENCY MODE ACTIVADO: Health monitor detecto estado ERROR
+2026-07-06 14:28:51 | WARNING | trading_bot | EMERGENCY MODE ACTIVADO: Health monitor detecto estado ERROR
+2026-07-06 14:30:51 | WARNING | trading_bot | EMERGENCY MODE ACTIVADO: Health monitor detecto estado ERROR
+2026-07-06 14:30:51 | WARNING | trading_bot | Forzando cierre de la aplicacion por solicitud del usuario.
+2026-07-06 14:47:25 | WARNING | trading_bot | No se pudo sincronizar posiciones al iniciar: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783363624998&recvWindow=5000&signature=23452738cadc11f32c0af48968bd975d8e6bc131eae4aa0a7fd28c87533486e3 (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 14:47:27 | WARNING | trading_bot | No se pudo sincronizar posiciones al iniciar: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783363627972&recvWindow=5000&signature=e7c5840f6059e23c615ed7d9cc25cfa63e40c567224bea29b10ea40fe71f0408 (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 14:47:33 | WARNING | trading_bot | No se pudo sincronizar posiciones al iniciar: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783363633218&recvWindow=5000&signature=620a870d1a6c7e9182c7ccab16c5423b623000a63137ba22ddad201350298679 (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 14:47:45 | WARNING | trading_bot | No se pudo refrescar lista de cryptos para enfoque IA: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v1/exchangeInfo (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 14:47:48 | WARNING | trading_bot | No se pudo refrescar lista de cryptos para enfoque IA: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v1/exchangeInfo (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 14:47:53 | WARNING | trading_bot | No se pudo refrescar lista de cryptos para enfoque IA: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v1/exchangeInfo (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 14:48:08 | WARNING | trading_bot | No se pudo validar la cuenta Binance Demo: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783363668308&recvWindow=5000&signature=49a075ab3d1aaa0c1c78edec2cb22642940a0758a3ef3b714a8a32580ae50b3b (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 14:48:13 | WARNING | trading_bot | No se pudo validar la cuenta Binance Demo: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783363673584&recvWindow=5000&signature=7fed80626661952c316eaeea621bd0a3f1f23ef66c783e6c050aa919f4f59489 (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 14:53:30 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+2026-07-06 14:53:41 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 14:53:49 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 14:53:54 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 14:53:54 | WARNING | trading_bot | Using fallback REST bars for AVAX/USD
+2026-07-06 14:53:59 | WARNING | trading_bot | Using fallback REST bars for BTC/USD
+2026-07-06 14:54:03 | WARNING | trading_bot | Using fallback REST bars for DOGE/USD
+2026-07-06 14:54:05 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 14:54:05 | WARNING | trading_bot | Using fallback REST bars for ETH/USD
+2026-07-06 14:54:57 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 14:54:57 | WARNING | trading_bot | Using fallback REST bars for AVAX/USD
+2026-07-06 14:55:37 | WARNING | trading_bot | No se pudo refrescar estado NYSE: ('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))
+2026-07-06 14:55:37 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 14:55:42 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 14:55:42 | WARNING | trading_bot | Using fallback REST bars for AVAX/USD
+2026-07-06 14:55:56 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 14:55:56 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 14:55:56 | WARNING | trading_bot | No se pudo verificar posicion abierta para pestana restaurada SOL/USD: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Read timed out. (read timeout=20)
+2026-07-06 14:57:11 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 14:57:16 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 14:57:16 | WARNING | trading_bot | Using fallback REST bars for AVAX/USD
+2026-07-06 14:57:21 | WARNING | trading_bot | Using fallback REST bars for BTC/USD
+2026-07-06 14:57:26 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 14:57:26 | WARNING | trading_bot | Using fallback REST bars for DOGE/USD
+2026-07-06 17:05:10 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 17:05:20 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 17:05:20 | WARNING | trading_bot | Using fallback REST bars for AVAX/USD
+2026-07-06 17:05:25 | WARNING | trading_bot | Using fallback REST bars for BTC/USD
+2026-07-06 17:05:29 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:05:29 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:05:29 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:05:30 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:05:32 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+2026-07-06 17:05:33 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 17:05:34 | WARNING | trading_bot | Using fallback REST bars for DOGE/USD
+2026-07-06 17:06:23 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 17:06:24 | WARNING | trading_bot | Using fallback REST bars for ETH/USD
+2026-07-06 17:06:33 | WARNING | trading_bot | Using fallback REST bars for LINK/USD
+2026-07-06 17:07:24 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:07:26 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:07:27 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:07:32 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 17:07:38 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 17:07:39 | WARNING | trading_bot | Using fallback REST bars for SOL/USD
+2026-07-06 17:07:43 | WARNING | trading_bot | Using fallback REST bars for XRP/USD
+2026-07-06 17:08:06 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:08:06 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:08:06 | WARNING | trading_bot | Internet caido durante monitoreo de posicion (DOGE/USD). Reintentando en 30s...
+2026-07-06 17:08:25 | WARNING | trading_bot | Sin conexion durante monitoreo general (ConnectionError). Reintentando automaticamente...
+2026-07-06 17:08:25 | WARNING | trading_bot | Sin conexion durante monitoreo general (ConnectionError). Reintentando automaticamente...
+2026-07-06 17:08:51 | WARNING | trading_bot | Internet caido durante monitoreo de posicion (SOL/USD). Reintentando en 30s...
+2026-07-06 17:08:51 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:08:52 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:09:09 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 17:09:41 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:09:41 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:09:58 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 17:09:59 | WARNING | trading_bot | Sin conexion durante monitoreo general (ReadTimeout). Reintentando automaticamente...
+2026-07-06 17:10:29 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:10:29 | WARNING | trading_bot | Sin conexion durante monitoreo general (ReadTimeout). Reintentando automaticamente...
+2026-07-06 17:10:44 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 17:10:48 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-06 17:11:20 | WARNING | trading_bot | Internet caido durante monitoreo de posicion (ZIL/USD). Reintentando en 30s...
+2026-07-06 17:11:20 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:11:20 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:11:33 | WARNING | trading_bot | Sin conexion durante monitoreo general (ConnectionError). Reintentando automaticamente...
+2026-07-06 17:11:33 | WARNING | trading_bot | Sin conexion durante monitoreo general (ConnectionError). Reintentando automaticamente...
+2026-07-06 17:12:05 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:12:05 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:12:52 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:12:52 | WARNING | trading_bot | Internet caido durante monitoreo de posicion (DOGE/USD). Reintentando en 30s...
+2026-07-06 17:12:52 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:13:38 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:13:41 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:13:51 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 17:13:52 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 17:14:21 | WARNING | trading_bot | Internet caido durante monitoreo de posicion (SOL/USD). Reintentando en 30s...
+2026-07-06 17:14:24 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:14:27 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:14:34 | WARNING | trading_bot | Sin conexion durante monitoreo general (ConnectionError). Reintentando automaticamente...
+2026-07-06 17:15:09 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:15:09 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:15:10 | WARNING | trading_bot | Internet caido durante monitoreo de posicion (ZIL/USD). Reintentando en 30s...
+2026-07-06 17:15:26 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 17:15:54 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:15:55 | WARNING | trading_bot | Internet caido durante monitoreo de posicion (SOL/USD). Reintentando en 30s...
+2026-07-06 17:15:57 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:16:39 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:16:39 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:16:45 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:16:50 | WARNING | trading_bot | Internet caido durante monitoreo de posicion (ZIL/USD). Reintentando en 30s...
+2026-07-06 17:17:35 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Read timed out. (read timeout=20)
+2026-07-06 17:17:35 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:17:35 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:17:35 | WARNING | trading_bot | Internet caido durante monitoreo de posicion (SOL/USD). Reintentando en 30s...
+2026-07-06 17:17:53 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 17:18:17 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:18:17 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:18:38 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-06 17:18:38 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-06 17:18:58 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 17:19:25 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:19:25 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:19:26 | WARNING | trading_bot | Internet caido durante monitoreo de posicion (DOGE/USD). Reintentando en 30s...
+2026-07-06 17:19:34 | WARNING | trading_bot | Sin conexion durante monitoreo general (ReadTimeout). Reintentando automaticamente...
+2026-07-06 17:20:16 | WARNING | trading_bot | Internet caido durante monitoreo de posicion (ZIL/USD). Reintentando en 30s...
+2026-07-06 17:20:17 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:20:17 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:20:59 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:20:59 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:21:00 | WARNING | trading_bot | Internet caido durante monitoreo de posicion (SOL/USD). Reintentando en 30s...
+2026-07-06 17:21:53 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:21:53 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:21:55 | WARNING | trading_bot | Internet caido durante monitoreo de posicion (ZIL/USD). Reintentando en 30s...
+2026-07-06 17:22:11 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 17:22:38 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:22:39 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:22:39 | WARNING | trading_bot | Internet caido durante monitoreo de posicion (LTC/USD). Reintentando en 30s...
+2026-07-06 17:23:29 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:23:30 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:24:25 | WARNING | trading_bot | Internet caido durante monitoreo de posicion (SOL/USD). Reintentando en 30s...
+2026-07-06 17:24:30 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:24:30 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:24:34 | WARNING | trading_bot | Sin conexion durante monitoreo general (ReadTimeout). Reintentando automaticamente...
+2026-07-06 17:24:44 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 17:25:14 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:25:14 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:25:15 | WARNING | trading_bot | Internet caido durante monitoreo de posicion (SOL/USD). Reintentando en 30s...
+2026-07-06 17:25:29 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 17:25:56 | WARNING | trading_bot | Internet caido durante monitoreo de posicion (DOGE/USD). Reintentando en 30s...
+2026-07-06 17:25:59 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:26:00 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:26:01 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:26:36 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:26:36 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:26:46 | WARNING | trading_bot | Internet caido durante monitoreo de posicion (DOGE/USD). Reintentando en 30s...
+2026-07-06 17:27:22 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:27:22 | WARNING | trading_bot | Internet caido durante monitoreo de posicion (SOL/USD). Reintentando en 30s...
+2026-07-06 17:27:24 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:28:08 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:28:08 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:28:08 | WARNING | trading_bot | Internet caido durante monitoreo de posicion (DOGE/USD). Reintentando en 30s...
+2026-07-06 17:28:22 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 17:28:24 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 17:28:54 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:28:55 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:28:55 | WARNING | trading_bot | Internet caido durante monitoreo de posicion (LTC/USD). Reintentando en 30s...
+2026-07-06 17:28:55 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:29:38 | WARNING | trading_bot | Internet caido durante monitoreo de posicion (ZIL/USD). Reintentando en 30s...
+2026-07-06 17:29:39 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:29:39 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:29:53 | WARNING | trading_bot | Sin conexion durante monitoreo general (ConnectionError). Reintentando automaticamente...
+2026-07-06 17:30:23 | WARNING | trading_bot | Internet caido durante monitoreo de posicion (SOL/USD). Reintentando en 30s...
+2026-07-06 17:30:24 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:30:24 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:30:45 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 17:31:11 | WARNING | trading_bot | Internet caido durante monitoreo de posicion (ZIL/USD). Reintentando en 30s...
+2026-07-06 17:31:13 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:31:13 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:31:31 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:31:34 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-06 17:31:34 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-06 17:31:52 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-06 17:31:58 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 17:32:21 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:32:21 | WARNING | trading_bot | Internet caido durante monitoreo de posicion (LTC/USD). Reintentando en 30s...
+2026-07-06 17:32:24 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:33:11 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:33:11 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:33:15 | WARNING | trading_bot | Internet caido durante monitoreo de posicion (SOL/USD). Reintentando en 30s...
+2026-07-06 17:33:58 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:33:59 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:33:59 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:33:59 | WARNING | trading_bot | Internet caido durante monitoreo de posicion (LTC/USD). Reintentando en 30s...
+2026-07-06 17:34:34 | WARNING | trading_bot | Sin conexion durante monitoreo general (ReadTimeout). Reintentando automaticamente...
+2026-07-06 17:34:35 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:34:35 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:34:56 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-06 17:34:56 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-06 17:35:04 | WARNING | trading_bot | Sin conexion durante monitoreo general (ConnectionError). Reintentando automaticamente...
+2026-07-06 17:35:18 | WARNING | trading_bot | DataCollectorWorker error MAV/USD: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v1/klines?symbol=MAVUSDT&interval=15m&limit=60 (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 17:35:32 | WARNING | trading_bot | Forzando cierre de la aplicacion por solicitud del usuario.
+2026-07-06 17:37:48 | WARNING | trading_bot | VPN bootstrap script failed rc=2: Error: VPN no conectada.
+2026-07-06 17:37:53 | WARNING | trading_bot | VPN bootstrap script failed rc=2: Error: VPN no conectada.
+2026-07-06 17:37:56 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:37:56 | WARNING | trading_bot | Internet caido durante monitoreo de posicion (ZIL/USD). Reintentando en 30s...
+2026-07-06 17:37:56 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 17:37:57 | WARNING | trading_bot | Internet caido durante monitoreo de posicion (DOGE/USD). Reintentando en 30s...
+2026-07-06 17:38:05 | WARNING | trading_bot | No se pudo ejecutar script VPN de inicio: Command '['/home/fbautista/Documents/Alpaca/trading_bot/scripts/nordvpn_connect_do.sh', '--non-interactive']' timed out after 30 seconds
+2026-07-06 17:38:05 | WARNING | trading_bot | VPN bootstrap script failed rc=2: Error: VPN no conectada.
+2026-07-06 17:38:17 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-06 17:38:17 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-06 17:38:23 | WARNING | trading_bot | Sin conexion durante monitoreo general (ReadTimeout). Reintentando automaticamente...
+2026-07-06 17:38:30 | WARNING | trading_bot | VPN bootstrap script failed rc=2: Error: VPN no conectada.
+2026-07-06 17:38:36 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 17:38:43 | WARNING | trading_bot | No se pudo ejecutar script VPN de inicio: Command '['/home/fbautista/Documents/Alpaca/trading_bot/scripts/nordvpn_connect_do.sh', '--non-interactive']' timed out after 30 seconds
+2026-07-06 17:38:50 | WARNING | trading_bot | VPN bootstrap script failed rc=2: Error: VPN no conectada.
+2026-07-06 17:38:57 | WARNING | trading_bot | Helper de emergencia inactivo. Relanzando...
+2026-07-06 17:38:57 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-06 17:38:59 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 17:39:01 | WARNING | trading_bot | Helper de emergencia inactivo. Relanzando...
+2026-07-06 17:39:02 | WARNING | trading_bot | Helper de emergencia inactivo. Relanzando...
+2026-07-06 17:39:06 | WARNING | trading_bot | Helper de emergencia inactivo. Relanzando...
+2026-07-06 17:39:09 | WARNING | trading_bot | Helper de emergencia inactivo. Relanzando...
+2026-07-06 17:39:10 | WARNING | trading_bot | VPN bootstrap script failed rc=2: Error: VPN no conectada.
+2026-07-06 17:39:52 | WARNING | trading_bot | No se pudo sincronizar posiciones al iniciar: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783373972671&recvWindow=5000&signature=2a77353f72902acecb78eb51cea40516dacd2842083e94f822d4e680631af063 (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 17:39:56 | WARNING | trading_bot | No se pudo sincronizar posiciones al iniciar: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783373976327&recvWindow=5000&signature=580054f0fc9127c879ceefb8a6cc25cf39557f55db1bfb3d775d875a82b864a4 (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 17:40:12 | WARNING | trading_bot | No se pudo refrescar lista de cryptos para enfoque IA: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v1/exchangeInfo (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 17:40:16 | WARNING | trading_bot | No se pudo refrescar lista de cryptos para enfoque IA: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v1/exchangeInfo (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 17:40:32 | WARNING | trading_bot | No se pudo validar la cuenta Binance Demo: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783374012942&recvWindow=5000&signature=7711ca30c03a37da7e45a994476e97f3a62b796247d2c6d1ffd709899375cc89 (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 17:40:36 | WARNING | trading_bot | No se pudo validar la cuenta Binance Demo: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783374016601&recvWindow=5000&signature=34e7a468b697f0a86ccbe022da5e97d09b91f157172704bc62b36239b7fb14ea (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 17:41:13 | WARNING | trading_bot | AI dashboard sin sincronizacion en vivo para Binance Demo: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783374053742&recvWindow=5000&signature=1eaaab2158e4018b2b00e933f1d807eeb7b045018136d00ab3d9d0e0d234b249 (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)")). Usando datos persistidos.
+2026-07-06 17:41:17 | WARNING | trading_bot | AI dashboard sin sincronizacion en vivo para Binance Demo: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783374057496&recvWindow=5000&signature=2ae3898105b72908a26cbbc95a2ce6bba7118ec9e602ac2aa76d323fb93cf2b9 (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)")). Usando datos persistidos.
+2026-07-06 17:42:46 | WARNING | trading_bot | No se pudo sincronizar posiciones al iniciar: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783374146389&recvWindow=5000&signature=82e27e819b43a280bf274f48fd20a97dd8a221d135f0640f1e2b922d66419bfa (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 17:42:50 | WARNING | trading_bot | No se pudo sincronizar posiciones al iniciar: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783374150074&recvWindow=5000&signature=429bbc8593e19f817f19d160d672b2ba2057ba9b3f47fd4d70f3385f4f33c112 (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 17:43:06 | WARNING | trading_bot | No se pudo refrescar lista de cryptos para enfoque IA: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v1/exchangeInfo (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 17:43:10 | WARNING | trading_bot | No se pudo refrescar lista de cryptos para enfoque IA: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v1/exchangeInfo (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 17:43:26 | WARNING | trading_bot | No se pudo validar la cuenta Binance Demo: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783374186643&recvWindow=5000&signature=74837a4f8cbd70490739660df7cc7ad3aae254c4f2cad09f8ea508325d0176ca (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 17:43:30 | WARNING | trading_bot | No se pudo validar la cuenta Binance Demo: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783374190346&recvWindow=5000&signature=1c147d09062fe46678fddaa18bd4c9462becfe4918a5b4fbb8ffc632ecf4af0a (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 17:44:07 | WARNING | trading_bot | AI dashboard sin sincronizacion en vivo para Binance Demo: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783374227418&recvWindow=5000&signature=afacb3e906a3bbec13c3fd3634802b44851bbee79a22c567176a291a77222877 (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)")). Usando datos persistidos.
+2026-07-06 17:44:11 | WARNING | trading_bot | AI dashboard sin sincronizacion en vivo para Binance Demo: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783374231321&recvWindow=5000&signature=1a3feab92a89a8b81db7a9cb64428b0021fdc61529c809d78febf73aa1a3b275 (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)")). Usando datos persistidos.
+2026-07-06 17:45:40 | WARNING | trading_bot | No se pudo sincronizar posiciones al iniciar: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783374320083&recvWindow=5000&signature=2e2907cb6ce37b53f5ebceb2f7659b502fb67b8f83892a095f6d72888e65b842 (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 17:45:43 | WARNING | trading_bot | No se pudo sincronizar posiciones al iniciar: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783374323848&recvWindow=5000&signature=69372ff7d0bef41c3aac6e652c31b88aa85fd9da39c847d110679c224c84562d (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 17:46:00 | WARNING | trading_bot | No se pudo refrescar lista de cryptos para enfoque IA: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v1/exchangeInfo (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 17:46:04 | WARNING | trading_bot | No se pudo refrescar lista de cryptos para enfoque IA: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v1/exchangeInfo (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 17:46:20 | WARNING | trading_bot | No se pudo validar la cuenta Binance Demo: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783374360328&recvWindow=5000&signature=50cf39f7ff3e9c0a763209aab2553919466cc1bc4baf4edfaba8ec97623fccc2 (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 17:46:24 | WARNING | trading_bot | No se pudo validar la cuenta Binance Demo: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783374364105&recvWindow=5000&signature=99d35f74a4b9a60c84cfb976a1ffcb66e3d7e481c754b31210d9b0696d9c8820 (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 17:47:01 | WARNING | trading_bot | AI dashboard sin sincronizacion en vivo para Binance Demo: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783374401390&recvWindow=5000&signature=00229711b8388d2cf6d5c700f235f15f37ce3513c10de2ce23fb6e03dece7568 (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)")). Usando datos persistidos.
+2026-07-06 17:47:04 | WARNING | trading_bot | AI dashboard sin sincronizacion en vivo para Binance Demo: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783374404879&recvWindow=5000&signature=ab043927989d46a814224b8537ff45fbc306203b115fca15deb2d53c0a9cca1e (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)")). Usando datos persistidos.
+2026-07-06 17:48:33 | WARNING | trading_bot | No se pudo sincronizar posiciones al iniciar: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783374493763&recvWindow=5000&signature=cc72131600a2f54e1793e43184e1ddd3c444a5cb9885458b4fa72f6bd3aeb39b (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 17:48:37 | WARNING | trading_bot | No se pudo sincronizar posiciones al iniciar: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783374497587&recvWindow=5000&signature=65e614bc49ed2351bbe2391a290c06cd9d37b86dbd712e8a598d19d1b8d9721e (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 17:48:54 | WARNING | trading_bot | No se pudo refrescar lista de cryptos para enfoque IA: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v1/exchangeInfo (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 17:48:57 | WARNING | trading_bot | No se pudo refrescar lista de cryptos para enfoque IA: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v1/exchangeInfo (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 17:49:14 | WARNING | trading_bot | No se pudo validar la cuenta Binance Demo: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783374534029&recvWindow=5000&signature=279e3c2e6420a235690a61fe978c19b8dda5a45d0073f7696f75d03c67acac83 (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 17:49:17 | WARNING | trading_bot | No se pudo validar la cuenta Binance Demo: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783374537860&recvWindow=5000&signature=b9f84cf422b5929b99919537963e4c9201bd0577873db71b6812577e55ffea67 (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 17:49:54 | WARNING | trading_bot | AI dashboard sin sincronizacion en vivo para Binance Demo: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783374574763&recvWindow=5000&signature=b1697037a922c6786a323382b022c422afe1ff0f40223a529dbc607df5fc6a3e (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)")). Usando datos persistidos.
+2026-07-06 17:49:59 | WARNING | trading_bot | AI dashboard sin sincronizacion en vivo para Binance Demo: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783374579084&recvWindow=5000&signature=ddf9cb547e19b52254045e103b8693e0d1345d2e9bd1a7f291c12dae7ca93d3a (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)")). Usando datos persistidos.
+2026-07-06 17:51:27 | WARNING | trading_bot | No se pudo sincronizar posiciones al iniciar: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783374667455&recvWindow=5000&signature=a175e93dbce441ebc8a9e88da7386b10331c78f1e216dc7afa266d0f479e7dc9 (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 17:51:31 | WARNING | trading_bot | No se pudo sincronizar posiciones al iniciar: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783374671357&recvWindow=5000&signature=dcd1b639925b72d6c2f1879ccd01bac0178c3db15024bb0b8545b2429d022e9c (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 17:51:38 | WARNING | trading_bot | No se pudo refrescar lista de cryptos para enfoque IA: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v1/exchangeInfo (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 17:51:44 | WARNING | trading_bot | No se pudo refrescar lista de cryptos para enfoque IA: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v1/exchangeInfo (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 18:52:11 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 18:52:12 | WARNING | trading_bot | Using fallback REST bars for AVAX/USD
+2026-07-06 18:52:16 | WARNING | trading_bot | Using fallback REST bars for BTC/USD
+2026-07-06 18:52:19 | WARNING | trading_bot | Using fallback REST bars for DOGE/USD
+2026-07-06 18:52:50 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 18:52:50 | WARNING | trading_bot | Using fallback REST bars for AVAX/USD
+2026-07-06 18:52:54 | WARNING | trading_bot | Using fallback REST bars for BTC/USD
+2026-07-06 18:52:58 | WARNING | trading_bot | Using fallback REST bars for DOGE/USD
+2026-07-06 18:53:02 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 18:53:02 | WARNING | trading_bot | Using fallback REST bars for ETH/USD
+2026-07-06 18:53:03 | WARNING | trading_bot | Forzando cierre de la aplicacion por solicitud del usuario.
+2026-07-06 21:08:54 | WARNING | trading_bot | No se pudo sincronizar posiciones al iniciar: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783386514691&recvWindow=5000&signature=636236db9b1e543f6ab2879e7ad64d6df032d3a34b547e057dd146514585111b (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 21:08:56 | WARNING | trading_bot | No se pudo sincronizar posiciones al iniciar: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783386516463&recvWindow=5000&signature=9462914e7fc7361687c8fce694b750ec58fd8311e1cdc2d3ff67c0d6c292637f (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 21:08:58 | WARNING | trading_bot | No se pudo sincronizar posiciones al iniciar: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783386518313&recvWindow=5000&signature=d9ff537c08d131eca159b8063a1d0d78030a4c9b8739b9e4f66d45da01e66663 (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 21:09:15 | WARNING | trading_bot | No se pudo refrescar lista de cryptos para enfoque IA: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v1/exchangeInfo (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 21:09:16 | WARNING | trading_bot | No se pudo refrescar lista de cryptos para enfoque IA: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v1/exchangeInfo (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 21:09:18 | WARNING | trading_bot | No se pudo refrescar lista de cryptos para enfoque IA: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v1/exchangeInfo (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 21:09:22 | WARNING | trading_bot | No se pudo sincronizar posiciones al iniciar: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783386542111&recvWindow=5000&signature=7dc456b66e2ef58fec9b3bace80c79471fe0ae06aa199ccffcb39e73a5031d94 (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 21:09:35 | WARNING | trading_bot | No se pudo validar la cuenta Binance Demo: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783386555955&recvWindow=5000&signature=af1674ae68ecea3cbd4d77dfd529cbbd536a2d735a78ef41d0eff1b32dd72a88 (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 21:09:36 | WARNING | trading_bot | No se pudo validar la cuenta Binance Demo: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783386556835&recvWindow=5000&signature=0f994c35bfad751d2fe303066a0775d1eb14966545e6ce338a4b94cd7e2caaab (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 21:09:38 | WARNING | trading_bot | No se pudo validar la cuenta Binance Demo: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783386558631&recvWindow=5000&signature=7dfbabe8c539b263650fa26182fad321cc6f1fd31fa1f288def85928d14032a1 (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 21:11:18 | WARNING | trading_bot | Forzando cierre de la aplicacion por solicitud del usuario.
+2026-07-06 21:11:18 | WARNING | trading_bot | Forzando cierre de la aplicacion por solicitud del usuario.
+2026-07-06 21:11:18 | WARNING | trading_bot | WireGuard bootstrap failed rc=1: sudo: a password is required
+2026-07-06 21:11:20 | WARNING | trading_bot | Helper de emergencia inactivo. Relanzando...
+2026-07-06 21:11:20 | WARNING | trading_bot | No se pudo refrescar estado NYSE: HTTPSConnectionPool(host='www.nyse.com', port=443): Max retries exceeded with url: /markets/hours-calendars (Caused by NameResolutionError("HTTPSConnection(host='www.nyse.com', port=443): Failed to resolve 'www.nyse.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 21:11:20 | WARNING | trading_bot | No se pudo refrescar estado NYSE: HTTPSConnectionPool(host='www.nyse.com', port=443): Max retries exceeded with url: /markets/hours-calendars (Caused by NameResolutionError("HTTPSConnection(host='www.nyse.com', port=443): Failed to resolve 'www.nyse.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 21:11:28 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 21:11:28 | WARNING | trading_bot | Using fallback REST bars for AVAX/USD
+2026-07-06 21:11:32 | WARNING | trading_bot | Using fallback REST bars for BTC/USD
+2026-07-06 21:11:37 | WARNING | trading_bot | Using fallback REST bars for DOGE/USD
+2026-07-06 21:11:40 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 21:11:57 | WARNING | trading_bot | Using fallback REST bars for ETH/USD
+2026-07-06 21:12:27 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 21:12:28 | WARNING | trading_bot | Using fallback REST bars for LINK/USD
+2026-07-06 21:12:35 | WARNING | trading_bot | Using fallback REST bars for SOL/USD
+2026-07-06 21:12:40 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-06 21:12:40 | WARNING | trading_bot | Using fallback REST bars for XRP/USD
+2026-07-06 21:22:37 | WARNING | trading_bot | Internet caido durante monitoreo de posicion (ZIL/USD). Reintentando en 30s...
+2026-07-06 21:22:40 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 21:22:41 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 21:23:01 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 21:23:01 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-06 21:23:02 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 2.0 s
+2026-07-06 21:23:02 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 21:23:20 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-06 21:23:20 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-06 21:23:20 | WARNING | trading_bot | DataCollectorWorker error SSV/USD: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v1/klines?symbol=SSVUSDT&interval=5m&limit=60 (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 21:24:18 | WARNING | trading_bot | Monitoreo fallido para cuenta Binance Demo: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v2/positionRisk?timestamp=1783387448736&recvWindow=5000&signature=5098b814cce38a945a91ba36d36e0e3a409f0f41624cf0d99bd31b8c54b5bc71 (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 21:24:40 | WARNING | trading_bot | Sin conexion durante monitoreo general (ConnectionError). Reintentando automaticamente...
+2026-07-06 21:24:40 | WARNING | trading_bot | Sin conexion durante monitoreo general (ConnectionError). Reintentando automaticamente...
+2026-07-06 21:24:40 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectTimeout). Reintentando en 1.0 s
+2026-07-06 21:24:40 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectTimeout). Reintentando en 1.0 s
+2026-07-06 21:24:48 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-06 21:24:48 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-06 21:25:10 | WARNING | trading_bot | DataCollectorWorker error CKB/USD: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v1/klines?symbol=CKBUSDT&interval=1m&limit=60 (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 21:25:38 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 21:25:38 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 21:25:59 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-06 21:25:59 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-06 21:26:08 | WARNING | trading_bot | DataCollectorWorker error LQTY/USD: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v1/klines?symbol=LQTYUSDT&interval=1m&limit=60 (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 21:26:28 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 21:26:28 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 21:26:59 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 2.0 s
+2026-07-06 21:26:59 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 2.0 s
+2026-07-06 21:27:08 | WARNING | trading_bot | Sin conexion durante monitoreo general (ConnectionError). Reintentando automaticamente...
+2026-07-06 21:27:28 | WARNING | trading_bot | DataCollectorWorker error USDC/USD: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Read timed out. (read timeout=20)
+2026-07-06 21:27:38 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 21:27:38 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 21:27:59 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-06 21:27:59 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-06 21:28:28 | WARNING | trading_bot | DataCollectorWorker error ARB/USD: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Read timed out. (read timeout=20)
+2026-07-06 21:28:28 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 21:28:48 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 21:28:49 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-06 21:28:58 | WARNING | trading_bot | DataCollectorWorker error ID/USD: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v1/klines?symbol=IDUSDT&interval=1m&limit=60 (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 21:28:58 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-06 21:28:58 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 21:29:19 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-06 21:29:28 | WARNING | trading_bot | Sin conexion durante monitoreo general (ConnectionError). Reintentando automaticamente...
+2026-07-06 21:29:28 | WARNING | trading_bot | DataCollectorWorker error JOE/USD: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v1/klines?symbol=JOEUSDT&interval=1m&limit=60 (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 21:29:28 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 21:29:48 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-06 21:29:48 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 21:30:09 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-06 21:30:18 | WARNING | trading_bot | DataCollectorWorker error TRU/USD: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v1/klines?symbol=TRUUSDT&interval=1m&limit=60 (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 21:30:18 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 21:30:38 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 21:30:39 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-06 21:30:48 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-06 22:12:26 | WARNING | trading_bot | DataCollectorWorker error RDNT/USD: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v1/klines?symbol=RDNTUSDT&interval=1m&limit=60 (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 22:12:26 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 22:12:26 | WARNING | trading_bot | VPN guard check failed: Command '['/usr/bin/curl', '-4', '--silent', '--show-error', '--max-time', '8', 'https://ifconfig.me']' timed out after 10 seconds
+2026-07-06 22:12:44 | WARNING | trading_bot | Sin conexion durante monitoreo general (ConnectionError). Reintentando automaticamente...
+2026-07-06 22:12:44 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 22:12:47 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-06 22:13:05 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-06 22:13:27 | WARNING | trading_bot | DataCollectorWorker error HFT/USD: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v1/klines?symbol=HFTUSDT&interval=1m&limit=60 (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 22:13:29 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 22:13:47 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 22:13:50 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-06 22:14:08 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-06 22:14:30 | WARNING | trading_bot | DataCollectorWorker error XVS/USD: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v1/klines?symbol=XVSUSDT&interval=1m&limit=60 (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 22:14:32 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 22:14:46 | WARNING | trading_bot | Sin conexion durante monitoreo general (ConnectionError). Reintentando automaticamente...
+2026-07-06 22:14:50 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 22:14:53 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-06 22:15:11 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-06 22:15:29 | WARNING | trading_bot | DataCollectorWorker error BLUR/USD: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v1/klines?symbol=BLURUSDT&interval=1m&limit=60 (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 22:15:34 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 22:15:49 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 22:15:55 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-06 22:16:10 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-06 22:16:32 | WARNING | trading_bot | DataCollectorWorker error EDU/USD: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Max retries exceeded with url: /fapi/v1/klines?symbol=EDUUSDT&interval=1m&limit=60 (Caused by NameResolutionError("HTTPSConnection(host='testnet.binancefuture.com', port=443): Failed to resolve 'testnet.binancefuture.com' ([Errno -3] Temporary failure in name resolution)"))
+2026-07-06 22:16:37 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 22:16:46 | WARNING | trading_bot | Sin conexion durante monitoreo general (ConnectionError). Reintentando automaticamente...
+2026-07-06 22:16:52 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 22:16:58 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-06 22:17:13 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 2.0 s
+2026-07-06 22:17:36 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-06 22:17:42 | WARNING | trading_bot | Helper de emergencia inactivo. Relanzando...
+2026-07-06 22:20:13 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 22:20:27 | WARNING | trading_bot | Fallo de red/HTTP en market data (ReadTimeout). Reintentando en 1.0 s
+2026-07-06 22:21:22 | WARNING | trading_bot | No se pudo iniciar la automatizacion IA automaticamente: Automation start blocked by VPN policy [PUBLIC_IP_CHECK_ERROR]: Unable to verify public IPv4: curl: (28) Connection timed out after 8001 milliseconds
+2026-07-06 22:21:35 | WARNING | trading_bot | No se pudo aplicar leverage 1x en VANRY/USD: HTTPSConnectionPool(host='testnet.binancefuture.com', port=443): Read timed out. (read timeout=20)

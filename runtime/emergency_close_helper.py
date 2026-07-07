@@ -89,7 +89,21 @@ def main() -> int:
     restart_main = sys.argv[5]
     restart_cwd = sys.argv[6]
     allow_restart = (sys.argv[7].strip().lower() != "0") if len(sys.argv) > 7 else True
+    stale_checks_required = 1
+    if len(sys.argv) > 8:
+        try:
+            stale_checks_required = max(int(float(sys.argv[8] or 1)), 1)
+        except ValueError:
+            stale_checks_required = 1
+    min_uptime_before_restart_seconds = 0.0
+    if len(sys.argv) > 9:
+        try:
+            min_uptime_before_restart_seconds = max(float(sys.argv[9] or 0.0), 0.0)
+        except ValueError:
+            min_uptime_before_restart_seconds = 0.0
     restarting = False
+    started_at = time.time()
+    stale_hits = 0
 
     root = tk.Tk()
     root.title("Cierre de emergencia")
@@ -138,6 +152,7 @@ def main() -> int:
         restart_bot("Reiniciando bot...")
 
     def watchdog_loop() -> None:
+        nonlocal stale_hits
         if restarting:
             return
         if not _target_alive(target_pid):
@@ -151,9 +166,18 @@ def main() -> int:
         if age is not None:
             status_var.set(f"Heartbeat: {age:.1f}s")
             if age >= heartbeat_timeout:
-                restart_bot("Freeze detectado, reiniciando...")
-                return
+                stale_hits += 1
+                uptime = max(time.time() - started_at, 0.0)
+                status_var.set(
+                    f"Heartbeat stale {stale_hits}/{stale_checks_required} ({age:.1f}s)"
+                )
+                if stale_hits >= stale_checks_required and uptime >= min_uptime_before_restart_seconds:
+                    restart_bot("Freeze detectado, reiniciando...")
+                    return
+            else:
+                stale_hits = 0
         else:
+            stale_hits = 0
             status_var.set("Heartbeat no disponible")
         root.after(1000, watchdog_loop)
 

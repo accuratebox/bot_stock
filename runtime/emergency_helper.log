@@ -10,3 +10,15 @@ Traceback (most recent call last):
     def __call__(self, *args):
 
 KeyboardInterrupt
+Traceback (most recent call last):
+  File "/home/fbautista/Documents/Alpaca/trading_bot/runtime/emergency_close_helper.py", line 205, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/home/fbautista/Documents/Alpaca/trading_bot/runtime/emergency_close_helper.py", line 200, in main
+    root.mainloop()
+  File "/usr/lib/python3.12/tkinter/__init__.py", line 1504, in mainloop
+    self.tk.mainloop(n)
+  File "/usr/lib/python3.12/tkinter/__init__.py", line 1962, in __call__
+    def __call__(self, *args):
+
+KeyboardInterrupt

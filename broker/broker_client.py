@@ -36,6 +36,8 @@ class AlpacaBrokerClient:
         self._crypto_cache: dict[tuple[str, bool], tuple[float, list[dict]]] = {}
         self._all_crypto_cache: tuple[float, list[dict]] | None = None
         self._binance_symbol_rules_cache: dict[str, tuple[float, dict[str, float]]] = {}
+        self._binance_time_offset_ms: int = 0
+        self._binance_time_offset_last_sync: float = 0.0
         self._stocks_cache_ttl_seconds = 900.0
         self.endpoint = self._normalize_endpoint(self.endpoint)
 
@@ -61,12 +63,30 @@ class AlpacaBrokerClient:
 
     def _binance_sign(self, params: dict[str, Any]) -> dict[str, Any]:
         payload = dict(params)
-        payload["timestamp"] = int(time.time() * 1000)
+        payload["timestamp"] = int(time.time() * 1000) + int(self._binance_time_offset_ms)
         payload["recvWindow"] = 5000
         query = requests.models.RequestEncodingMixin._encode_params(payload)
         signature = hmac.new(self.api_secret.encode("utf-8"), query.encode("utf-8"), hashlib.sha256).hexdigest()
         payload["signature"] = signature
         return payload
+
+    def _sync_binance_server_time_offset(self, force: bool = False) -> None:
+        if self.provider != "binance":
+            return
+        now = time.monotonic()
+        if not force and (now - float(self._binance_time_offset_last_sync or 0.0)) < 60.0:
+            return
+        try:
+            response = self._request("GET", f"{self.endpoint}/fapi/v1/time", timeout=5)
+            payload = self._response_json(response)
+            server_ms = int(payload.get("serverTime", 0) or 0)
+            if server_ms > 0:
+                local_ms = int(time.time() * 1000)
+                self._binance_time_offset_ms = int(server_ms - local_ms)
+                self._binance_time_offset_last_sync = now
+        except Exception:
+            # Keep current offset when sync fails; signed requests still proceed.
+            return
 
     def _request(self, method: str, url: str, **kwargs: Any) -> requests.Response:
         self.runtime_state.acquire(self.account_name)
@@ -76,10 +96,19 @@ class AlpacaBrokerClient:
         return response
 
     def _request_binance(self, method: str, path: str, params: dict[str, Any] | None = None, signed: bool = False) -> requests.Response:
+        if signed:
+            self._sync_binance_server_time_offset(force=False)
         payload = dict(params or {})
         if signed:
             payload = self._binance_sign(payload)
-        return self._request(method, f"{self.endpoint}{path}", params=payload)
+        response = self._request(method, f"{self.endpoint}{path}", params=payload)
+        if signed and int(getattr(response, "status_code", 0) or 0) == 400:
+            body_text = str(getattr(response, "text", "") or "")
+            if '"code":-1021' in body_text or "outside of the recvWindow" in body_text:
+                self._sync_binance_server_time_offset(force=True)
+                retry_payload = self._binance_sign(dict(params or {}))
+                response = self._request(method, f"{self.endpoint}{path}", params=retry_payload)
+        return response
 
     @staticmethod
     def _response_json(response: requests.Response) -> Any:
@@ -308,20 +337,23 @@ class AlpacaBrokerClient:
                 symbol = self._from_binance_symbol(symbol_raw)
                 current_price = float(row.get("markPrice", 0.0) or 0.0)
                 avg_entry = float(row.get("entryPrice", 0.0) or 0.0)
+                leverage = max(float(row.get("leverage", 1.0) or 1.0), 1.0)
                 market_value = qty * current_price
                 unrealized = float(row.get("unRealizedProfit", 0.0) or 0.0)
                 basis = qty * avg_entry
                 unrealized_plpc = (unrealized / basis) if basis > 0 else 0.0
+                side = "long" if qty_signed > 0 else "short"
                 positions.append(
                     {
                         "symbol": symbol,
                         "qty": str(qty),
                         "avg_entry_price": str(avg_entry),
+                        "leverage": leverage,
                         "current_price": str(current_price),
                         "market_value": str(market_value),
                         "unrealized_pl": str(unrealized),
                         "unrealized_plpc": str(unrealized_plpc),
-                        "side": "long",
+                        "side": side,
                     }
                 )
             self.runtime_state.set_cached("_positions_cache", self.account_name, positions)
@@ -348,7 +380,9 @@ class AlpacaBrokerClient:
             qty = float(position.get("qty", 0.0) or 0.0)
             if qty <= 0:
                 return {}
-            return self.send_market_order(symbol=symbol, qty=qty, side="sell", time_in_force="gtc")
+            side = str(position.get("side", "long") or "long").lower().strip()
+            close_side = "sell" if side != "short" else "buy"
+            return self.send_market_order(symbol=symbol, qty=qty, side=close_side, time_in_force="gtc")
         encoded_symbol = quote(symbol.upper(), safe="")
         response = self._request("DELETE", f"{self.endpoint}/positions/{encoded_symbol}")
         self.runtime_state.invalidate_positions(self.account_name)
@@ -370,6 +404,24 @@ class AlpacaBrokerClient:
             signed=True,
         )
         return self._response_json(response)
+
+    def get_binance_position_risk(self, symbol: str) -> dict[str, Any]:
+        if self.provider != "binance":
+            return {}
+        target = self._to_binance_symbol(symbol)
+        response = self._request_binance("GET", "/fapi/v2/positionRisk", signed=True)
+        rows = list(self._response_json(response) or [])
+        fallback: dict[str, Any] = {}
+        for row in rows:
+            row_symbol = str(row.get("symbol", "") or "").upper().strip()
+            if row_symbol != target:
+                continue
+            if not fallback:
+                fallback = dict(row)
+            qty_signed = float(row.get("positionAmt", 0.0) or 0.0)
+            if abs(qty_signed) > 0.0:
+                return dict(row)
+        return fallback
 
     def get_clock(self) -> dict:
         if self.provider == "binance":

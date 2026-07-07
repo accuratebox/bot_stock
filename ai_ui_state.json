@@ -3,7 +3,7 @@
   "ai_automation_account": "Binance Demo",
   "ai_focus": {
     "stocks_only": false,
-    "cryptos_only": true,
+    "cryptos_only": false,
     "stocks_symbols": "",
     "cryptos_symbols": "SOL/USD"
   },
@@ -22,7 +22,7 @@
     },
     "Binance Demo": {
       "stocks_only": false,
-      "cryptos_only": true,
+      "cryptos_only": false,
       "stocks_symbols": "",
       "cryptos_symbols": "SOL/USD"
     }
