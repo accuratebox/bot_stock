@@ -130,8 +130,8 @@ class FakeSettings:
         self.manual_approval_required = True
         self.alpaca_api_key = "paper-key"
         self.alpaca_api_secret = "paper-secret"
-        self.require_nordvpn_before_trading = False
-        self.required_vpn_provider = "NordVPN"
+        self.require_vpn_before_trading = False
+        self.required_vpn_provider = "WireGuard"
         self.required_vpn_country = "Dominican Republic"
 
     def account_profiles(self):

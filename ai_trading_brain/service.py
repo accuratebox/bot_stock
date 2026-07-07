@@ -287,14 +287,31 @@ class AITradingBrainService:
         return " ".join(ascii_only.lower().split())
 
     def _vpn_requirement_enabled(self) -> bool:
-        return bool(getattr(self.settings, "require_nordvpn_before_trading", True))
+        return bool(getattr(self.settings, "require_vpn_before_trading", True))
 
     def _required_vpn_country(self) -> str:
         return str(getattr(self.settings, "required_vpn_country", "Dominican Republic") or "Dominican Republic").strip()
 
+    def _required_vpn_connection_name(self) -> str:
+        return str(getattr(self.settings, "required_vpn_connection_name", "") or "").strip()
+
+    def _required_vpn_interface_name(self) -> str:
+        return str(getattr(self.settings, "required_vpn_interface_name", "") or "").strip()
+
+    def _vpn_expected_ipv4(self) -> str:
+        return str(getattr(self.settings, "vpn_expected_ipv4", "") or "").strip()
+
+    def _vpn_require_no_ipv6(self) -> bool:
+        return bool(getattr(self.settings, "vpn_require_no_ipv6", True))
+
+    @staticmethod
+    def _vpn_country_enforced(required_country: str) -> bool:
+        normalized = AITradingBrainService._normalize_text(required_country)
+        return normalized not in {"", "any", "*", "all"}
+
     def _vpn_status(self) -> dict[str, Any]:
         requirement_enabled = self._vpn_requirement_enabled()
-        provider = str(getattr(self.settings, "required_vpn_provider", "NordVPN") or "NordVPN").strip() or "NordVPN"
+        provider = str(getattr(self.settings, "required_vpn_provider", "WireGuard") or "WireGuard").strip() or "WireGuard"
         required_country = self._required_vpn_country()
 
         if not requirement_enabled:
@@ -308,7 +325,260 @@ class AITradingBrainService:
                 "reason": "VPN requirement disabled by configuration",
             }
 
-        if provider.lower() != "nordvpn":
+        provider_key = self._normalize_text(provider)
+
+        if provider_key in {"wireguard", "proton wireguard", "protonvpn wireguard"}:
+            nmcli_bin = shutil.which("nmcli")
+            if not nmcli_bin:
+                return {
+                    "enabled": True,
+                    "ready": False,
+                    "provider": provider,
+                    "required_country": required_country,
+                    "status": "NMCLI_NOT_INSTALLED",
+                    "country": "",
+                    "reason": "nmcli not found in PATH",
+                }
+
+            required_connection = self._required_vpn_connection_name()
+            required_interface = self._required_vpn_interface_name()
+            expected_ipv4 = self._vpn_expected_ipv4()
+            require_no_ipv6 = self._vpn_require_no_ipv6()
+
+            try:
+                proc = subprocess.run(
+                    [nmcli_bin, "-t", "-f", "NAME,TYPE,DEVICE", "connection", "show", "--active"],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    timeout=8,
+                )
+            except Exception as ex:
+                return {
+                    "enabled": True,
+                    "ready": False,
+                    "provider": provider,
+                    "required_country": required_country,
+                    "status": "STATUS_ERROR",
+                    "country": "",
+                    "reason": f"Unable to read NetworkManager active connections: {ex}",
+                }
+
+            if proc.returncode != 0:
+                err = str((proc.stderr or proc.stdout or "")).strip() or "nmcli failed"
+                return {
+                    "enabled": True,
+                    "ready": False,
+                    "provider": provider,
+                    "required_country": required_country,
+                    "status": "STATUS_ERROR",
+                    "country": "",
+                    "reason": f"Unable to read NetworkManager status: {err}",
+                }
+
+            active_rows: list[tuple[str, str, str]] = []
+            for raw_line in str(proc.stdout or "").splitlines():
+                line = str(raw_line or "").strip()
+                if not line:
+                    continue
+                parts = line.split(":", 2)
+                if len(parts) < 3:
+                    continue
+                name, conn_type, device = parts[0].strip(), parts[1].strip(), parts[2].strip()
+                if self._normalize_text(conn_type) != "wireguard":
+                    continue
+                active_rows.append((name, conn_type, device))
+
+            if not active_rows:
+                return {
+                    "enabled": True,
+                    "ready": False,
+                    "provider": provider,
+                    "required_country": required_country,
+                    "status": "DISCONNECTED",
+                    "country": "",
+                    "reason": "No active WireGuard connection detected",
+                }
+
+            if required_connection and not any(name == required_connection for name, _, _ in active_rows):
+                return {
+                    "enabled": True,
+                    "ready": False,
+                    "provider": provider,
+                    "required_country": required_country,
+                    "status": "WRONG_CONNECTION",
+                    "country": "",
+                    "reason": f"Required WireGuard connection not active: {required_connection}",
+                }
+
+            if required_interface and not any(device == required_interface for _, _, device in active_rows):
+                return {
+                    "enabled": True,
+                    "ready": False,
+                    "provider": provider,
+                    "required_country": required_country,
+                    "status": "WRONG_INTERFACE",
+                    "country": "",
+                    "reason": f"Required WireGuard interface not active: {required_interface}",
+                }
+
+            curl_bin = shutil.which("curl")
+            if not curl_bin:
+                return {
+                    "enabled": True,
+                    "ready": False,
+                    "provider": provider,
+                    "required_country": required_country,
+                    "status": "CURL_NOT_INSTALLED",
+                    "country": required_connection or required_interface,
+                    "reason": "curl not found in PATH",
+                }
+
+            public_ipv4 = ""
+            if expected_ipv4:
+                ip4_proc = subprocess.run(
+                    [curl_bin, "-4", "--silent", "--show-error", "--max-time", "8", "https://ifconfig.me"],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                )
+                if ip4_proc.returncode != 0:
+                    err = str((ip4_proc.stderr or ip4_proc.stdout or "")).strip() or "curl -4 failed"
+                    return {
+                        "enabled": True,
+                        "ready": False,
+                        "provider": provider,
+                        "required_country": required_country,
+                        "status": "PUBLIC_IP_CHECK_ERROR",
+                        "country": required_connection or required_interface,
+                        "reason": f"Unable to verify public IPv4: {err}",
+                    }
+                public_ipv4 = str(ip4_proc.stdout or "").strip()
+                if public_ipv4 != expected_ipv4:
+                    return {
+                        "enabled": True,
+                        "ready": False,
+                        "provider": provider,
+                        "required_country": required_country,
+                        "status": "WRONG_PUBLIC_IP",
+                        "country": required_connection or required_interface,
+                        "reason": f"Expected public IPv4 {expected_ipv4}; current={public_ipv4 or 'unknown'}",
+                    }
+
+            if require_no_ipv6:
+                ip6_proc = subprocess.run(
+                    [curl_bin, "-6", "--silent", "--show-error", "--max-time", "6", "https://ifconfig.me"],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    timeout=8,
+                )
+                ip6_value = str(ip6_proc.stdout or "").strip() if ip6_proc.returncode == 0 else ""
+                if ip6_value:
+                    return {
+                        "enabled": True,
+                        "ready": False,
+                        "provider": provider,
+                        "required_country": required_country,
+                        "status": "IPV6_DETECTED",
+                        "country": required_connection or required_interface,
+                        "reason": f"IPv6 detected while VPN policy requires IPv6 off: {ip6_value}",
+                    }
+
+            return {
+                "enabled": True,
+                "ready": True,
+                "provider": provider,
+                "required_country": required_country,
+                "status": "READY",
+                "country": required_connection or required_interface,
+                "reason": "WireGuard connected and verified",
+            }
+
+        if provider_key == "protonvpn":
+            proton_bin = shutil.which("protonvpn-cli") or shutil.which("protonvpn")
+            if not proton_bin:
+                return {
+                    "enabled": True,
+                    "ready": False,
+                    "provider": provider,
+                    "required_country": required_country,
+                    "status": "PROTONVPN_NOT_INSTALLED",
+                    "country": "",
+                    "reason": "ProtonVPN CLI not found in PATH",
+                }
+
+            cmd = [proton_bin, "status"]
+            try:
+                proc = subprocess.run(
+                    cmd,
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    timeout=8,
+                )
+            except Exception as ex:
+                return {
+                    "enabled": True,
+                    "ready": False,
+                    "provider": provider,
+                    "required_country": required_country,
+                    "status": "STATUS_ERROR",
+                    "country": "",
+                    "reason": f"Unable to read ProtonVPN status: {ex}",
+                }
+
+            output = (proc.stdout or "") + "\n" + (proc.stderr or "")
+            normalized_output = self._normalize_text(output)
+            connected = ("connected" in normalized_output) and ("disconnected" not in normalized_output)
+            if not connected:
+                return {
+                    "enabled": True,
+                    "ready": False,
+                    "provider": provider,
+                    "required_country": required_country,
+                    "status": "DISCONNECTED",
+                    "country": "",
+                    "reason": "ProtonVPN disconnected",
+                }
+
+            parsed: dict[str, str] = {}
+            for line in output.splitlines():
+                if ":" not in line:
+                    continue
+                key, value = line.split(":", 1)
+                parsed[self._normalize_text(key)] = str(value or "").strip()
+            country = str(parsed.get("country", "") or "").strip()
+            if not country:
+                country = str(parsed.get("server", "") or "").strip()
+
+            if self._vpn_country_enforced(required_country):
+                normalized_required = self._normalize_text(required_country)
+                normalized_country = self._normalize_text(country)
+                country_ok = normalized_required in normalized_country if normalized_country else (normalized_required in normalized_output)
+                if not country_ok:
+                    return {
+                        "enabled": True,
+                        "ready": False,
+                        "provider": provider,
+                        "required_country": required_country,
+                        "status": "WRONG_COUNTRY",
+                        "country": country,
+                        "reason": f"VPN country must be {required_country}; current={country or 'unknown'}",
+                    }
+
+            return {
+                "enabled": True,
+                "ready": True,
+                "provider": provider,
+                "required_country": required_country,
+                "status": "READY",
+                "country": country,
+                "reason": "ProtonVPN connected",
+            }
+
+        if provider_key not in {"protonvpn", "wireguard", "proton wireguard", "protonvpn wireguard"}:
             return {
                 "enabled": True,
                 "ready": False,
@@ -319,92 +589,14 @@ class AITradingBrainService:
                 "reason": f"Unsupported VPN provider: {provider}",
             }
 
-        nordvpn_bin = shutil.which("nordvpn")
-        if not nordvpn_bin:
-            return {
-                "enabled": True,
-                "ready": False,
-                "provider": provider,
-                "required_country": required_country,
-                "status": "NORDVPN_NOT_INSTALLED",
-                "country": "",
-                "reason": "NordVPN CLI not found in PATH",
-            }
-
-        try:
-            proc = subprocess.run(
-                [nordvpn_bin, "status"],
-                check=False,
-                capture_output=True,
-                text=True,
-                timeout=8,
-            )
-        except Exception as ex:
-            return {
-                "enabled": True,
-                "ready": False,
-                "provider": provider,
-                "required_country": required_country,
-                "status": "STATUS_ERROR",
-                "country": "",
-                "reason": f"Unable to read NordVPN status: {ex}",
-            }
-
-        output = (proc.stdout or "") + "\n" + (proc.stderr or "")
-        normalized_output = self._normalize_text(output)
-        if "permission denied" in normalized_output and "groupadd nordvpn" in normalized_output:
-            return {
-                "enabled": True,
-                "ready": False,
-                "provider": provider,
-                "required_country": required_country,
-                "status": "PERMISSION_DENIED",
-                "country": "",
-                "reason": "NordVPN requires permissions: run 'sudo groupadd nordvpn' and 'sudo usermod -aG nordvpn $USER', then reboot",
-            }
-        parsed: dict[str, str] = {}
-        for line in output.splitlines():
-            if ":" not in line:
-                continue
-            key, value = line.split(":", 1)
-            parsed[self._normalize_text(key)] = str(value or "").strip()
-
-        status_text = str(parsed.get("status", "") or "").strip()
-        country = str(parsed.get("country", "") or "").strip()
-        connected = "connected" in self._normalize_text(status_text)
-        if not connected:
-            return {
-                "enabled": True,
-                "ready": False,
-                "provider": provider,
-                "required_country": required_country,
-                "status": "DISCONNECTED",
-                "country": country,
-                "reason": f"NordVPN disconnected ({status_text or 'status unknown'})",
-            }
-
-        normalized_required = self._normalize_text(required_country)
-        normalized_country = self._normalize_text(country)
-        country_ok = normalized_required in normalized_country if normalized_country else False
-        if not country_ok:
-            return {
-                "enabled": True,
-                "ready": False,
-                "provider": provider,
-                "required_country": required_country,
-                "status": "WRONG_COUNTRY",
-                "country": country,
-                "reason": f"VPN country must be {required_country}; current={country or 'unknown'}",
-            }
-
         return {
             "enabled": True,
-            "ready": True,
+            "ready": False,
             "provider": provider,
             "required_country": required_country,
-            "status": "READY",
-            "country": country,
-            "reason": "NordVPN connected to required country",
+            "status": "UNSUPPORTED_PROVIDER",
+            "country": "",
+            "reason": f"Unsupported VPN provider: {provider}",
         }
 
     def _ensure_vpn_ready_for_trading(self, action: str) -> None:
@@ -703,6 +895,70 @@ class AITradingBrainService:
         scanner_engine = str((runtime or {}).get("scanner_decision_engine", "heuristic") or "heuristic").strip().lower()
         if scanner_engine not in {"heuristic", "model"}:
             scanner_engine = "heuristic"
+
+        broker_open_positions_leverage: list[str] = []
+        try:
+            try:
+                live_positions = self.broker.get_positions(force_refresh=True)
+            except TypeError:
+                live_positions = self.broker.get_positions()
+            for row in live_positions:
+                qty = float(row.get("qty", 0.0) or 0.0)
+                if qty <= 0.0:
+                    continue
+                symbol = str(row.get("symbol", "") or "").upper().strip()
+                side = str(row.get("side", "long") or "long").upper().strip()
+                lev = float(row.get("leverage", 0.0) or 0.0)
+                if lev <= 0.0 and hasattr(self.broker, "get_binance_position_risk"):
+                    try:
+                        risk_row = self.broker.get_binance_position_risk(symbol)
+                        lev = float((risk_row or {}).get("leverage", 0.0) or 0.0)
+                    except Exception:
+                        lev = 0.0
+                if lev <= 0.0:
+                    lev = 1.0
+                broker_open_positions_leverage.append(f"{symbol}:{side}:{lev:.0f}x")
+                if len(broker_open_positions_leverage) >= 10:
+                    break
+        except Exception:
+            broker_open_positions_leverage = []
+
+        scanner_symbols: list[str] = []
+        scanner_crypto_symbols: list[str] = []
+        scanner_thinking_lines: list[str] = []
+        try:
+            symbols_for_scan = self._symbols_for_collection(account_name)
+            scanner_symbols = [str(item.get("symbol", "") or "").upper().strip() for item in symbols_for_scan if str(item.get("symbol", "") or "").strip()]
+            scanner_crypto_symbols = [
+                str(item.get("symbol", "") or "").upper().strip()
+                for item in symbols_for_scan
+                if str(item.get("asset_type", "stock") or "stock").lower().strip() == "crypto"
+            ]
+        except Exception:
+            scanner_symbols = []
+            scanner_crypto_symbols = []
+
+        account_key = str(account_name or "").strip().lower()
+        for row in self.database.latest_signals(limit=120):
+            features_row = row.get("features_json") or {}
+            signal_account = str(features_row.get("account_name", "") or "").strip().lower()
+            if account_key and signal_account and signal_account != account_key:
+                continue
+            symbol = str(row.get("symbol", "") or "").upper().strip()
+            if scanner_symbols and symbol not in set(scanner_symbols):
+                continue
+            action = str(row.get("signal_type", "N/A") or "N/A")
+            score = float(row.get("confidence_score", 0.0) or 0.0)
+            reason = str(row.get("reason", "") or "").replace("\n", " ").strip()
+            scanner_thinking_lines.append(f"{symbol}:{action}({score:.1f}) -> {reason[:80]}")
+            if len(scanner_thinking_lines) >= 6:
+                break
+
+        max_open_positions_runtime = max(
+            int(float(os.getenv("MAX_OPEN_POSITIONS", getattr(self.settings, "max_open_positions", 5)) or 5)),
+            1,
+        )
+
         return {
             "collector": "Running" if self.data_collector_worker.running else "Stopped",
             "scanner": "Running" if self.signal_scanner_worker.running else "Stopped",
@@ -745,6 +1001,13 @@ class AITradingBrainService:
             "futures_require_news": bool(runtime.get("futures_require_news", getattr(self.settings, "ai_futures_require_news", False))) if runtime else bool(getattr(self.settings, "ai_futures_require_news", False)),
             "futures_enable_long": bool(runtime.get("futures_enable_long", getattr(self.settings, "ai_futures_enable_long", True))) if runtime else bool(getattr(self.settings, "ai_futures_enable_long", True)),
             "futures_enable_short": bool(runtime.get("futures_enable_short", getattr(self.settings, "ai_futures_enable_short", True))) if runtime else bool(getattr(self.settings, "ai_futures_enable_short", True)),
+            "max_open_positions": max_open_positions_runtime,
+            "scanner_symbols_count": len(scanner_symbols),
+            "scanner_symbols_preview": scanner_symbols[:20],
+            "scanner_cryptos_count": len(scanner_crypto_symbols),
+            "scanner_cryptos_preview": scanner_crypto_symbols[:20],
+            "scanner_thinking_preview": scanner_thinking_lines,
+            "broker_open_positions_leverage": broker_open_positions_leverage,
             "health": self.get_health_snapshot(),
             "threads": self._thread_manager.summary(),
             "websocket": self.stream_manager.status_snapshot(),
@@ -801,7 +1064,7 @@ class AITradingBrainService:
             "openai_key_ok": bool(self.settings.openai_api_key),
             "vpn_required": bool(vpn.get("enabled", False)),
             "vpn_ready": bool(vpn.get("ready", False)),
-            "vpn_provider": str(vpn.get("provider", "NordVPN") or "NordVPN"),
+            "vpn_provider": str(vpn.get("provider", "VPN") or "VPN"),
             "vpn_required_country": str(vpn.get("required_country", self._required_vpn_country()) or self._required_vpn_country()),
             "vpn_country": str(vpn.get("country", "") or ""),
             "vpn_status": str(vpn.get("status", "N/A") or "N/A"),
@@ -1471,6 +1734,20 @@ class AITradingBrainService:
         is_buy_signal = signal_type in {"BUY", "BUY_SMALL"}
         is_short_signal = signal_type == "SELL_SHORT"
         is_entry_signal = is_buy_signal or is_short_signal
+        entry_signal_state = "INFO_HOLD" if signal_type == "HOLD" else "APPLIES"
+        signal_direction = (
+            "LONG"
+            if signal_type in {"BUY", "BUY_SMALL"}
+            else "SHORT"
+            if signal_type == "SELL_SHORT"
+            else "HOLD"
+            if signal_type == "HOLD"
+            else "WATCH"
+            if signal_type == "WATCH"
+            else "EXIT_LONG"
+            if signal_type == "SELL_ALLOWED"
+            else "N/A"
+        )
         auto_enabled_for_asset = self._is_effective_auto_enabled_for_symbol(
             runtime=runtime,
             account_name=account_name,
@@ -1521,10 +1798,11 @@ class AITradingBrainService:
                 "required": True,
             },
             {
-                "name": "buy_signal_available",
+                "name": "entry_signal_available",
                 "ok": is_entry_signal,
                 "current": signal_type if signal_type else "NO_SIGNAL",
                 "required": True,
+                "state": entry_signal_state,
             },
             {
                 "name": "confidence_threshold",
@@ -1587,7 +1865,10 @@ class AITradingBrainService:
         blocked_reasons_for_entry = list(blocked_reasons_unique)
         if not is_entry_signal:
             current_signal = signal_type if signal_type else "NO_SIGNAL"
-            blocked_reasons_for_entry = [f"Señal actual no habilita compra ({current_signal})"]
+            if current_signal == "HOLD":
+                blocked_reasons_for_entry = ["Señal HOLD activa: mantener posición, sin nueva entrada"]
+            else:
+                blocked_reasons_for_entry = [f"Señal actual no habilita entrada ({current_signal})"]
             if requested_signal_engine == "model" and actual_signal_engine == "heuristic_fallback":
                 if current_approved_model and not current_approved_model_available:
                     blocked_reasons_for_entry.append("Modo modelo con referencia aprobada rota: falta el archivo del modelo aprobado, usando heurística de respaldo")
@@ -1697,9 +1978,6 @@ class AITradingBrainService:
             name = str(item.get("name", "check") or "check")
             state = str(item.get("state", "APPLIES") or "APPLIES")
             if state != "APPLIES":
-                # Keep the root cause when there is no BUY signal; hide non-applicable checks.
-                if name == "buy_signal_available" and not bool(item.get("ok", False)):
-                    entry_blockers.append(f"{name}=FAIL")
                 continue
             if not bool(item.get("ok", False)):
                 entry_blockers.append(f"{name}=FAIL")
@@ -1779,6 +2057,9 @@ class AITradingBrainService:
                 "kill_switch": bool(runtime.get("kill_switch", 0)),
                 "auto_trade_stocks_enabled": bool(runtime.get("auto_trade_stocks_enabled", 1)),
                 "auto_trade_cryptos_enabled": bool(runtime.get("auto_trade_cryptos_enabled", 1)),
+                "futures_enable_long": bool(runtime.get("futures_enable_long", getattr(self.settings, "ai_futures_enable_long", True))),
+                "futures_enable_short": bool(runtime.get("futures_enable_short", getattr(self.settings, "ai_futures_enable_short", True))),
+                "futures_only_mode": bool(runtime.get("futures_only_mode", getattr(self.settings, "crypto_futures_only_mode", True))),
             },
             "settings": {
                 "AI_MAX_SPREAD_ALLOWED": ai_max_spread_allowed,
@@ -1802,7 +2083,8 @@ class AITradingBrainService:
             },
             "blocked_reasons": blocked_reasons_for_entry,
             "entry_checks": checks,
-            "can_enter_now": all(
+            "signal_direction": signal_direction,
+            "can_enter_now": is_entry_signal and all(
                 bool(item.get("ok", False))
                 for item in checks
                 if str(item.get("state", "APPLIES")) == "APPLIES"
@@ -2331,9 +2613,12 @@ class AITradingBrainService:
     def sync_positions(self, account_name: str) -> list[dict[str, Any]]:
         account = self.refresh_account_context(account_name)
         account_id = int(account["id"])
+        funds = self._reconcile_ai_funds_budget(account_id)
+        max_position_size = float(funds.get("max_position_size", getattr(self.settings, "ai_default_max_position_size", 0.0)) or 0.0)
         positions = self.broker.get_positions()
         open_symbols: set[str] = set()
         persisted: list[dict[str, Any]] = []
+        capital_used_live = 0.0
         for position in positions:
             symbol = str(position.get("symbol", "")).upper().replace(" ", "")
             if not symbol:
@@ -2345,6 +2630,13 @@ class AITradingBrainService:
             current_price = float(self.market_data.get_last_price(symbol))
             average_cost = float(metrics["average_cost"] or position.get("avg_entry_price", 0.0) or 0.0)
             total_cost_basis = float(metrics["total_cost_basis"] or (average_cost * qty))
+            leverage = max(float(position.get("leverage", 1.0) or 1.0), 1.0)
+            notional_used = max(average_cost, 0.0) * abs(float(qty))
+            # In futures, budget impact is margin (notional / leverage), not full notional.
+            margin_used = notional_used / leverage if asset_type == "crypto" else notional_used
+            if max_position_size > 0.0:
+                margin_used = min(margin_used, max_position_size)
+            capital_used_live += max(margin_used, 0.0)
             unrealized_pnl = (current_price - average_cost) * qty if qty > 0 else 0.0
             min_sell_price = self._minimum_sell_price(average_cost)
             if qty <= 0:
@@ -2371,6 +2663,23 @@ class AITradingBrainService:
             self.database.upsert_position(payload)
             persisted.append(payload)
         self.database.close_missing_positions(account_id=account_id, open_symbols=open_symbols)
+
+        funds = self._reconcile_ai_funds_budget(account_id)
+        max_capital_assigned = float(funds.get("max_capital_assigned", getattr(self.settings, "ai_default_max_capital_assigned", 0.0)) or 0.0)
+        max_position_size = float(funds.get("max_position_size", getattr(self.settings, "ai_default_max_position_size", 0.0)) or 0.0)
+        max_daily_loss = float(funds.get("max_daily_loss", getattr(self.settings, "ai_default_max_daily_loss", 0.0)) or 0.0)
+        enabled = bool(funds.get("enabled", 1))
+        capital_used_live = min(capital_used_live, max_capital_assigned) if max_capital_assigned > 0 else capital_used_live
+        available_capital_live = max(max_capital_assigned - capital_used_live, 0.0)
+        self.database.upsert_bot_funds(
+            account_id=account_id,
+            max_capital_assigned=max_capital_assigned,
+            available_capital=available_capital_live,
+            capital_used=capital_used_live,
+            max_position_size=max_position_size,
+            max_daily_loss=max_daily_loss,
+            enabled=enabled,
+        )
         return persisted
 
     def calculate_average_cost(self, symbol: str, account_id: int) -> dict[str, float]:
@@ -2429,7 +2738,7 @@ class AITradingBrainService:
         account = self.refresh_account_context(account_name)
         account_id = int(account["id"])
         runtime = self.database.get_runtime_settings(account_id) or {}
-        funds = self.database.get_bot_funds(account_id) or {}
+        funds = self._reconcile_ai_funds_budget(account_id)
         signal = next((item for item in self.database.latest_signals(limit=100) if int(item["id"]) == int(signal_id)), None)
         if signal is None:
             raise ValueError("Senal no encontrada")
@@ -2468,6 +2777,7 @@ class AITradingBrainService:
         blocked = self._blocked_buy_reason(symbol=str(signal["symbol"]), account_id=account_id, features=signal["features_json"], account_name=account_name)
         if blocked:
             raise ValueError(blocked)
+        funds = self._reconcile_ai_funds_budget(account_id)
         if bool(runtime.get("kill_switch", 0)):
             raise ValueError("Kill switch activo")
         if bool(runtime.get("manual_approval_required", 1)) and not manual_approved:
@@ -2559,7 +2869,7 @@ class AITradingBrainService:
         account = self.refresh_account_context(account_name)
         account_id = int(account["id"])
         runtime = self.database.get_runtime_settings(account_id) or {}
-        funds = self.database.get_bot_funds(account_id) or {}
+        funds = self._reconcile_ai_funds_budget(account_id)
         signal = next((item for item in self.database.latest_signals(limit=200) if int(item["id"]) == int(signal_id)), None)
         if signal is None:
             raise ValueError("Senal no encontrada")
@@ -2600,6 +2910,7 @@ class AITradingBrainService:
         leverage_default = int(getattr(self.settings, "crypto_futures_default_leverage", 1) or 1)
         leverage_max = max(int(getattr(self.settings, "crypto_futures_max_leverage", 20) or 20), 1)
         leverage = min(self._runtime_futures_leverage(runtime, leverage_default), leverage_max)
+        funds = self._reconcile_ai_funds_budget(account_id)
 
         capital = min(float(funds.get("available_capital", 0.0) or 0.0), float(funds.get("max_position_size", 0.0) or 0.0))
         if capital <= 0:
@@ -4108,9 +4419,26 @@ class AITradingBrainService:
                 },
             )
 
-        # If user defined a focus list, force evaluation to those symbols for that asset type.
-        # This keeps collector/scanner aligned with "Enfoque de evaluacion IA".
-        if focus_stocks:
+        # When crypto focus is not hard-restricted, evaluate the full tradable Binance crypto universe.
+        if is_binance_provider and not focus_cryptos_only:
+            try:
+                for asset in self.broker.list_cryptos(status="active", only_tradable=True):
+                    symbol = str(asset.get("symbol", "")).upper().strip()
+                    if not symbol:
+                        continue
+                    symbols.setdefault(
+                        self._symbol_key(symbol),
+                        {
+                            "symbol": symbol,
+                            "asset_type": "crypto",
+                        },
+                    )
+            except Exception as ex:
+                self._last_api_error = str(ex)
+
+        # Apply hard filtering only when *_only toggles are enabled.
+        # If user disables "solo", symbol lists are treated as preferences in UI, not strict filters.
+        if focus_stocks_only and focus_stocks:
             focus_stock_keys = {self._symbol_key(item) for item in focus_stocks}
             symbols = {
                 key: value
@@ -4119,7 +4447,7 @@ class AITradingBrainService:
                 or key in focus_stock_keys
             }
 
-        if focus_cryptos:
+        if focus_cryptos_only and focus_cryptos:
             focus_crypto_keys = {self._symbol_key(item) for item in focus_cryptos}
             symbols = {
                 key: value
@@ -4828,16 +5156,71 @@ class AITradingBrainService:
         self._openai_calls_today = 0
 
     def _blocked_buy_reason(self, symbol: str, account_id: int, features: dict[str, Any], account_name: str) -> str:
-        funds = self.database.get_bot_funds(account_id) or {}
+        funds = self._reconcile_ai_funds_budget(account_id)
         runtime = self.database.get_runtime_settings(account_id) or {}
+        max_open_positions = self._max_open_positions_runtime()
         if bool(runtime.get("kill_switch", 0)):
             return "Kill switch activo"
         if not bool(funds.get("enabled", 0)):
             return "Bot desactivado"
-        if float(funds.get("available_capital", 0.0) or 0.0) <= 0:
-            return "No hay fondos asignados"
+
+        available_capital = float(funds.get("available_capital", 0.0) or 0.0)
+        max_capital_assigned = float(funds.get("max_capital_assigned", 0.0) or 0.0)
+        capital_used = float(funds.get("capital_used", 0.0) or 0.0)
+
+        if available_capital <= 0.0:
+            # Best-effort reconciliation when DB budget gets stale after manual broker operations.
+            now_mono = time.monotonic()
+            reconcile_map = getattr(self, "_funds_reconcile_at_by_account", None)
+            if not isinstance(reconcile_map, dict):
+                reconcile_map = {}
+                setattr(self, "_funds_reconcile_at_by_account", reconcile_map)
+            last_reconcile_at = float(reconcile_map.get(int(account_id), 0.0) or 0.0)
+            if (now_mono - last_reconcile_at) >= 10.0:
+                reconcile_map[int(account_id)] = now_mono
+                try:
+                    self.sync_positions(account_name)
+                except Exception:
+                    pass
+                funds = self._reconcile_ai_funds_budget(account_id)
+                available_capital = float(funds.get("available_capital", 0.0) or 0.0)
+                max_capital_assigned = float(funds.get("max_capital_assigned", 0.0) or 0.0)
+                capital_used = float(funds.get("capital_used", 0.0) or 0.0)
+
+            broker_cash = 0.0
+            try:
+                try:
+                    broker_account = self.broker.get_account(force_refresh=True)
+                except TypeError:
+                    broker_account = self.broker.get_account()
+                broker_cash = float((broker_account or {}).get("cash", 0.0) or 0.0)
+            except Exception:
+                broker_cash = 0.0
+
+            if available_capital <= 0.0:
+                return (
+                    "No hay fondos asignados "
+                    f"(disponible={available_capital:.2f}, asignado={max_capital_assigned:.2f}, "
+                    f"usado={capital_used:.2f}, cash_broker={broker_cash:.2f}, max_pos={max_open_positions})"
+                )
+
         if float(funds.get("max_position_size", 0.0) or 0.0) <= 0:
             return "Max position size invalido"
+        try:
+            try:
+                live_positions = self.broker.get_positions(force_refresh=True)
+            except TypeError:
+                live_positions = self.broker.get_positions()
+            open_positions_count = sum(1 for row in live_positions if float(row.get("qty", 0.0) or 0.0) > 0.0)
+            if open_positions_count >= max_open_positions:
+                return f"Maximo de posiciones abiertas alcanzado: {open_positions_count}/{max_open_positions}"
+        except Exception:
+            persisted_open_positions = [
+                row for row in (self.database.list_positions(account_id) or [])
+                if float(row.get("qty", 0.0) or 0.0) > 0.0
+            ]
+            if len(persisted_open_positions) >= max_open_positions:
+                return f"Maximo de posiciones abiertas alcanzado: {len(persisted_open_positions)}/{max_open_positions}"
         price = float(features.get("price", 0.0) or 0.0)
         spread = float(features.get("spread", 0.0) or 0.0)
         asset_type = "crypto" if "/" in symbol or symbol.endswith("USD") else "stock"
@@ -4856,6 +5239,58 @@ class AITradingBrainService:
         if not supported:
             return "Activo no soportado en Alpaca"
         return ""
+
+    def _max_open_positions_runtime(self) -> int:
+        return max(
+            int(float(os.getenv("MAX_OPEN_POSITIONS", getattr(self.settings, "max_open_positions", 5)) or 5)),
+            1,
+        )
+
+    def _reconcile_ai_funds_budget(self, account_id: int) -> dict[str, Any]:
+        funds = self.database.get_bot_funds(account_id) or {}
+        max_position_size = float(funds.get("max_position_size", 0.0) or 0.0)
+        max_capital_assigned = float(funds.get("max_capital_assigned", 0.0) or 0.0)
+        available_capital = float(funds.get("available_capital", 0.0) or 0.0)
+        capital_used = float(funds.get("capital_used", 0.0) or 0.0)
+        max_daily_loss = float(funds.get("max_daily_loss", 0.0) or 0.0)
+        enabled = bool(funds.get("enabled", 1))
+
+        if max_position_size <= 0.0:
+            return funds
+
+        max_open_positions = self._max_open_positions_runtime()
+        desired_assigned = max_position_size * float(max_open_positions)
+
+        # If runtime allows more concurrent positions than assigned budget can support,
+        # expand assigned budget so per-position sizing and max-open-positions stay aligned.
+        should_expand_budget = (
+            max_open_positions > 1
+            and max_capital_assigned > 0.0
+            and desired_assigned > max_capital_assigned
+            and available_capital <= 0.0
+        )
+        if not should_expand_budget:
+            return funds
+
+        new_assigned = desired_assigned
+        new_capital_used = min(capital_used, new_assigned)
+        new_available = max(new_assigned - new_capital_used, 0.0)
+        self.database.upsert_bot_funds(
+            account_id=account_id,
+            max_capital_assigned=new_assigned,
+            available_capital=new_available,
+            capital_used=new_capital_used,
+            max_position_size=max_position_size,
+            max_daily_loss=max_daily_loss,
+            enabled=enabled,
+        )
+        refreshed = self.database.get_bot_funds(account_id) or {}
+        return refreshed if refreshed else {
+            **funds,
+            "max_capital_assigned": new_assigned,
+            "available_capital": new_available,
+            "capital_used": new_capital_used,
+        }
 
     def _is_spread_allowed(self, *, asset_type: str, spread: float, price: float) -> bool:
         max_allowed = float(getattr(self, "_ai_max_spread_allowed", getattr(self.settings, "ai_max_spread_allowed", 0.05)) or 0.05)

@@ -173,12 +173,13 @@ class Settings:
     websocket_max_reconnect_backoff_seconds: int = int(_env("WEBSOCKET_MAX_RECONNECT_BACKOFF_SECONDS", default="30"))
     health_monitor_interval_seconds: int = int(_env("HEALTH_MONITOR_INTERVAL_SECONDS", default="30"))
     ui_max_log_lines: int = int(_env("UI_MAX_LOG_LINES", default="1000"))
-    require_nordvpn_before_trading: bool = _env_bool("REQUIRE_NORDVPN_BEFORE_TRADING", default=True)
-    required_vpn_provider: str = _env("REQUIRED_VPN_PROVIDER", default="NordVPN")
+    require_vpn_before_trading: bool = _env_bool("REQUIRE_VPN_BEFORE_TRADING", default=True)
+    required_vpn_provider: str = _env("REQUIRED_VPN_PROVIDER", default="WireGuard")
     required_vpn_country: str = _env("REQUIRED_VPN_COUNTRY", default="Dominican Republic")
-    nordvpn_email: str = _env("NORDVPN_EMAIL", default="")
-    nordvpn_password: str = _env("NORDVPN_PASSWORD", default="")
-    nordvpn_token: str = _env("NORDVPN_TOKEN", default="")
+    required_vpn_connection_name: str = _env("REQUIRED_VPN_CONNECTION_NAME", default="")
+    required_vpn_interface_name: str = _env("REQUIRED_VPN_INTERFACE_NAME", default="")
+    vpn_expected_ipv4: str = _env("VPN_EXPECTED_IPV4", default="")
+    vpn_require_no_ipv6: bool = _env_bool("VPN_REQUIRE_NO_IPV6", default=True)
 
     # ===== STOCKS CONFIGURATION =====
     stock_allow_hold: bool = _env_bool("STOCK_ALLOW_HOLD", default=True)

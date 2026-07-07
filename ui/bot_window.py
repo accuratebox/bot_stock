@@ -1,6 +1,7 @@
 import json
 import os
 import queue
+import shutil
 import subprocess
 import sys
 import threading
@@ -105,9 +106,14 @@ class BotControlWindow:
         self._watch_state_path = Path(__file__).resolve().parents[1] / "watch_tabs_state.json"
         self._ai_ui_state_path = Path(__file__).resolve().parents[1] / "ai_ui_state.json"
         self._ui_heartbeat_path = Path(__file__).resolve().parents[1] / "runtime" / f"ui_heartbeat_{os.getpid()}.json"
-        self._ui_heartbeat_interval_ms = 2000
-        self._ui_heartbeat_timeout_seconds = 25
-        self._emergency_helper_enabled = str(os.getenv("ENABLE_EMERGENCY_HELPER", "false") or "false").strip().lower() == "true"
+        self._ui_heartbeat_interval_ms = max(int(float(os.getenv("UI_HEARTBEAT_INTERVAL_MS", "2000") or 2000)), 500)
+        self._ui_heartbeat_timeout_seconds = max(float(os.getenv("UI_HEARTBEAT_TIMEOUT_SECONDS", "90") or 90), 20.0)
+        self._emergency_stale_checks_required = max(int(float(os.getenv("EMERGENCY_STALE_CHECKS_REQUIRED", "3") or 3)), 1)
+        self._emergency_min_uptime_before_restart_seconds = max(
+            float(os.getenv("EMERGENCY_MIN_UPTIME_BEFORE_RESTART_SECONDS", "45") or 45),
+            5.0,
+        )
+        self._emergency_helper_enabled = str(os.getenv("ENABLE_EMERGENCY_HELPER", "true") or "true").strip().lower() == "true"
         self._history_tab_frame: ttk.Frame | None = None
         self._power_inhibitor: PowerInhibitor | None = None
         self._emergency_close_process: subprocess.Popen[str] | None = None
@@ -116,12 +122,17 @@ class BotControlWindow:
         self._is_closing = False
         self._startup_restore_done = False
         self._network_degraded = False
+        self._monitor_success_streak = 0
+        self._monitor_failure_streak = 0
         self._vpn_ever_ready = False
         self._vpn_forced_pause_active = False
         self._vpn_bootstrap_in_flight = False
         self._vpn_guard_in_flight = False
         self._vpn_last_ready_state: bool | None = None
         self._vpn_last_connect_attempt_ts = 0.0
+        self._tailscale_disconnect_in_flight = False
+        self._tailscale_last_disconnect_attempt_ts = 0.0
+        self._transient_log_last_ts: dict[str, float] = {}
         self._latest_ai_signal_id: int | None = None
         self.ai_window: tk.Toplevel | None = None
         self.ai_diagnostics_window: tk.Toplevel | None = None
@@ -235,6 +246,7 @@ class BotControlWindow:
         self.config_cp_active_days_remaining_var = tk.StringVar(value="0")
         self.config_cp_request_days_vars: dict[int, tk.IntVar] = {idx: tk.IntVar(value=0) for idx in range(7)}
         self._ai_crypto_monitor_refresh_in_flight = False
+        self._ai_runtime_refresh_in_flight = False
 
         self._load_ai_ui_state()
 
@@ -1049,6 +1061,10 @@ class BotControlWindow:
                 used_baseline=int(float(values.get("CRYPTOPANIC_USED_THIS_MONTH", "0") or 0)),
                 request_days=str(values.get("CRYPTOPANIC_REQUEST_DAYS", "mon,tue,wed,thu,fri")),
             )
+            try:
+                settings.max_open_positions = max(int(float(values.get("MAX_OPEN_POSITIONS", settings.max_open_positions) or settings.max_open_positions)), 1)
+            except Exception:
+                pass
             target_stock = float(values.get("AI_TARGET_PROFIT_PER_OPERATION_STOCKS", values.get("AI_TARGET_PROFIT_PER_OPERATION", "0.05")) or 0.05)
             target_crypto = float(values.get("AI_TARGET_PROFIT_PER_OPERATION_CRYPTOS", values.get("AI_TARGET_PROFIT_PER_OPERATION", "0.05")) or 0.05)
             self.ai_trading_brain.update_ai_target_profit_per_operation_by_asset(
@@ -1182,6 +1198,7 @@ class BotControlWindow:
             width=10,
         ).pack(side="left", padx=(0, 8))
         ttk.Button(mode_row, text="Config Futuros", command=self._open_futures_risk_window).pack(side="left", padx=(0, 8))
+        ttk.Label(mode_row, text="(Aquí cambias X, LONG y SHORT)", foreground="#666").pack(side="left", padx=(0, 8))
         ttk.Label(mode_row, textvariable=self.ai_pending_status_var, foreground="#1d5f2a").pack(side="left", padx=(4, 8))
         ttk.Button(mode_row, text="Guardar modo", command=lambda: self._run_async(self._save_ai_runtime_controls)).pack(side="right", padx=(8, 8))
 
@@ -1251,7 +1268,7 @@ class BotControlWindow:
         crypto_toolbar.pack(fill="x", pady=(0, 6))
         ttk.Label(
             crypto_toolbar,
-            text="Vista rápida por crypto: última señal, bloqueo exacto y ajuste mínimo para pasar de WATCH a BUY.",
+            text="Vista rápida por crypto: señal IA, dirección (LONG/SHORT) y ajuste mínimo para habilitar entrada.",
         ).pack(side="left")
         ttk.Button(
             crypto_toolbar,
@@ -1594,6 +1611,7 @@ class BotControlWindow:
         details_lines = [
             f"Cuenta: {payload.get('account_name', 'N/A')}",
             f"Símbolo: {payload.get('symbol', 'N/A')} | Tipo: {payload.get('asset_type', 'N/A')}",
+            f"Dirección señal/operación: {payload.get('signal_direction', 'N/A')}",
             f"Puede entrar ahora: {'SI' if bool(payload.get('can_enter_now', False)) else 'NO'}",
             f"Razón exacta: {payload.get('entry_reason', 'N/A')}",
             "",
@@ -1677,7 +1695,10 @@ class BotControlWindow:
                 )
 
         if self.ai_diag_details_text is not None:
-            self._set_text_widget(self.ai_diag_details_text, "\n".join(details_lines))
+            self._set_diagnostics_details_with_direction_color(
+                details_lines=details_lines,
+                direction=str(payload.get("signal_direction", "N/A") or "N/A"),
+            )
         if self.ai_diag_reco_text is not None:
             self._set_text_widget(self.ai_diag_reco_text, "\n".join(reco_lines))
 
@@ -1934,8 +1955,28 @@ class BotControlWindow:
             if account_name:
                 threading.Thread(target=self._ensure_ai_automation_running, args=(account_name,), daemon=True).start()
                 self._sync_ai_watch_tabs_from_recent_trades_async()
-            self._refresh_ai_runtime_view()
+            self._refresh_ai_runtime_view_async()
         self.root.after(5000, self._ai_runtime_loop)
+
+    def _refresh_ai_runtime_view_async(self) -> None:
+        if self._ai_runtime_refresh_in_flight:
+            return
+        self._ai_runtime_refresh_in_flight = True
+
+        def worker() -> None:
+            status: dict[str, Any] | None = None
+            try:
+                status = self.ai_trading_brain.get_automation_status(self._ai_automation_account_name())
+            except Exception as ex:
+                if self._should_emit_transient_log("ai-runtime-refresh", min_interval_seconds=30.0):
+                    self.logger.warning("No se pudo refrescar runtime IA: %s", ex)
+            finally:
+                self._ai_runtime_refresh_in_flight = False
+
+            if status is not None:
+                self._safe_after(0, self._refresh_ai_runtime_view, status)
+
+        threading.Thread(target=worker, daemon=True).start()
 
     def _ai_automation_account_name(self) -> str:
         account_name = str(getattr(self, "_ai_automation_account", "") or "").strip()
@@ -2068,29 +2109,38 @@ class BotControlWindow:
 
         def worker() -> None:
             try:
-                script_path = Path(__file__).resolve().parents[1] / "scripts" / "nordvpn_connect_do.sh"
-                if script_path.exists():
-                    try:
-                        script_env = os.environ.copy()
-                        if str(getattr(settings, "nordvpn_token", "") or "").strip():
-                            script_env["NORDVPN_TOKEN"] = str(getattr(settings, "nordvpn_token", "") or "")
-                        if str(getattr(settings, "nordvpn_email", "") or "").strip():
-                            script_env["NORDVPN_EMAIL"] = str(getattr(settings, "nordvpn_email", "") or "")
-                        if str(getattr(settings, "nordvpn_password", "") or "").strip():
-                            script_env["NORDVPN_PASSWORD"] = str(getattr(settings, "nordvpn_password", "") or "")
-                        proc = subprocess.run(
-                            [str(script_path), "--non-interactive"],
-                            check=False,
-                            capture_output=True,
-                            text=True,
-                            timeout=30,
-                            env=script_env,
-                        )
-                        if proc.returncode != 0:
-                            err = (proc.stderr or proc.stdout or "").strip()
-                            self.logger.warning("VPN bootstrap script failed rc=%s: %s", proc.returncode, err)
-                    except Exception as ex:
-                        self.logger.warning("No se pudo ejecutar script VPN de inicio: %s", ex)
+                provider = str(getattr(settings, "required_vpn_provider", "WireGuard") or "WireGuard").strip().lower()
+                if provider in {"wireguard", "proton wireguard", "protonvpn wireguard"}:
+                    conn_name = str(getattr(settings, "required_vpn_connection_name", "") or "").strip()
+                    if conn_name:
+                        nmcli_bin = shutil.which("nmcli")
+                        if nmcli_bin:
+                            up_proc = subprocess.run(
+                                [nmcli_bin, "connection", "up", conn_name],
+                                check=False,
+                                capture_output=True,
+                                text=True,
+                                timeout=20,
+                            )
+                            if up_proc.returncode != 0:
+                                up_proc = subprocess.run(
+                                    ["sudo", "-n", nmcli_bin, "connection", "up", conn_name],
+                                    check=False,
+                                    capture_output=True,
+                                    text=True,
+                                    timeout=20,
+                                )
+                            if up_proc.returncode != 0:
+                                err = (up_proc.stderr or up_proc.stdout or "").strip()
+                                self.logger.warning("WireGuard bootstrap failed rc=%s: %s", up_proc.returncode, err)
+                        else:
+                            self.logger.warning("No se encontro nmcli para activar WireGuard.")
+
+                    account_name = self._ai_automation_account_name()
+                    if account_name:
+                        security = self.ai_trading_brain.get_security_state(account_name)
+                        self._safe_after(0, self._apply_vpn_security_state, security)
+                    return
 
                 account_name = self._ai_automation_account_name()
                 if account_name:
@@ -2139,6 +2189,7 @@ class BotControlWindow:
         vpn_required = bool(security.get("vpn_required", False))
         vpn_ready = bool(security.get("vpn_ready", False))
         vpn_reason = str(security.get("vpn_reason", "") or "")
+        vpn_provider = str(security.get("vpn_provider", "") or "").strip().lower()
         was_ready = self._vpn_last_ready_state
         self._vpn_last_ready_state = vpn_ready
 
@@ -2150,8 +2201,11 @@ class BotControlWindow:
         if vpn_ready:
             self._vpn_ever_ready = True
             country = str(security.get("vpn_country", "") or "").strip()
-            self.vpn_badge_var.set(f"VPN CONECTADA: {country or 'Dominican Republic'}")
+            provider_label = str(security.get("vpn_provider", "VPN") or "VPN").strip()
+            self.vpn_badge_var.set(f"VPN CONECTADA: {country or provider_label}")
             self.vpn_badge_label.configure(bg="#1f5f2a")
+            if vpn_provider == "protonvpn":
+                self._ensure_tailscale_down_async()
             transitioned_to_ready = (was_ready is not True)
             if self._vpn_forced_pause_active:
                 account_name = self._ai_automation_account_name()
@@ -2180,6 +2234,64 @@ class BotControlWindow:
                 self._vpn_forced_pause_active = True
             except Exception:
                 pass
+
+    def _ensure_tailscale_down_async(self) -> None:
+        if self._is_closing or self._tailscale_disconnect_in_flight:
+            return
+        now_mono = time.monotonic()
+        if (now_mono - float(self._tailscale_last_disconnect_attempt_ts or 0.0)) < 30.0:
+            return
+        self._tailscale_last_disconnect_attempt_ts = now_mono
+        self._tailscale_disconnect_in_flight = True
+
+        def worker() -> None:
+            try:
+                tailscale_bin = shutil.which("tailscale")
+                if not tailscale_bin:
+                    return
+
+                status_proc = subprocess.run(
+                    [tailscale_bin, "status", "--json"],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    timeout=6,
+                )
+                if status_proc.returncode != 0:
+                    return
+
+                backend_state = ""
+                try:
+                    payload = json.loads(str(status_proc.stdout or "{}"))
+                    backend_state = str(payload.get("BackendState", "") or "").strip().lower()
+                except Exception:
+                    backend_state = ""
+
+                if backend_state not in {"running", "starting"}:
+                    return
+
+                down_proc = subprocess.run(
+                    [tailscale_bin, "down"],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                )
+                if down_proc.returncode == 0:
+                    self.logger.info("Tailscale desactivado automaticamente porque ProtonVPN esta conectado.")
+                    return
+
+                err = str((down_proc.stderr or down_proc.stdout or "")).strip()
+                if err:
+                    self.logger.warning("No se pudo desactivar Tailscale automaticamente: %s", err)
+                else:
+                    self.logger.warning("No se pudo desactivar Tailscale automaticamente (rc=%s).", down_proc.returncode)
+            except Exception as ex:
+                self.logger.warning("Error al intentar desactivar Tailscale: %s", ex)
+            finally:
+                self._tailscale_disconnect_in_flight = False
+
+        threading.Thread(target=worker, daemon=True).start()
 
     def run(self) -> None:
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
@@ -2288,6 +2400,9 @@ class BotControlWindow:
                     python_executable,
                     str(main_path),
                     str(main_path.parent),
+                    "1",
+                    str(self._emergency_stale_checks_required),
+                    str(self._emergency_min_uptime_before_restart_seconds),
                 ],
                 stdout=subprocess.DEVNULL,
                 stderr=log_handle,
@@ -2513,6 +2628,14 @@ class BotControlWindow:
             self._network_degraded = False
             self.root.after(0, self.status_var.set, "Conexion restaurada")
             self.logger.info("Conexion restaurada. Reanudando flujos automaticamente.")
+
+    def _should_emit_transient_log(self, key: str, min_interval_seconds: float = 30.0) -> bool:
+        now = time.monotonic()
+        last = float(self._transient_log_last_ts.get(key, 0.0) or 0.0)
+        if (now - last) >= float(min_interval_seconds):
+            self._transient_log_last_ts[key] = now
+            return True
+        return False
 
     def _view_account(self) -> None:
         account = self.broker.get_account()
@@ -4623,6 +4746,8 @@ class BotControlWindow:
         self,
         watch_id: str,
         *,
+        side: str,
+        leverage: float,
         state: str,
         current_price: float,
         pnl: float,
@@ -4634,6 +4759,8 @@ class BotControlWindow:
         now = time.monotonic()
         heartbeat_seconds = 180.0
         snapshot = {
+            "side": str(side or "long").lower(),
+            "leverage": round(float(leverage or 1.0), 2),
             "state": state,
             "current_price": round(current_price, 4),
             "pnl": round(pnl, 4),
@@ -4802,10 +4929,11 @@ class BotControlWindow:
                     self._mark_network_degraded(
                         f"Internet caido durante monitoreo de posicion ({symbol}). Reintentando en {wait_seconds}s..."
                     )
-                    self._watch_log(
-                        watch_id,
-                        f"Sin conexion en monitoreo ({ex.__class__.__name__}). Reintentando en {wait_seconds}s.",
-                    )
+                    if self._should_emit_transient_log(f"watch-net-{watch_id}", min_interval_seconds=90.0):
+                        self._watch_log(
+                            watch_id,
+                            f"Sin conexion en monitoreo ({ex.__class__.__name__}). Reintentando en {wait_seconds}s.",
+                        )
                     self._set_watch_status(watch_id, f"Sin conexion. Reintentando en {wait_seconds}s...")
                     time.sleep(wait_seconds)
                     continue
@@ -4857,13 +4985,33 @@ class BotControlWindow:
                 avg_entry_price = float(position.get("avg_entry_price", 0.0) or 0.0)
                 if avg_entry_price <= 0:
                     avg_entry_price = entry_price_hint
+                side = str(position.get("side", "long") or "long").lower().strip()
+                if side not in {"long", "short"}:
+                    side = "long"
+                side_label = "SHORT" if side == "short" else "LONG"
+                leverage = float(position.get("leverage", 1.0) or 1.0)
+                provider = str(getattr(broker, "provider", "") or "").lower().strip()
+                if provider == "binance" and leverage <= 1.0 and hasattr(broker, "get_binance_position_risk"):
+                    try:
+                        risk_row = broker.get_binance_position_risk(symbol)
+                        risk_leverage = float((risk_row or {}).get("leverage", 0.0) or 0.0)
+                        if risk_leverage > 0.0:
+                            leverage = risk_leverage
+                    except Exception:
+                        pass
+                if leverage <= 0:
+                    leverage = 1.0
                 current_price = float(market_data.get_last_price(symbol))
-                pnl = (current_price - avg_entry_price) * qty
-                pnl_pct = ((current_price / avg_entry_price) - 1.0) * 100.0 if avg_entry_price > 0 else 0.0
+                if side == "short":
+                    pnl = (avg_entry_price - current_price) * qty
+                    pnl_pct = ((avg_entry_price / current_price) - 1.0) * 100.0 if avg_entry_price > 0 and current_price > 0 else 0.0
+                else:
+                    pnl = (current_price - avg_entry_price) * qty
+                    pnl_pct = ((current_price / avg_entry_price) - 1.0) * 100.0 if avg_entry_price > 0 else 0.0
                 state = "GANANDO" if pnl > 0 else "PERDIENDO" if pnl < 0 else "EQUILIBRIO"
                 configured_target = self._watch_target_profit_value(watch_id, position_manager=position_manager)
                 target_profit_per_share = float(position_manager.get_target_profit_per_share_for_symbol(symbol))
-                target_price = avg_entry_price + target_profit_per_share
+                target_price = avg_entry_price - target_profit_per_share if side == "short" else avg_entry_price + target_profit_per_share
                 target_details_short, _ = self._format_watch_target_details(
                     configured_target=configured_target,
                     effective_target_per_share=target_profit_per_share,
@@ -5024,7 +5172,8 @@ class BotControlWindow:
                                     f"Repair limit en cooldown para {symbol} por HTTP {status or 'N/A'}: esperando {next_backoff:.1f}s.",
                                 )
                         except Exception as repair_ex:
-                            self._watch_log(watch_id, f"No se pudo reparar limit para {symbol}: {repair_ex}")
+                            if self._should_emit_transient_log(f"watch-repair-{watch_id}", min_interval_seconds=120.0):
+                                self._watch_log(watch_id, f"No se pudo reparar limit para {symbol}: {repair_ex}")
                 elif effective_limit > 0:
                     with self._watch_lock:
                         current_context = self._watch_tabs.get(watch_id)
@@ -5032,13 +5181,15 @@ class BotControlWindow:
                             current_context["last_known_limit_price"] = effective_limit
 
                 line = (
-                    f"PnL en vivo {symbol} | entry={avg_entry_price:.4f} | current={current_price:.4f} | "
+                    f"PnL en vivo {symbol} | side={side_label} | lev={leverage:.0f}x | entry={avg_entry_price:.4f} | current={current_price:.4f} | "
                     f"target_teorico={target_price:.4f} ({target_details_short}) | "
                     f"limit_real={(f'{effective_limit:.4f}' if effective_limit > 0 else 'N/A')} | "
                     f"qty={qty:.4f} | pnl={pnl:.4f} ({pnl_pct:.2f}%) | estado={state}"
                 )
                 if self._should_emit_live_pnl_update(
                     watch_id,
+                    side=side,
+                    leverage=leverage,
                     state=state,
                     current_price=current_price,
                     pnl=pnl,
@@ -5384,7 +5535,11 @@ class BotControlWindow:
     def _find_open_position_by_symbol(self, symbol: str, broker: Any | None = None) -> dict[str, Any] | None:
         target = self._symbol_key(symbol)
         active_broker = broker or self.broker
-        for position in active_broker.get_positions():
+        try:
+            positions = active_broker.get_positions(force_refresh=True)
+        except TypeError:
+            positions = active_broker.get_positions()
+        for position in positions:
             current = self._symbol_key(str(position.get("symbol", "")))
             if current == target:
                 return position
@@ -6189,6 +6344,18 @@ class BotControlWindow:
             f"Cuenta scanner IA activa: {status.get('active_worker_account', 'N/A') or 'N/A'}",
             f"Motor de decisión scanner: {status.get('scanner_decision_engine', 'heuristic')}",
             f"Actor decisiones: {status.get('decision_actor', 'Heurística')}",
+            f"Máximo posiciones abiertas activas: {int(status.get('max_open_positions', getattr(settings, 'max_open_positions', 5)) or getattr(settings, 'max_open_positions', 5))}",
+            (
+                "Futuros: "
+                f"solo_futuros={'SI' if bool(status.get('futures_only_mode', True)) else 'NO'} | "
+                f"leverage_config_nuevas_entradas={int(status.get('futures_leverage', 1) or 1)}x | "
+                f"LONG={'ON' if bool(status.get('futures_enable_long', True)) else 'OFF'} | "
+                f"SHORT={'ON' if bool(status.get('futures_enable_short', True)) else 'OFF'}"
+            ),
+            f"Leverage broker posiciones abiertas: {', '.join(list(status.get('broker_open_positions_leverage', []) or [])[:8]) or 'N/A'}",
+            f"Cryptos en estudio ahora: {int(status.get('scanner_cryptos_count', 0) or 0)}",
+            f"Vista rápida cryptos: {', '.join(list(status.get('scanner_cryptos_preview', []) or [])[:12]) or 'N/A'}",
+            f"Pensamiento IA (últimas decisiones): {' || '.join(list(status.get('scanner_thinking_preview', []) or [])[:3]) or 'N/A'}",
             f"Estado del DataCollector: {status.get('collector', 'Stopped')}",
             f"Estado del SignalScanner: {status.get('scanner', 'Stopped')}",
             f"Estado del OutcomeLabeler: {status.get('labeler', 'Stopped')}",
@@ -6461,8 +6628,9 @@ class BotControlWindow:
                 "Mejores señales (arriba = mayor score):",
             ]
         for item in ranked[:10]:
+            signal_ts = self._format_iso_local_text(item.get("timestamp", "N/A"))
             lines.append(
-                f"- {item.get('timestamp', 'N/A')} | {item.get('symbol', 'N/A')} | {item.get('signal_type', 'N/A')} | conf={float(item.get('confidence_score', 0.0) or 0.0):.2f}"
+                f"- {signal_ts} | {item.get('symbol', 'N/A')} | {item.get('signal_type', 'N/A')} | conf={float(item.get('confidence_score', 0.0) or 0.0):.2f}"
             )
 
         recent_news = self.ai_trading_brain.database.list_news_events_since(
@@ -6474,9 +6642,10 @@ class BotControlWindow:
             lines.append("- Sin noticias/textos recientes analizados")
         else:
             for event in recent_news[:8]:
+                event_ts = self._format_iso_local_text(event.get("timestamp", "N/A"))
                 lines.append(
                     "- "
-                    f"{event.get('timestamp', 'N/A')} | {event.get('symbol', 'N/A')} | {event.get('source', 'N/A')} | "
+                    f"{event_ts} | {event.get('symbol', 'N/A')} | {event.get('source', 'N/A')} | "
                     f"sent={float(event.get('sentiment_score', 0.0) or 0.0):.2f} | infl={float(event.get('influence_score', 0.0) or 0.0):.2f}"
                 )
                 text_preview = str(event.get("title_or_text", "") or "").strip()
@@ -6580,6 +6749,10 @@ class BotControlWindow:
             confidence = float(latest_signal.get("confidence_score", 0.0) or 0.0)
             signal_reason = str(latest_signal.get("reason", "") or payload.get("latest_signal_text", "Sin señal"))
             signal_reason = signal_reason.replace("\n", " ").strip()
+            direction = str(payload.get("signal_direction", "N/A") or "N/A")
+            runtime_info = payload.get("runtime", {}) or {}
+            short_enabled = bool(runtime_info.get("futures_enable_short", False))
+            long_enabled = bool(runtime_info.get("futures_enable_long", True))
 
             latest_decision = payload.get("latest_decision") or {}
             exact_block = str(latest_decision.get("blocked_reason", "") or "").strip()
@@ -6589,7 +6762,7 @@ class BotControlWindow:
 
             can_enter_now = bool(payload.get("can_enter_now", False))
             recommendations = payload.get("recommendations", []) or []
-            if can_enter_now and signal_type in {"BUY", "BUY_SMALL"}:
+            if can_enter_now and signal_type in {"BUY", "BUY_SMALL", "SELL_SHORT"}:
                 min_adjustment = "Ninguno: ya puede entrar a operar."
             elif recommendations:
                 first = recommendations[0]
@@ -6600,10 +6773,19 @@ class BotControlWindow:
             else:
                 min_adjustment = "Sin ajuste sugerido automatico; revisar spread, volumen y bloqueos actuales."
 
+            if signal_type == "AVOID" and direction == "N/A":
+                direction = "SIN_ENTRADA"
+            if signal_type == "SELL_SHORT" and not short_enabled:
+                exact_block = "SHORT deshabilitado en runtime (futures_enable_short=OFF)"
+                min_adjustment = "futures_enable_short: OFF -> ON"
+            if signal_type in {"BUY", "BUY_SMALL"} and not long_enabled:
+                exact_block = "LONG deshabilitado en runtime (futures_enable_long=OFF)"
+                min_adjustment = "futures_enable_long: OFF -> ON"
+
             lines.append(f"{index}. {symbol}")
-            lines.append(f"1. Ultima señal: {signal_type} | confianza={confidence:.2f} | razon={signal_reason[:180]}")
+            lines.append(f"1. Ultima señal: {signal_type} | dirección={direction} | confianza={confidence:.2f} | razon={signal_reason[:180]}")
             lines.append(f"2. Ultimo bloqueo exacto: {exact_block}")
-            lines.append(f"3. Ajuste minimo para pasar de WATCH a BUY: {min_adjustment}")
+            lines.append(f"3. Ajuste minimo para habilitar entrada LONG/SHORT: {min_adjustment}")
             lines.append("")
 
         self._set_text_widget(widget, "\n".join(lines).strip())
@@ -7395,7 +7577,7 @@ class BotControlWindow:
             f"Paper trading activado: {'ON' if security.get('paper_trading') else 'OFF'}",
             f"VPN requerida: {'SI' if security.get('vpn_required') else 'NO'}",
             f"VPN lista para operar: {'SI' if security.get('vpn_ready') else 'NO'}",
-            f"Proveedor VPN: {security.get('vpn_provider', 'NordVPN')}",
+            f"Proveedor VPN: {security.get('vpn_provider', 'N/A')}",
             f"Pais VPN requerido: {security.get('vpn_required_country', 'Dominican Republic')}",
             f"Pais VPN actual: {security.get('vpn_country', 'N/A') or 'N/A'}",
             f"Estado VPN: {security.get('vpn_status', 'N/A')}",
@@ -7510,6 +7692,53 @@ class BotControlWindow:
             return
         self._safe_after(0, _apply)
 
+    def _set_diagnostics_details_with_direction_color(self, details_lines: list[str], direction: str) -> None:
+        widget = self.ai_diag_details_text
+        if widget is None:
+            return
+
+        direction_key = str(direction or "").upper().strip()
+        color = "#d4a017"
+        if direction_key == "LONG":
+            color = "#1a8f3c"
+        elif direction_key == "SHORT":
+            color = "#c62828"
+        elif direction_key in {"HOLD", "WATCH"}:
+            color = "#d4a017"
+
+        def _apply() -> None:
+            if self._is_closing or widget is None:
+                return
+            try:
+                if hasattr(widget, "winfo_exists") and not widget.winfo_exists():
+                    return
+                widget.configure(state="normal")
+                widget.delete("1.0", tk.END)
+                widget.tag_configure("diag_direction", foreground=color)
+                widget.tag_configure("diag_can_enter_yes", foreground="#1a8f3c")
+                widget.tag_configure("diag_can_enter_no", foreground="#c62828")
+                for line in details_lines:
+                    if line.startswith("Dirección señal/operación:"):
+                        widget.insert(tk.END, line + "\n", ("diag_direction",))
+                    elif line.startswith("Puede entrar ahora:"):
+                        normalized = line.upper()
+                        if "SI" in normalized:
+                            widget.insert(tk.END, line + "\n", ("diag_can_enter_yes",))
+                        elif "NO" in normalized:
+                            widget.insert(tk.END, line + "\n", ("diag_can_enter_no",))
+                        else:
+                            widget.insert(tk.END, line + "\n")
+                    else:
+                        widget.insert(tk.END, line + "\n")
+                widget.configure(state="disabled")
+            except (RuntimeError, tk.TclError):
+                return
+
+        if threading.get_ident() == self._ui_thread_ident:
+            _apply()
+            return
+        self._safe_after(0, _apply)
+
     def _get_account_runtime(self, account_name: str) -> dict[str, Any]:
         runtime = self._account_runtimes.get(account_name)
         if runtime is not None:
@@ -7578,6 +7807,8 @@ class BotControlWindow:
 
     def _safe_target_profit_value(self) -> float:
         fallback = float(getattr(self, "_target_profit_cached", settings.target_profit_per_share))
+        if threading.get_ident() != self._ui_thread_ident:
+            return fallback
         try:
             value = float(self.target_profit_var.get().strip() or str(settings.target_profit_per_share))
             self._target_profit_cached = value
@@ -7736,6 +7967,11 @@ class BotControlWindow:
     def _apply_runtime_settings(self) -> None:
         target_profit = self._safe_target_profit_value()
         self.position_manager.set_target_profit_per_share(target_profit)
+        try:
+            current_max_open = max(int(float(self.config_max_open_pos_var.get().strip() or str(settings.max_open_positions))), 1)
+            settings.max_open_positions = current_max_open
+        except Exception:
+            pass
 
     def _auto_manage_all_account_positions(self) -> list[dict[str, Any]]:
         actions: list[dict[str, Any]] = []
@@ -7810,13 +8046,25 @@ class BotControlWindow:
                     self._apply_runtime_settings()
                     schedule_actions = self.scheduler.process_pending_schedules()
                     actions = self._auto_manage_all_account_positions()
-                    self._mark_network_recovered()
+                    self._monitor_failure_streak = 0
+                    self._monitor_success_streak += 1
+                    # Avoid network status flapping on single successful cycle.
+                    if self._monitor_success_streak >= 3:
+                        self._mark_network_recovered()
                     message = self._format_monitor_result(schedule_actions, actions)
                     self.root.after(0, self._on_monitor_result, message)
                 except requests.exceptions.RequestException as ex:
+                    self._monitor_success_streak = 0
+                    self._monitor_failure_streak += 1
                     self._mark_network_degraded(
                         f"Sin conexion durante monitoreo general ({ex.__class__.__name__}). Reintentando automaticamente..."
                     )
+                    log_interval = 300.0 if ex.__class__.__name__ == "ReadTimeout" else 120.0
+                    if self._should_emit_transient_log("general-monitor-network", min_interval_seconds=log_interval):
+                        self.logger.warning(
+                            "Sin conexion durante monitoreo general (%s). Reintentando automaticamente...",
+                            ex.__class__.__name__,
+                        )
                 except Exception as ex:
                     self.root.after(0, self._show_error, f"Monitoreo fallido: {ex}")
                 finally:
@@ -7895,9 +8143,11 @@ class BotControlWindow:
             lines.append("  - No hay posiciones abiertas")
         else:
             for position in positions:
+                side_text = "SHORT" if str(position.side).lower().strip() == "short" else "LONG"
+                leverage_value = max(float(getattr(position, "leverage", 1.0) or 1.0), 1.0)
                 lines.append(
                     "  - "
-                    f"{position.symbol} | qty={position.qty} | entry={position.avg_entry_price:.2f} | "
+                    f"{position.symbol} | side={side_text} | lev={leverage_value:.0f}x | qty={position.qty} | entry={position.avg_entry_price:.2f} | "
                     f"current={position.current_price:.2f} | pnl={position.unrealized_pl:.2f} | "
                     f"state={position.state} | pnl/share={position.pnl_per_share:.2f} | "
                     f"age={position.duration_seconds/60.0:.1f}m"
