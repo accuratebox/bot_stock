@@ -1363,9 +1363,9 @@ class TradingBrainDatabase:
             "win_rate": win_rate,
         }
 
-    def load_training_samples(self, label_type: str = "result_15m_fallback_30m") -> list[dict[str, Any]]:
+    def load_training_samples(self, label_type: str = "result_5m_fallback_15m") -> list[dict[str, Any]]:
         samples: list[dict[str, Any]] = []
-        label_type_norm = str(label_type or "result_15m_fallback_30m").strip().lower()
+        label_type_norm = str(label_type or "result_5m_fallback_15m").strip().lower()
         supported = {
             "result_5m",
             "result_5m_fallback_15m",
@@ -1374,7 +1374,31 @@ class TradingBrainDatabase:
             "final_label",
         }
         if label_type_norm not in supported:
-            label_type_norm = "result_15m_fallback_30m"
+            label_type_norm = "result_5m_fallback_15m"
+
+        def _sample_weight(label_source: str, selected_label: str, max_profit: float, max_drawdown: float) -> float:
+            base_weight = 1.0
+            if label_source == "result_5m":
+                base_weight = 1.6
+            elif label_source == "result_15m":
+                base_weight = 1.2
+            elif label_source == "result_30m":
+                base_weight = 1.0
+
+            if selected_label == "win":
+                base_weight += 0.2
+            elif selected_label == "loss":
+                base_weight += 0.1 if label_source == "result_5m" else 0.0
+            else:
+                base_weight -= 0.1
+
+            if max_profit > 0.0:
+                base_weight += min(max_profit / 10.0, 0.25)
+            if max_drawdown < 0.0:
+                base_weight += min(abs(max_drawdown) / 10.0, 0.25)
+
+            return max(base_weight, 0.5)
+
         with self.connect() as connection:
             rows = connection.execute(
                 """
@@ -1450,6 +1474,7 @@ class TradingBrainDatabase:
                     "label": label,
                     "final_label": selected_label,
                     "label_source": label_source,
+                    "sample_weight": _sample_weight(label_source, selected_label, max_profit, max_drawdown),
                     "timestamp": str(row["timestamp"] or ""),
                     "confidence_score": float(row["confidence_score"] or 0.0),
                     "max_profit_pct": max_profit,

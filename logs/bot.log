@@ -24670,3 +24670,725 @@ ValueError: No hay posicion activa para vender
 2026-07-07 14:02:10 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
 2026-07-07 14:02:40 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
 2026-07-07 14:03:10 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 14:15:31 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-07 14:15:33 | INFO | trading_bot | Recuperacion inicial | abiertas=2 sincronizadas=0 ya_linkeadas=2
+2026-07-07 14:15:33 | INFO | trading_bot | Inhibidor de suspension activado
+2026-07-07 14:15:33 | INFO | trading_bot | Helper de emergencia iniciado (pid=380428)
+2026-07-07 14:15:34 | INFO | trading_bot | Workers automaticos iniciados para Binance Demo
+2026-07-07 14:15:37 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-07 14:15:38 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 14:15:39 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-07 14:15:39 | WARNING | trading_bot | Using fallback REST bars for AVAX/USD
+2026-07-07 14:15:41 | INFO | trading_bot | CoinGecko global volume updated successfully
+2026-07-07 14:15:42 | INFO | trading_bot | Orden limite creada: 1403126517
+2026-07-07 14:15:42 | INFO | trading_bot | Auto-ejecucion IA SHORT | DOGE/USD | score=64.44 | result=submitted
+2026-07-07 14:15:43 | WARNING | trading_bot | Using fallback REST bars for BTC/USD
+2026-07-07 14:15:43 | INFO | trading_bot | CoinGecko global volume updated successfully
+2026-07-07 14:15:45 | INFO | trading_bot | Workers automaticos en pausa
+2026-07-07 14:15:45 | WARNING | trading_bot | Using fallback REST bars for DOGE/USD
+2026-07-07 14:15:46 | INFO | trading_bot | Workers automaticos iniciados para Binance Demo
+2026-07-07 14:15:46 | INFO | trading_bot | CoinGecko global volume updated successfully
+2026-07-07 14:15:48 | WARNING | trading_bot | Using fallback REST bars for ETH/USD
+2026-07-07 14:15:49 | INFO | trading_bot | CoinGecko global volume updated successfully
+2026-07-07 14:15:57 | WARNING | trading_bot | No se pudo refrescar estado NYSE: HTTPSConnectionPool(host='www.nyse.com', port=443): Read timed out. (read timeout=20)
+2026-07-07 14:16:01 | INFO | trading_bot | Workers automaticos iniciados para Binance Demo
+2026-07-07 14:16:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 14:16:33 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-07 14:16:35 | WARNING | trading_bot | Using fallback REST bars for LINK/USD
+2026-07-07 14:16:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 14:16:37 | INFO | trading_bot | CoinGecko global volume updated successfully
+2026-07-07 14:16:38 | INFO | trading_bot | Orden limite creada: 1272497219
+2026-07-07 14:16:38 | INFO | trading_bot | Auto-ejecucion IA SHORT | LTC/USD | score=62.00 | result=submitted
+2026-07-07 14:16:41 | WARNING | trading_bot | Using fallback REST bars for SOL/USD
+2026-07-07 14:16:42 | INFO | trading_bot | CoinGecko global volume updated successfully
+2026-07-07 14:16:45 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-07 14:16:45 | WARNING | trading_bot | Using fallback REST bars for XRP/USD
+2026-07-07 14:16:46 | INFO | trading_bot | CoinGecko global volume updated successfully
+2026-07-07 14:17:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 14:17:36 | INFO | trading_bot | Orden limite creada: 316533087
+2026-07-07 14:17:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 14:17:37 | INFO | trading_bot | Auto-ejecucion IA | IOTA/USD | BUY_SMALL | score=66.54 | result=submitted
+2026-07-07 14:17:48 | INFO | trading_bot | Orden limite creada: 240370318
+2026-07-07 14:17:48 | INFO | trading_bot | Auto-ejecucion IA SHORT | ZIL/USD | score=67.46 | result=submitted
+2026-07-07 14:17:49 | INFO | trading_bot | Orden limite creada: 316533364
+2026-07-07 14:17:49 | INFO | trading_bot | Salida inmediata creada IOTA/USD qty=6677.30000000 limit=0.03732744 reason=repair_missing_limit_from_tracking
+2026-07-07 14:18:07 | INFO | trading_bot | Recuperacion de posiciones abierta(s): 1
+2026-07-07 14:18:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=1 ya_linkeadas=2 reparadas=0
+2026-07-07 14:18:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:18:46 | INFO | trading_bot | Orden limite creada: 190510077
+2026-07-07 14:18:46 | INFO | trading_bot | Auto-ejecucion IA SHORT | EGLD/USD | score=60.00 | result=submitted
+2026-07-07 14:19:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:19:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:19:46 | INFO | trading_bot | Auto-ejecucion bloqueada para 1INCH/USD: Compra bloqueada: expectativa de ganancia neta no positiva (riesgo de loss esperado)
+2026-07-07 14:19:56 | INFO | trading_bot | Orden limite creada: 189018074
+2026-07-07 14:19:56 | INFO | trading_bot | Auto-ejecucion IA SHORT | CHR/USD | score=69.42 | result=submitted
+2026-07-07 14:20:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:20:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:20:49 | INFO | trading_bot | Orden limite creada: 194354547
+2026-07-07 14:20:49 | INFO | trading_bot | Auto-ejecucion IA SHORT | OGN/USD | score=71.03 | result=submitted
+2026-07-07 14:20:53 | INFO | trading_bot | Orden limite creada: 269484416
+2026-07-07 14:20:53 | INFO | trading_bot | Auto-ejecucion IA SHORT | 1000SHIB/USD | score=61.96 | result=submitted
+2026-07-07 14:21:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:21:38 | INFO | trading_bot | Orden limite creada: 194355156
+2026-07-07 14:21:38 | INFO | trading_bot | Salida inmediata creada OGN/USD qty=29691.00000000 limit=0.01683158 reason=reconcile_missing_target_limit
+2026-07-07 14:21:41 | INFO | trading_bot | Orden limite creada: 269486378
+2026-07-07 14:21:41 | INFO | trading_bot | Salida inmediata creada 1000SHIB/USD qty=112107.00000000 limit=0.00445777 reason=reconcile_missing_target_limit
+2026-07-07 14:21:41 | INFO | trading_bot | Targets limit reparados al iniciar: 2
+2026-07-07 14:21:41 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=5 sincronizadas=0 ya_linkeadas=5 reparadas=2
+2026-07-07 14:21:49 | INFO | trading_bot | Orden limite creada: 180132938
+2026-07-07 14:21:49 | INFO | trading_bot | Auto-ejecucion IA SHORT | ARPA/USD | score=63.00 | result=submitted
+2026-07-07 14:22:08 | INFO | trading_bot | Orden limite creada: 180133211
+2026-07-07 14:22:08 | INFO | trading_bot | Salida inmediata creada ARPA/USD qty=58548.00000000 limit=0.00856573 reason=reconcile_missing_target_limit
+2026-07-07 14:22:09 | INFO | trading_bot | Recuperacion de posiciones abierta(s): 1
+2026-07-07 14:22:09 | INFO | trading_bot | Targets limit reparados al iniciar: 1
+2026-07-07 14:22:09 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=5 sincronizadas=1 ya_linkeadas=4 reparadas=1
+2026-07-07 14:22:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=4 sincronizadas=0 ya_linkeadas=4 reparadas=0
+2026-07-07 14:22:54 | INFO | trading_bot | Orden limite creada: 175777523
+2026-07-07 14:22:54 | INFO | trading_bot | Auto-ejecucion IA SHORT | 1000LUNC/USD | score=71.64 | result=submitted
+2026-07-07 14:23:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=4 sincronizadas=0 ya_linkeadas=4 reparadas=0
+2026-07-07 14:23:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=4 sincronizadas=0 ya_linkeadas=4 reparadas=0
+2026-07-07 14:24:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=4 sincronizadas=0 ya_linkeadas=4 reparadas=0
+2026-07-07 14:24:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=4 sincronizadas=0 ya_linkeadas=4 reparadas=0
+2026-07-07 14:24:42 | INFO | trading_bot | Orden limite creada: 125722986
+2026-07-07 14:24:51 | INFO | trading_bot | Auto-ejecucion IA | ID/USD | BUY_SMALL | score=66.61 | result=submitted
+2026-07-07 14:25:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=4 sincronizadas=0 ya_linkeadas=4 reparadas=0
+2026-07-07 14:25:36 | INFO | trading_bot | Orden limite creada: 146828432
+2026-07-07 14:25:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=4 sincronizadas=0 ya_linkeadas=4 reparadas=0
+2026-07-07 14:25:45 | INFO | trading_bot | Auto-ejecucion IA | BLUR/USD | BUY_SMALL | score=68.73 | result=submitted
+2026-07-07 14:25:51 | INFO | trading_bot | Orden limite creada: 609223705
+2026-07-07 14:25:52 | INFO | trading_bot | Auto-ejecucion IA | 1000PEPE/USD | BUY_SMALL | score=68.67 | result=submitted
+2026-07-07 14:26:01 | INFO | trading_bot | Orden limite creada: 125723824
+2026-07-07 14:26:01 | INFO | trading_bot | Salida inmediata creada ID/USD qty=6322.00000000 limit=0.03957954 reason=repair_missing_limit_from_tracking
+2026-07-07 14:26:05 | INFO | trading_bot | Orden limite creada: 609224710
+2026-07-07 14:26:05 | INFO | trading_bot | Salida inmediata creada 1000PEPE/USD qty=91200.00000000 limit=0.00272514 reason=repair_missing_limit_from_tracking
+2026-07-07 14:26:07 | INFO | trading_bot | Recuperacion de posiciones abierta(s): 2
+2026-07-07 14:26:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=5 sincronizadas=2 ya_linkeadas=3 reparadas=0
+2026-07-07 14:26:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=5 sincronizadas=0 ya_linkeadas=5 reparadas=0
+2026-07-07 14:27:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=4 sincronizadas=0 ya_linkeadas=4 reparadas=0
+2026-07-07 14:27:51 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-07 14:27:53 | INFO | trading_bot | Recuperacion inicial | abiertas=4 sincronizadas=0 ya_linkeadas=4
+2026-07-07 14:27:54 | INFO | trading_bot | Inhibidor de suspension activado
+2026-07-07 14:27:54 | INFO | trading_bot | Helper de emergencia iniciado (pid=385841)
+2026-07-07 14:27:54 | WARNING | trading_bot | Otra instancia del bot ya está activa. Cancelando segundo arranque.
+2026-07-07 14:27:55 | INFO | trading_bot | Workers automaticos iniciados para Binance Demo
+2026-07-07 14:27:56 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-07 14:27:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=4 sincronizadas=0 ya_linkeadas=4 reparadas=0
+2026-07-07 14:28:00 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-07 14:28:00 | WARNING | trading_bot | Using fallback REST bars for AVAX/USD
+2026-07-07 14:28:01 | INFO | trading_bot | CoinGecko global volume updated successfully
+2026-07-07 14:28:02 | INFO | trading_bot | Auto-short bloqueado para DOGE/USD: Notional insuficiente para DOGEUSDT: 3.982420 < 5.000000
+2026-07-07 14:28:03 | WARNING | trading_bot | Using fallback REST bars for BTC/USD
+2026-07-07 14:28:03 | INFO | trading_bot | CoinGecko global volume updated successfully
+2026-07-07 14:28:06 | WARNING | trading_bot | Using fallback REST bars for DOGE/USD
+2026-07-07 14:28:07 | INFO | trading_bot | CoinGecko global volume updated successfully
+2026-07-07 14:28:10 | WARNING | trading_bot | Using fallback REST bars for ETH/USD
+2026-07-07 14:28:10 | INFO | trading_bot | CoinGecko global volume updated successfully
+2026-07-07 14:28:16 | WARNING | trading_bot | No se pudo refrescar estado NYSE: HTTPSConnectionPool(host='www.nyse.com', port=443): Read timed out. (read timeout=20)
+2026-07-07 14:28:26 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=4 sincronizadas=0 ya_linkeadas=4 reparadas=0
+2026-07-07 14:28:52 | INFO | trading_bot | Auto-short bloqueado para 1000PEPE/USD: Notional insuficiente para 1000PEPEUSDT: 3.999353 < 5.000000
+2026-07-07 14:28:56 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-07 14:28:56 | WARNING | trading_bot | Using fallback REST bars for LINK/USD
+2026-07-07 14:28:56 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=4 sincronizadas=0 ya_linkeadas=4 reparadas=0
+2026-07-07 14:28:59 | INFO | trading_bot | CoinGecko global volume updated successfully
+2026-07-07 14:29:01 | INFO | trading_bot | Auto-ejecucion bloqueada para ARPA/USD: Notional insuficiente para ARPAUSDT: 1.994480 < 5.000000
+2026-07-07 14:29:02 | WARNING | trading_bot | Using fallback REST bars for SOL/USD
+2026-07-07 14:29:03 | INFO | trading_bot | CoinGecko global volume updated successfully
+2026-07-07 14:29:06 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-07 14:29:06 | INFO | trading_bot | Auto-short bloqueado para LTC/USD: Notional insuficiente para LTCUSDT: 3.988800 < 5.000000
+2026-07-07 14:29:06 | WARNING | trading_bot | Using fallback REST bars for XRP/USD
+2026-07-07 14:29:07 | INFO | trading_bot | CoinGecko global volume updated successfully
+2026-07-07 14:29:23 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-07 14:29:26 | INFO | trading_bot | Recuperacion inicial | abiertas=4 sincronizadas=0 ya_linkeadas=4
+2026-07-07 14:29:26 | INFO | trading_bot | Inhibidor de suspension activado
+2026-07-07 14:29:26 | INFO | trading_bot | Helper de emergencia iniciado (pid=386556)
+2026-07-07 14:29:27 | INFO | trading_bot | Workers automaticos iniciados para Binance Demo
+2026-07-07 14:29:28 | INFO | trading_bot | Pestana guardada omitida por no tener posicion abierta en broker: BLUR/USD (Binance Demo)
+2026-07-07 14:29:28 | INFO | trading_bot | Se omitieron 1 pestaña(s) guardadas sin posición abierta.
+2026-07-07 14:29:30 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=4 sincronizadas=0 ya_linkeadas=4 reparadas=0
+2026-07-07 14:29:30 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-07 14:29:31 | WARNING | trading_bot | Using fallback REST bars for AVAX/USD
+2026-07-07 14:29:31 | INFO | trading_bot | CoinGecko global volume updated successfully
+2026-07-07 14:29:33 | WARNING | trading_bot | Using fallback REST bars for BTC/USD
+2026-07-07 14:29:34 | INFO | trading_bot | Auto-short bloqueado para DOGE/USD: Notional insuficiente para DOGEUSDT: 3.976060 < 5.000000
+2026-07-07 14:29:34 | INFO | trading_bot | CoinGecko global volume updated successfully
+2026-07-07 14:29:37 | WARNING | trading_bot | Using fallback REST bars for DOGE/USD
+2026-07-07 14:29:39 | INFO | trading_bot | CoinGecko global volume updated successfully
+2026-07-07 14:29:41 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-07 14:29:41 | WARNING | trading_bot | Using fallback REST bars for ETH/USD
+2026-07-07 14:29:42 | INFO | trading_bot | CoinGecko global volume updated successfully
+2026-07-07 14:29:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=4 sincronizadas=0 ya_linkeadas=4 reparadas=0
+2026-07-07 14:30:24 | INFO | trading_bot | Auto-short bloqueado para 1000PEPE/USD: Notional insuficiente para 1000PEPEUSDT: 3.999195 < 5.000000
+2026-07-07 14:30:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=4 sincronizadas=0 ya_linkeadas=4 reparadas=0
+2026-07-07 14:30:28 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-07 14:30:30 | WARNING | trading_bot | Using fallback REST bars for LINK/USD
+2026-07-07 14:30:31 | INFO | trading_bot | CoinGecko global volume updated successfully
+2026-07-07 14:30:31 | INFO | trading_bot | Auto-short bloqueado para KAVA/USD: Notional insuficiente para KAVAUSDT: 3.997833 < 5.000000
+2026-07-07 14:30:33 | WARNING | trading_bot | Using fallback REST bars for SOL/USD
+2026-07-07 14:30:35 | INFO | trading_bot | CoinGecko global volume updated successfully
+2026-07-07 14:30:37 | WARNING | trading_bot | Using fallback REST bars for XRP/USD
+2026-07-07 14:30:39 | INFO | trading_bot | CoinGecko global volume updated successfully
+2026-07-07 14:30:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=4 sincronizadas=0 ya_linkeadas=4 reparadas=0
+2026-07-07 14:31:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=4 sincronizadas=0 ya_linkeadas=4 reparadas=0
+2026-07-07 14:31:33 | INFO | trading_bot | Auto-short bloqueado para IOTA/USD: Notional insuficiente para IOTAUSDT: 3.996416 < 5.000000
+2026-07-07 14:31:37 | INFO | trading_bot | Auto-short bloqueado para VET/USD: Notional insuficiente para VETUSDT: 3.995780 < 5.000000
+2026-07-07 14:31:43 | INFO | trading_bot | Auto-short bloqueado para IOST/USD: Notional insuficiente para IOSTUSDT: 3.999926 < 5.000000
+2026-07-07 14:31:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=4 sincronizadas=0 ya_linkeadas=4 reparadas=0
+2026-07-07 14:32:27 | INFO | trading_bot | Auto-short bloqueado para ZIL/USD: Notional insuficiente para ZILUSDT: 3.999420 < 5.000000
+2026-07-07 14:32:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=4 sincronizadas=0 ya_linkeadas=4 reparadas=0
+2026-07-07 14:32:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=4 sincronizadas=0 ya_linkeadas=4 reparadas=0
+2026-07-07 14:33:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=4 sincronizadas=0 ya_linkeadas=4 reparadas=0
+2026-07-07 14:33:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=4 sincronizadas=0 ya_linkeadas=4 reparadas=0
+2026-07-07 14:34:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=4 sincronizadas=0 ya_linkeadas=4 reparadas=0
+2026-07-07 14:34:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=4 sincronizadas=0 ya_linkeadas=4 reparadas=0
+2026-07-07 14:35:27 | INFO | trading_bot | Auto-short bloqueado para C98/USD: Notional insuficiente para C98USDT: 3.987620 < 5.000000
+2026-07-07 14:35:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=4 sincronizadas=0 ya_linkeadas=4 reparadas=0
+2026-07-07 14:35:36 | INFO | trading_bot | Auto-ejecucion bloqueada para GALA/USD: Notional insuficiente para GALAUSDT: 1.998050 < 5.000000
+2026-07-07 14:35:45 | INFO | trading_bot | Auto-ejecucion bloqueada para PEOPLE/USD: Notional insuficiente para PEOPLEUSDT: 1.999872 < 5.000000
+2026-07-07 14:35:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=4 sincronizadas=0 ya_linkeadas=4 reparadas=0
+2026-07-07 14:36:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=4 sincronizadas=0 ya_linkeadas=4 reparadas=0
+2026-07-07 14:36:42 | INFO | trading_bot | Auto-ejecucion bloqueada para SPELL/USD: Notional insuficiente para SPELLUSDT: 1.999985 < 5.000000
+2026-07-07 14:36:50 | INFO | trading_bot | Auto-short bloqueado para QNT/USD: Cantidad invalida para QNTUSDT tras ajustar step/minQty
+2026-07-07 14:36:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=4 sincronizadas=0 ya_linkeadas=4 reparadas=0
+2026-07-07 14:37:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=4 sincronizadas=0 ya_linkeadas=4 reparadas=0
+2026-07-07 14:37:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=4 sincronizadas=0 ya_linkeadas=4 reparadas=0
+2026-07-07 14:38:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=4 sincronizadas=0 ya_linkeadas=4 reparadas=0
+2026-07-07 14:38:41 | INFO | trading_bot | Auto-ejecucion bloqueada para BLUR/USD: Notional insuficiente para BLURUSDT: 1.997450 < 5.000000
+2026-07-07 14:38:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=4 sincronizadas=0 ya_linkeadas=4 reparadas=0
+2026-07-07 14:39:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:39:43 | INFO | trading_bot | Auto-short bloqueado para BICO/USD: Notional insuficiente para BICOUSDT: 3.993120 < 5.000000
+2026-07-07 14:39:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:40:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:40:39 | INFO | trading_bot | Auto-ejecucion bloqueada para STEEM/USD: Notional insuficiente para STEEMUSDT: 1.987680 < 5.000000
+2026-07-07 14:40:45 | INFO | trading_bot | Auto-ejecucion bloqueada para KAS/USD: Notional insuficiente para KASUSDT: 1.971420 < 5.000000
+2026-07-07 14:40:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:41:28 | INFO | trading_bot | Auto-short bloqueado para USTC/USD: Notional insuficiente para USTCUSDT: 3.996960 < 5.000000
+2026-07-07 14:41:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:41:40 | INFO | trading_bot | Auto-short bloqueado para 1000RATS/USD: Notional insuficiente para 1000RATSUSDT: 3.977640 < 5.000000
+2026-07-07 14:41:52 | INFO | trading_bot | Auto-ejecucion bloqueada para MANTA/USD: Notional insuficiente para MANTAUSDT: 1.997320 < 5.000000
+2026-07-07 14:41:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:42:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:42:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:43:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:43:31 | INFO | trading_bot | Auto-ejecucion bloqueada para VANRY/USD: Notional insuficiente para VANRYUSDT: 1.995500 < 5.000000
+2026-07-07 14:43:35 | INFO | trading_bot | Auto-short bloqueado para BOME/USD: Notional insuficiente para BOMEUSDT: 3.999632 < 5.000000
+2026-07-07 14:43:43 | INFO | trading_bot | Auto-short bloqueado para W/USD: Notional insuficiente para WUSDT: 3.999424 < 5.000000
+2026-07-07 14:43:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:44:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:44:42 | INFO | trading_bot | Auto-short bloqueado para G/USD: Notional insuficiente para GUSDT: 3.996944 < 5.000000
+2026-07-07 14:44:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:45:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:45:48 | INFO | trading_bot | Auto-short bloqueado para HMSTR/USD: Notional insuficiente para HMSTRUSDT: 3.999738 < 5.000000
+2026-07-07 14:45:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:46:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:46:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:47:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:47:49 | INFO | trading_bot | Auto-ejecucion bloqueada para ACX/USD: Notional insuficiente para ACXUSDT: 1.999818 < 5.000000
+2026-07-07 14:47:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:48:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:48:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:49:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:49:34 | INFO | trading_bot | Auto-ejecucion bloqueada para GRIFFAIN/USD: Notional insuficiente para GRIFFAINUSDT: 1.993680 < 5.000000
+2026-07-07 14:49:44 | INFO | trading_bot | Auto-ejecucion bloqueada para SWARMS/USD: Notional insuficiente para SWARMSUSDT: 1.999240 < 5.000000
+2026-07-07 14:49:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:50:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:50:29 | INFO | trading_bot | Auto-ejecucion bloqueada para SOLV/USD: Notional insuficiente para SOLVUSDT: 1.998720 < 5.000000
+2026-07-07 14:50:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:51:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:51:36 | INFO | trading_bot | Auto-short bloqueado para MUBARAK/USD: Notional insuficiente para MUBARAKUSDT: 3.989400 < 5.000000
+2026-07-07 14:51:50 | INFO | trading_bot | Auto-ejecucion bloqueada para SIREN/USD: Notional insuficiente para SIRENUSDT: 1.996400 < 5.000000
+2026-07-07 14:51:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:52:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:52:42 | INFO | trading_bot | Auto-ejecucion bloqueada para STO/USD: Notional insuficiente para STOUSDT: 1.963920 < 5.000000
+2026-07-07 14:52:45 | INFO | trading_bot | Auto-ejecucion bloqueada para FHE/USD: Notional insuficiente para FHEUSDT: 1.996140 < 5.000000
+2026-07-07 14:52:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:53:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:53:30 | INFO | trading_bot | Auto-ejecucion bloqueada para DEEP/USD: Notional insuficiente para DEEPUSDT: 1.999160 < 5.000000
+2026-07-07 14:53:37 | INFO | trading_bot | Auto-short bloqueado para SIGN/USD: Notional insuficiente para SIGNUSDT: 3.995680 < 5.000000
+2026-07-07 14:53:51 | INFO | trading_bot | Auto-short bloqueado para DOLO/USD: Notional insuficiente para DOLOUSDT: 3.985240 < 5.000000
+2026-07-07 14:53:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:54:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:54:30 | INFO | trading_bot | Auto-short bloqueado para HAEDAL/USD: Notional insuficiente para HAEDALUSDT: 3.985900 < 5.000000
+2026-07-07 14:54:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:55:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:55:39 | INFO | trading_bot | Auto-short bloqueado para F/USD: Notional insuficiente para FUSDT: 3.998644 < 5.000000
+2026-07-07 14:55:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:56:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:56:33 | INFO | trading_bot | Auto-short bloqueado para C/USD: Notional insuficiente para CUSDT: 3.937660 < 5.000000
+2026-07-07 14:56:39 | INFO | trading_bot | Auto-short bloqueado para TAC/USD: Notional insuficiente para TACUSDT: 3.995496 < 5.000000
+2026-07-07 14:56:45 | INFO | trading_bot | Auto-short bloqueado para SLP/USD: Notional insuficiente para SLPUSDT: 3.999933 < 5.000000
+2026-07-07 14:56:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:57:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:57:47 | INFO | trading_bot | Auto-short bloqueado para SAPIEN/USD: Notional insuficiente para SAPIENUSDT: 3.932760 < 5.000000
+2026-07-07 14:57:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:58:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:58:31 | INFO | trading_bot | Auto-short bloqueado para HUMA/USD: Notional insuficiente para HUMAUSDT: 3.989848 < 5.000000
+2026-07-07 14:58:40 | INFO | trading_bot | Auto-ejecucion bloqueada para BAS/USD: Notional insuficiente para BASUSDT: 1.999434 < 5.000000
+2026-07-07 14:58:46 | INFO | trading_bot | Auto-short bloqueado para MITO/USD: Notional insuficiente para MITOUSDT: 3.998290 < 5.000000
+2026-07-07 14:58:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:59:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 14:59:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:00:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:00:34 | INFO | trading_bot | Auto-short bloqueado para BLESS/USD: Notional insuficiente para BLESSUSDT: 3.993300 < 5.000000
+2026-07-07 15:00:43 | INFO | trading_bot | Auto-short bloqueado para ORDER/USD: Notional insuficiente para ORDERUSDT: 3.987770 < 5.000000
+2026-07-07 15:00:50 | INFO | trading_bot | Auto-short bloqueado para 4/USD: Notional insuficiente para 4USDT: 3.996460 < 5.000000
+2026-07-07 15:00:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:01:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:01:33 | INFO | trading_bot | Auto-short bloqueado para YB/USD: Notional insuficiente para YBUSDT: 3.943200 < 5.000000
+2026-07-07 15:01:59 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:02:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:02:35 | INFO | trading_bot | Auto-short bloqueado para SENT/USD: Notional insuficiente para SENTUSDT: 3.986030 < 5.000000
+2026-07-07 15:02:50 | INFO | trading_bot | Auto-short bloqueado para GUA/USD: Notional insuficiente para GUAUSDT: 3.994560 < 5.000000
+2026-07-07 15:02:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:03:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:03:33 | INFO | trading_bot | Auto-ejecucion bloqueada para COLLECT/USD: Notional insuficiente para COLLECTUSDT: 1.977760 < 5.000000
+2026-07-07 15:03:40 | INFO | trading_bot | Auto-short bloqueado para FOGO/USD: Notional insuficiente para FOGOUSDT: 3.995000 < 5.000000
+2026-07-07 15:03:49 | INFO | trading_bot | Auto-short bloqueado para SKR/USD: Notional insuficiente para SKRUSDT: 3.998010 < 5.000000
+2026-07-07 15:03:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:04:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:04:38 | INFO | trading_bot | Auto-ejecucion bloqueada para MEGA/USD: Notional insuficiente para MEGAUSDT: 1.949020 < 5.000000
+2026-07-07 15:04:45 | INFO | trading_bot | Auto-ejecucion bloqueada para CRCL/USD: Notional insuficiente para CRCLUSDT: 1.344200 < 5.000000
+2026-07-07 15:04:53 | INFO | trading_bot | Auto-ejecucion bloqueada para TRIA/USD: Notional insuficiente para TRIAUSDT: 1.998740 < 5.000000
+2026-07-07 15:04:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:05:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:05:59 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:06:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:06:59 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:07:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:07:35 | INFO | trading_bot | Orden limite creada: 180184748
+2026-07-07 15:07:35 | INFO | trading_bot | Salida inmediata creada ARPA/USD qty=25353.00000000 limit=0.00854831 reason=repair_missing_limit_from_tracking
+2026-07-07 15:07:59 | INFO | trading_bot | Orden limite creada: 180185504
+2026-07-07 15:07:59 | INFO | trading_bot | Salida inmediata creada ARPA/USD qty=25353.00000000 limit=0.00856169 reason=reconcile_missing_target_limit
+2026-07-07 15:07:59 | INFO | trading_bot | Targets limit reparados al iniciar: 1
+2026-07-07 15:07:59 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=1
+2026-07-07 15:08:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:08:39 | INFO | trading_bot | Auto-short bloqueado para IOST/USD: Notional insuficiente para IOSTUSDT: 3.999930 < 5.000000
+2026-07-07 15:08:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:09:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:09:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:10:02 | INFO | trading_bot | Auto-ejecucion bloqueada para RSR/USD: Notional insuficiente para RSRUSDT: 1.999887 < 5.000000
+2026-07-07 15:10:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:10:54 | INFO | trading_bot | Auto-short bloqueado para CHZ/USD: Notional insuficiente para CHZUSDT: 3.984380 < 5.000000
+2026-07-07 15:10:58 | INFO | trading_bot | Auto-short bloqueado para ANKR/USD: Notional insuficiente para ANKRUSDT: 3.996480 < 5.000000
+2026-07-07 15:10:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:11:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:11:34 | INFO | trading_bot | Auto-short bloqueado para CHR/USD: Notional insuficiente para CHRUSDT: 3.993300 < 5.000000
+2026-07-07 15:11:46 | INFO | trading_bot | Auto-short bloqueado para ONE/USD: Notional insuficiente para ONEUSDT: 3.999960 < 5.000000
+2026-07-07 15:11:55 | INFO | trading_bot | Auto-short bloqueado para CELR/USD: Notional insuficiente para CELRUSDT: 3.998560 < 5.000000
+2026-07-07 15:11:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:12:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:12:37 | INFO | trading_bot | Auto-short bloqueado para IOTX/USD: Notional insuficiente para IOTXUSDT: 3.997584 < 5.000000
+2026-07-07 15:12:42 | INFO | trading_bot | Auto-short bloqueado para C98/USD: Notional insuficiente para C98USDT: 3.994080 < 5.000000
+2026-07-07 15:12:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:12:59 | INFO | trading_bot | Auto-ejecucion bloqueada para CTSI/USD: Notional insuficiente para CTSIUSDT: 1.982400 < 5.000000
+2026-07-07 15:13:29 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:13:51 | INFO | trading_bot | Auto-short bloqueado para JASMY/USD: Notional insuficiente para JASMYUSDT: 3.998770 < 5.000000
+2026-07-07 15:13:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:14:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:14:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:15:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:15:49 | INFO | trading_bot | Auto-short bloqueado para 1000PEPE/USD: Notional insuficiente para 1000PEPEUSDT: 3.999195 < 5.000000
+2026-07-07 15:15:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:16:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:16:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:17:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:17:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:18:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:18:34 | INFO | trading_bot | Auto-short bloqueado para 1000RATS/USD: Notional insuficiente para 1000RATSUSDT: 3.970020 < 5.000000
+2026-07-07 15:18:41 | INFO | trading_bot | Auto-ejecucion bloqueada para ACE/USD: Notional insuficiente para ACEUSDT: 1.944800 < 5.000000
+2026-07-07 15:18:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:19:08 | INFO | trading_bot | Auto-ejecucion bloqueada para ALT/USD: Notional insuficiente para ALTUSDT: 1.996800 < 5.000000
+2026-07-07 15:19:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:19:49 | INFO | trading_bot | Auto-short bloqueado para STRK/USD: Notional insuficiente para STRKUSDT: 3.998460 < 5.000000
+2026-07-07 15:19:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:20:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:20:35 | INFO | trading_bot | Auto-ejecucion bloqueada para BOME/USD: Notional insuficiente para BOMEUSDT: 1.999983 < 5.000000
+2026-07-07 15:20:56 | INFO | trading_bot | Auto-ejecucion bloqueada para NOT/USD: Notional insuficiente para NOTUSDT: 1.999759 < 5.000000
+2026-07-07 15:20:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:21:29 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:21:35 | INFO | trading_bot | Auto-ejecucion bloqueada para LISTA/USD: Notional insuficiente para LISTAUSDT: 2.000000 < 5.000000
+2026-07-07 15:21:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:22:00 | INFO | trading_bot | Auto-ejecucion bloqueada para SUN/USD: Notional insuficiente para SUNUSDT: 1.990275 < 5.000000
+2026-07-07 15:22:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:22:58 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:23:28 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:23:54 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-07 15:23:56 | WARNING | trading_bot | Using fallback REST bars for AVAX/USD
+2026-07-07 15:23:58 | INFO | trading_bot | CoinGecko global volume updated successfully
+2026-07-07 15:23:59 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:24:02 | INFO | trading_bot | Iniciando trading bot UI
+2026-07-07 15:24:04 | INFO | trading_bot | Recuperacion inicial | abiertas=3 sincronizadas=0 ya_linkeadas=3
+2026-07-07 15:24:05 | INFO | trading_bot | Inhibidor de suspension activado
+2026-07-07 15:24:05 | INFO | trading_bot | Helper de emergencia iniciado (pid=409822)
+2026-07-07 15:24:06 | INFO | trading_bot | Workers automaticos iniciados para Binance Demo
+2026-07-07 15:24:07 | INFO | trading_bot | Pestana guardada omitida por no tener posicion abierta en broker: BLUR/USD (Binance Demo)
+2026-07-07 15:24:07 | INFO | trading_bot | Se omitieron 1 pestaña(s) guardadas sin posición abierta.
+2026-07-07 15:24:07 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-07 15:24:09 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:24:09 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-07 15:24:10 | WARNING | trading_bot | Using fallback REST bars for AVAX/USD
+2026-07-07 15:24:11 | INFO | trading_bot | CoinGecko global volume updated successfully
+2026-07-07 15:24:12 | INFO | trading_bot | Auto-short bloqueado para DOGE/USD: Notional insuficiente para DOGEUSDT: 3.936310 < 5.000000
+2026-07-07 15:24:12 | WARNING | trading_bot | Using fallback REST bars for BTC/USD
+2026-07-07 15:24:14 | INFO | trading_bot | CoinGecko global volume updated successfully
+2026-07-07 15:24:16 | WARNING | trading_bot | Using fallback REST bars for DOGE/USD
+2026-07-07 15:24:17 | INFO | trading_bot | CoinGecko global volume updated successfully
+2026-07-07 15:24:19 | WARNING | trading_bot | Using fallback REST bars for ETH/USD
+2026-07-07 15:24:21 | INFO | trading_bot | CoinGecko global volume updated successfully
+2026-07-07 15:24:27 | WARNING | trading_bot | No se pudo refrescar estado NYSE: HTTPSConnectionPool(host='www.nyse.com', port=443): Read timed out. (read timeout=20)
+2026-07-07 15:24:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:25:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:25:08 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-07 15:25:09 | WARNING | trading_bot | Using fallback REST bars for LINK/USD
+2026-07-07 15:25:10 | INFO | trading_bot | CoinGecko global volume updated successfully
+2026-07-07 15:25:13 | WARNING | trading_bot | Using fallback REST bars for SOL/USD
+2026-07-07 15:25:15 | INFO | trading_bot | CoinGecko global volume updated successfully
+2026-07-07 15:25:18 | WARNING | trading_bot | Using fallback REST bars for XRP/USD
+2026-07-07 15:25:19 | INFO | trading_bot | CoinGecko global volume updated successfully
+2026-07-07 15:25:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:26:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:26:07 | INFO | trading_bot | Auto-short bloqueado para IOTA/USD: Notional insuficiente para IOTAUSDT: 3.997101 < 5.000000
+2026-07-07 15:26:16 | INFO | trading_bot | Auto-short bloqueado para IOST/USD: Notional insuficiente para IOSTUSDT: 3.999499 < 5.000000
+2026-07-07 15:26:21 | INFO | trading_bot | Auto-short bloqueado para ZIL/USD: Notional insuficiente para ZILUSDT: 3.999936 < 5.000000
+2026-07-07 15:26:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:27:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:27:17 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-07 15:27:17 | WARNING | trading_bot | Using fallback REST bars for AVAX/USD
+2026-07-07 15:27:24 | WARNING | trading_bot | Using fallback REST bars for BTC/USD
+2026-07-07 15:27:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:28:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:28:10 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-07 15:28:10 | WARNING | trading_bot | Using fallback REST bars for DOGE/USD
+2026-07-07 15:28:16 | INFO | trading_bot | Auto-short bloqueado para RSR/USD: Notional insuficiente para RSRUSDT: 3.999660 < 5.000000
+2026-07-07 15:28:17 | WARNING | trading_bot | Using fallback REST bars for ETH/USD
+2026-07-07 15:28:23 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-07 15:28:23 | WARNING | trading_bot | Using fallback REST bars for LINK/USD
+2026-07-07 15:28:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:29:07 | INFO | trading_bot | Auto-short bloqueado para SKL/USD: Notional insuficiente para SKLUSDT: 3.997350 < 5.000000
+2026-07-07 15:29:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:29:09 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-07 15:29:09 | WARNING | trading_bot | Using fallback REST bars for SOL/USD
+2026-07-07 15:29:16 | WARNING | trading_bot | Using fallback REST bars for XRP/USD
+2026-07-07 15:29:17 | INFO | trading_bot | Auto-short bloqueado para 1INCH/USD: Notional insuficiente para 1INCHUSDT: 3.987200 < 5.000000
+2026-07-07 15:29:20 | INFO | trading_bot | Auto-short bloqueado para CHZ/USD: Notional insuficiente para CHZUSDT: 3.990400 < 5.000000
+2026-07-07 15:29:23 | INFO | trading_bot | Auto-short bloqueado para SAND/USD: Notional insuficiente para SANDUSDT: 3.973050 < 5.000000
+2026-07-07 15:29:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:30:06 | INFO | trading_bot | Auto-short bloqueado para RVN/USD: Notional insuficiente para RVNUSDT: 3.997500 < 5.000000
+2026-07-07 15:30:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:30:11 | INFO | trading_bot | Auto-short bloqueado para COTI/USD: Notional insuficiente para COTIUSDT: 3.997110 < 5.000000
+2026-07-07 15:30:14 | INFO | trading_bot | Auto-short bloqueado para CHR/USD: Notional insuficiente para CHRUSDT: 3.989440 < 5.000000
+2026-07-07 15:30:20 | INFO | trading_bot | Auto-short bloqueado para ONE/USD: Notional insuficiente para ONEUSDT: 3.999933 < 5.000000
+2026-07-07 15:30:24 | INFO | trading_bot | Auto-short bloqueado para CELR/USD: Notional insuficiente para CELRUSDT: 3.999488 < 5.000000
+2026-07-07 15:30:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:31:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:31:08 | INFO | trading_bot | Auto-short bloqueado para OGN/USD: Notional insuficiente para OGNUSDT: 3.999780 < 5.000000
+2026-07-07 15:31:26 | INFO | trading_bot | Auto-short bloqueado para CTSI/USD: Notional insuficiente para CTSIUSDT: 3.997280 < 5.000000
+2026-07-07 15:31:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:32:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:32:11 | INFO | trading_bot | Auto-short bloqueado para ROSE/USD: Notional insuficiente para ROSEUSDT: 3.999645 < 5.000000
+2026-07-07 15:32:20 | INFO | trading_bot | Auto-short bloqueado para GMT/USD: Notional insuficiente para GMTUSDT: 3.998920 < 5.000000
+2026-07-07 15:32:25 | INFO | trading_bot | Auto-short bloqueado para JASMY/USD: Notional insuficiente para JASMYUSDT: 3.996000 < 5.000000
+2026-07-07 15:32:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:33:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:33:11 | INFO | trading_bot | Auto-ejecucion bloqueada para SPELL/USD: Notional insuficiente para SPELLUSDT: 1.999985 < 5.000000
+2026-07-07 15:33:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:34:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:34:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:35:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:35:10 | INFO | trading_bot | Auto-short bloqueado para 1000PEPE/USD: Notional insuficiente para 1000PEPEUSDT: 3.999195 < 5.000000
+2026-07-07 15:35:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:36:07 | INFO | trading_bot | Auto-short bloqueado para SEI/USD: Notional insuficiente para SEIUSDT: 3.977100 < 5.000000
+2026-07-07 15:36:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:36:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:37:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:37:14 | INFO | trading_bot | Auto-short bloqueado para PYTH/USD: Notional insuficiente para PYTHUSDT: 3.959100 < 5.000000
+2026-07-07 15:37:21 | INFO | trading_bot | Auto-short bloqueado para ONG/USD: Notional insuficiente para ONGUSDT: 3.969840 < 5.000000
+2026-07-07 15:37:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:38:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:38:38 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:39:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:39:30 | INFO | trading_bot | Auto-ejecucion bloqueada para NOT/USD: Notional insuficiente para NOTUSDT: 1.999759 < 5.000000
+2026-07-07 15:39:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:40:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:40:38 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:41:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 15:41:21 | INFO | trading_bot | Auto-short bloqueado para FIDA/USD: Notional insuficiente para FIDAUSDT: 3.983910 < 5.000000
+2026-07-07 15:41:38 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 15:42:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 15:42:21 | INFO | trading_bot | Auto-short bloqueado para CETUS/USD: Notional insuficiente para CETUSUSDT: 3.981800 < 5.000000
+2026-07-07 15:42:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 15:43:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 15:43:09 | INFO | trading_bot | Auto-short bloqueado para ACT/USD: Notional insuficiente para ACTUSDT: 3.994080 < 5.000000
+2026-07-07 15:43:20 | INFO | trading_bot | Auto-short bloqueado para SLERF/USD: Notional insuficiente para SLERFUSDT: 3.999930 < 5.000000
+2026-07-07 15:43:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 15:44:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 15:44:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 15:45:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 15:45:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 15:46:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 15:46:21 | INFO | trading_bot | Auto-ejecucion bloqueada para TST/USD: Notional insuficiente para TSTUSDT: 1.992960 < 5.000000
+2026-07-07 15:46:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 15:47:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 15:47:15 | INFO | trading_bot | Auto-short bloqueado para MUBARAK/USD: Notional insuficiente para MUBARAKUSDT: 3.997280 < 5.000000
+2026-07-07 15:47:28 | INFO | trading_bot | Auto-short bloqueado para SIREN/USD: Notional insuficiente para SIRENUSDT: 3.959540 < 5.000000
+2026-07-07 15:47:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 15:48:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 15:48:10 | INFO | trading_bot | Auto-short bloqueado para JELLYJELLY/USD: Notional insuficiente para JELLYJELLYUSDT: 3.956400 < 5.000000
+2026-07-07 15:48:23 | INFO | trading_bot | Auto-short bloqueado para STO/USD: Notional insuficiente para STOUSDT: 3.982660 < 5.000000
+2026-07-07 15:48:26 | INFO | trading_bot | Auto-short bloqueado para FHE/USD: Notional insuficiente para FHEUSDT: 3.985020 < 5.000000
+2026-07-07 15:48:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 15:49:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 15:49:10 | INFO | trading_bot | Auto-short bloqueado para BANK/USD: Notional insuficiente para BANKUSDT: 3.989440 < 5.000000
+2026-07-07 15:49:21 | INFO | trading_bot | Auto-short bloqueado para SIGN/USD: Notional insuficiente para SIGNUSDT: 3.999450 < 5.000000
+2026-07-07 15:49:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 15:50:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 15:50:27 | INFO | trading_bot | Auto-ejecucion bloqueada para AGT/USD: Notional insuficiente para AGTUSDT: 1.990900 < 5.000000
+2026-07-07 15:50:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 15:51:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 15:51:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 15:52:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 15:52:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 15:53:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 15:53:22 | INFO | trading_bot | Auto-short bloqueado para HUMA/USD: Notional insuficiente para HUMAUSDT: 3.984150 < 5.000000
+2026-07-07 15:53:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 15:54:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 15:54:09 | INFO | trading_bot | Auto-short bloqueado para BAS/USD: Notional insuficiente para BASUSDT: 3.999717 < 5.000000
+2026-07-07 15:54:13 | INFO | trading_bot | Auto-short bloqueado para BTR/USD: Notional insuficiente para BTRUSDT: 3.998940 < 5.000000
+2026-07-07 15:54:17 | INFO | trading_bot | Auto-short bloqueado para MITO/USD: Notional insuficiente para MITOUSDT: 3.998550 < 5.000000
+2026-07-07 15:54:38 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 15:55:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 15:55:14 | INFO | trading_bot | Auto-short bloqueado para SKY/USD: Notional insuficiente para SKYUSDT: 3.983040 < 5.000000
+2026-07-07 15:55:22 | INFO | trading_bot | Auto-short bloqueado para STBL/USD: Notional insuficiente para STBLUSDT: 3.995160 < 5.000000
+2026-07-07 15:55:38 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 15:56:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 15:56:22 | INFO | trading_bot | Auto-short bloqueado para MON/USD: Notional insuficiente para MONUSDT: 3.986340 < 5.000000
+2026-07-07 15:56:38 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 15:57:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 15:57:27 | INFO | trading_bot | Auto-short bloqueado para SENT/USD: Notional insuficiente para SENTUSDT: 3.997910 < 5.000000
+2026-07-07 15:57:31 | INFO | trading_bot | Auto-short bloqueado para POWER/USD: Notional insuficiente para POWERUSDT: 3.932820 < 5.000000
+2026-07-07 15:57:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 15:58:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 15:58:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 15:59:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 15:59:13 | INFO | trading_bot | Auto-short bloqueado para 我踏马来了/USD: Notional insuficiente para 我踏马来了USDT: 3.999717 < 5.000000
+2026-07-07 15:59:17 | INFO | trading_bot | Auto-short bloqueado para SKR/USD: Notional insuficiente para SKRUSDT: 3.999825 < 5.000000
+2026-07-07 15:59:22 | INFO | trading_bot | Auto-short bloqueado para FIGHT/USD: Notional insuficiente para FIGHTUSDT: 3.998400 < 5.000000
+2026-07-07 15:59:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:00:08 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:00:23 | INFO | trading_bot | Auto-short bloqueado para ESP/USD: Notional insuficiente para ESPUSDT: 3.935720 < 5.000000
+2026-07-07 16:00:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:01:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:01:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:02:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:02:16 | INFO | trading_bot | Auto-short bloqueado para DOGE/USD: Notional insuficiente para DOGEUSDT: 3.940020 < 5.000000
+2026-07-07 16:02:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:03:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:03:19 | INFO | trading_bot | Auto-short bloqueado para IOTA/USD: Notional insuficiente para IOTAUSDT: 3.996750 < 5.000000
+2026-07-07 16:03:29 | INFO | trading_bot | Auto-short bloqueado para IOST/USD: Notional insuficiente para IOSTUSDT: 3.999499 < 5.000000
+2026-07-07 16:03:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:04:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:04:34 | INFO | trading_bot | Auto-short bloqueado para ICX/USD: Notional insuficiente para ICXUSDT: 3.991870 < 5.000000
+2026-07-07 16:04:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:05:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:05:26 | INFO | trading_bot | Auto-ejecucion bloqueada para ZEN/USD: Notional insuficiente para ZENUSDT: 1.715600 < 5.000000
+2026-07-07 16:05:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:06:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:06:26 | INFO | trading_bot | Auto-short bloqueado para CELR/USD: Notional insuficiente para CELRUSDT: 3.998320 < 5.000000
+2026-07-07 16:06:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:07:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:07:17 | INFO | trading_bot | Auto-ejecucion bloqueada para C98/USD: Notional insuficiente para C98USDT: 1.998700 < 5.000000
+2026-07-07 16:07:31 | INFO | trading_bot | Auto-ejecucion bloqueada para CTSI/USD: Notional insuficiente para CTSIUSDT: 1.985600 < 5.000000
+2026-07-07 16:07:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:08:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:08:30 | INFO | trading_bot | Auto-ejecucion bloqueada para SPELL/USD: Notional insuficiente para SPELLUSDT: 1.999923 < 5.000000
+2026-07-07 16:08:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:09:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:09:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:10:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:10:38 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:11:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:11:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:12:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:12:23 | INFO | trading_bot | Auto-short bloqueado para USTC/USD: Notional insuficiente para USTCUSDT: 3.997728 < 5.000000
+2026-07-07 16:12:38 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:13:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:13:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:14:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:14:18 | INFO | trading_bot | Auto-ejecucion bloqueada para AEVO/USD: Notional insuficiente para AEVOUSDT: 1.999850 < 5.000000
+2026-07-07 16:14:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:14:38 | INFO | trading_bot | Auto-short bloqueado para BB/USD: Notional insuficiente para BBUSDT: 3.996340 < 5.000000
+2026-07-07 16:15:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:15:15 | INFO | trading_bot | Auto-short bloqueado para TURBO/USD: Notional insuficiente para TURBOUSDT: 3.999286 < 5.000000
+2026-07-07 16:15:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:16:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:16:16 | INFO | trading_bot | Auto-ejecucion bloqueada para DOGS/USD: Notional insuficiente para DOGSUSDT: 1.999974 < 5.000000
+2026-07-07 16:16:33 | INFO | trading_bot | Auto-ejecucion bloqueada para FIDA/USD: Notional insuficiente para FIDAUSDT: 1.997320 < 5.000000
+2026-07-07 16:16:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:17:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:17:14 | INFO | trading_bot | Auto-short bloqueado para HMSTR/USD: Notional insuficiente para HMSTRUSDT: 3.999755 < 5.000000
+2026-07-07 16:17:25 | INFO | trading_bot | Auto-short bloqueado para GOAT/USD: Notional insuficiente para GOATUSDT: 3.989700 < 5.000000
+2026-07-07 16:17:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:18:08 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:18:36 | INFO | trading_bot | Auto-short bloqueado para THE/USD: Notional insuficiente para THEUSDT: 3.997340 < 5.000000
+2026-07-07 16:18:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:19:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:19:17 | INFO | trading_bot | Auto-ejecucion bloqueada para ACX/USD: Notional insuficiente para ACXUSDT: 1.998685 < 5.000000
+2026-07-07 16:19:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:20:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:20:12 | INFO | trading_bot | Auto-ejecucion bloqueada para USUAL/USD: Notional insuficiente para USUALUSDT: 1.995630 < 5.000000
+2026-07-07 16:20:16 | INFO | trading_bot | Auto-ejecucion bloqueada para KMNO/USD: Notional insuficiente para KMNOUSDT: 1.987440 < 5.000000
+2026-07-07 16:20:37 | INFO | trading_bot | Auto-ejecucion bloqueada para COOKIE/USD: Notional insuficiente para COOKIEUSDT: 1.991520 < 5.000000
+2026-07-07 16:20:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:21:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:21:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:21:43 | WARNING | trading_bot | Fallo de red/HTTP en market data (HTTPError). Reintentando en 1.0 s
+2026-07-07 16:22:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:22:28 | INFO | trading_bot | Auto-short bloqueado para SHELL/USD: Notional insuficiente para SHELLUSDT: 3.998290 < 5.000000
+2026-07-07 16:22:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:23:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:23:24 | INFO | trading_bot | Auto-ejecucion bloqueada para SIREN/USD: Notional insuficiente para SIRENUSDT: 1.967420 < 5.000000
+2026-07-07 16:23:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:24:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:24:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:24:38 | INFO | trading_bot | Auto-short bloqueado para PARTI/USD: Notional insuficiente para PARTIUSDT: 3.955900 < 5.000000
+2026-07-07 16:25:08 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:25:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:26:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:26:26 | INFO | trading_bot | Auto-ejecucion bloqueada para SQD/USD: Notional insuficiente para SQDUSDT: 1.993860 < 5.000000
+2026-07-07 16:26:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:27:08 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:27:11 | INFO | trading_bot | Auto-short bloqueado para SAHARA/USD: Notional insuficiente para SAHARAUSDT: 3.993450 < 5.000000
+2026-07-07 16:27:17 | INFO | trading_bot | Auto-ejecucion bloqueada para IDOL/USD: Notional insuficiente para IDOLUSDT: 1.999200 < 5.000000
+2026-07-07 16:27:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:28:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:28:18 | INFO | trading_bot | Auto-ejecucion bloqueada para NAORIS/USD: Notional insuficiente para NAORISUSDT: 1.982440 < 5.000000
+2026-07-07 16:28:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:29:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:29:25 | INFO | trading_bot | Auto-short bloqueado para BAS/USD: Notional insuficiente para BASUSDT: 3.999622 < 5.000000
+2026-07-07 16:29:29 | INFO | trading_bot | Auto-short bloqueado para BTR/USD: Notional insuficiente para BTRUSDT: 3.985800 < 5.000000
+2026-07-07 16:29:33 | INFO | trading_bot | Auto-short bloqueado para MITO/USD: Notional insuficiente para MITOUSDT: 3.989400 < 5.000000
+2026-07-07 16:29:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:30:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:30:34 | INFO | trading_bot | Auto-short bloqueado para XPIN/USD: Notional insuficiente para XPINUSDT: 3.999078 < 5.000000
+2026-07-07 16:30:38 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:31:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:31:19 | INFO | trading_bot | Auto-ejecucion bloqueada para BLESS/USD: Notional insuficiente para BLESSUSDT: 1.999400 < 5.000000
+2026-07-07 16:31:29 | INFO | trading_bot | Auto-ejecucion bloqueada para AKE/USD: Notional insuficiente para AKEUSDT: 1.999871 < 5.000000
+2026-07-07 16:31:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:32:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:32:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:32:38 | INFO | trading_bot | Auto-ejecucion bloqueada para STABLE/USD: Notional insuficiente para STABLEUSDT: 1.984640 < 5.000000
+2026-07-07 16:33:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=2 sincronizadas=0 ya_linkeadas=2 reparadas=0
+2026-07-07 16:33:17 | INFO | trading_bot | Auto-short bloqueado para SENT/USD: Notional insuficiente para SENTUSDT: 3.997440 < 5.000000
+2026-07-07 16:33:21 | INFO | trading_bot | Auto-short bloqueado para BOB/USD: Notional insuficiente para BOBUSDT: 3.996489 < 5.000000
+2026-07-07 16:33:39 | INFO | trading_bot | Orden limite creada: 146991301
+2026-07-07 16:33:39 | INFO | trading_bot | Salida inmediata creada BLUR/USD qty=6301.00000000 limit=0.02088729 reason=reconcile_missing_target_limit
+2026-07-07 16:33:40 | INFO | trading_bot | Orden limite creada: 146991307
+2026-07-07 16:33:40 | INFO | trading_bot | Salida inmediata creada BLUR/USD qty=6301.00000000 limit=0.02088729 reason=repair_missing_limit_from_tracking
+2026-07-07 16:33:40 | INFO | trading_bot | Recuperacion de posiciones abierta(s): 1
+2026-07-07 16:33:40 | INFO | trading_bot | Targets limit reparados al iniciar: 1
+2026-07-07 16:33:40 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=1 ya_linkeadas=2 reparadas=1
+2026-07-07 16:34:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:34:27 | INFO | trading_bot | Auto-short bloqueado para SPORTFUN/USD: Notional insuficiente para SPORTFUNUSDT: 3.993170 < 5.000000
+2026-07-07 16:34:36 | INFO | trading_bot | Auto-short bloqueado para SKR/USD: Notional insuficiente para SKRUSDT: 3.991560 < 5.000000
+2026-07-07 16:34:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:35:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:35:26 | INFO | trading_bot | Auto-short bloqueado para INX/USD: Notional insuficiente para INXUSDT: 3.996730 < 5.000000
+2026-07-07 16:35:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:36:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:36:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:37:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:37:38 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:37:43 | INFO | trading_bot | Auto-short bloqueado para DOGE/USD: Notional insuficiente para DOGEUSDT: 3.951150 < 5.000000
+2026-07-07 16:38:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:38:17 | INFO | trading_bot | Auto-short bloqueado para SOL/USD: Notional insuficiente para SOLUSDT: 3.246400 < 5.000000
+2026-07-07 16:38:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:39:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:39:34 | INFO | trading_bot | Auto-short bloqueado para IOST/USD: Notional insuficiente para IOSTUSDT: 3.999917 < 5.000000
+2026-07-07 16:39:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:39:43 | INFO | trading_bot | Auto-short bloqueado para ZIL/USD: Notional insuficiente para ZILUSDT: 3.999936 < 5.000000
+2026-07-07 16:40:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:40:38 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:41:08 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:41:32 | INFO | trading_bot | Auto-short bloqueado para SKL/USD: Notional insuficiente para SKLUSDT: 3.997092 < 5.000000
+2026-07-07 16:41:38 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:42:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:42:31 | INFO | trading_bot | Auto-short bloqueado para CELR/USD: Notional insuficiente para CELRUSDT: 3.998652 < 5.000000
+2026-07-07 16:42:37 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:43:07 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:43:15 | INFO | trading_bot | Auto-short bloqueado para IOTX/USD: Notional insuficiente para IOTXUSDT: 3.997695 < 5.000000
+2026-07-07 16:43:38 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:44:08 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:44:38 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:44:41 | INFO | trading_bot | Auto-ejecucion bloqueada para LUNA2/USD: Notional insuficiente para LUNA2USDT: 1.974800 < 5.000000
+2026-07-07 16:45:08 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:45:29 | INFO | trading_bot | Auto-short bloqueado para ASTR/USD: Notional insuficiente para ASTRUSDT: 3.997584 < 5.000000
+2026-07-07 16:45:38 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:46:08 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:46:22 | INFO | trading_bot | Auto-short bloqueado para ID/USD: Notional insuficiente para IDUSDT: 3.974940 < 5.000000
+2026-07-07 16:46:38 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:47:08 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:47:38 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:48:08 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:48:24 | INFO | trading_bot | Auto-short bloqueado para KAS/USD: Notional insuficiente para KASUSDT: 3.991950 < 5.000000
+2026-07-07 16:48:34 | INFO | trading_bot | Auto-short bloqueado para PYTH/USD: Notional insuficiente para PYTHUSDT: 3.972150 < 5.000000
+2026-07-07 16:48:38 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:48:41 | INFO | trading_bot | Auto-ejecucion bloqueada para USTC/USD: Notional insuficiente para USTCUSDT: 1.994190 < 5.000000
+2026-07-07 16:48:45 | INFO | trading_bot | Auto-short bloqueado para ONG/USD: Notional insuficiente para ONGUSDT: 3.975450 < 5.000000
+2026-07-07 16:49:08 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:49:18 | INFO | trading_bot | Auto-short bloqueado para 1000SATS/USD: Notional insuficiente para 1000SATSUSDT: 3.999992 < 5.000000
+2026-07-07 16:49:38 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:50:08 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:50:31 | INFO | trading_bot | Auto-ejecucion bloqueada para PORTAL/USD: Notional insuficiente para PORTALUSDT: 1.999095 < 5.000000
+2026-07-07 16:50:38 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:50:44 | INFO | trading_bot | Auto-short bloqueado para VANRY/USD: Notional insuficiente para VANRYUSDT: 3.999840 < 5.000000
+2026-07-07 16:51:08 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:51:29 | INFO | trading_bot | Auto-ejecucion bloqueada para BB/USD: Notional insuficiente para BBUSDT: 1.992900 < 5.000000
+2026-07-07 16:51:35 | INFO | trading_bot | Auto-short bloqueado para NOT/USD: Notional insuficiente para NOTUSDT: 3.999798 < 5.000000
+2026-07-07 16:51:38 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:52:08 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:52:38 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:53:08 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:53:26 | INFO | trading_bot | Auto-short bloqueado para HMSTR/USD: Notional insuficiente para HMSTRUSDT: 3.999868 < 5.000000
+2026-07-07 16:53:38 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:53:43 | INFO | trading_bot | Auto-short bloqueado para GOAT/USD: Notional insuficiente para GOATUSDT: 3.990000 < 5.000000
+2026-07-07 16:54:08 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:54:38 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:54:48 | INFO | trading_bot | Auto-short bloqueado para 1000CHEEMS/USD: Notional insuficiente para 1000CHEEMSUSDT: 3.999531 < 5.000000
+2026-07-07 16:55:08 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:55:38 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:56:08 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:56:16 | INFO | trading_bot | Auto-ejecucion bloqueada para KMNO/USD: Notional insuficiente para KMNOUSDT: 1.998220 < 5.000000
+2026-07-07 16:56:38 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:56:38 | INFO | trading_bot | Auto-ejecucion bloqueada para ZEREBRO/USD: Notional insuficiente para ZEREBROUSDT: 1.993000 < 5.000000
+2026-07-07 16:57:08 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:57:25 | INFO | trading_bot | Auto-short bloqueado para AVAAI/USD: Notional insuficiente para AVAAIUSDT: 3.998430 < 5.000000
+2026-07-07 16:57:38 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:57:49 | INFO | trading_bot | Auto-short bloqueado para TST/USD: Notional insuficiente para TSTUSDT: 3.990560 < 5.000000
+2026-07-07 16:58:08 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:58:38 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:58:50 | INFO | trading_bot | Auto-short bloqueado para BANANAS31/USD: Notional insuficiente para BANANAS31USDT: 3.994485 < 5.000000
+2026-07-07 16:59:08 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 16:59:16 | INFO | trading_bot | Auto-short bloqueado para SIREN/USD: Notional insuficiente para SIRENUSDT: 3.976200 < 5.000000
+2026-07-07 16:59:38 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 17:00:08 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 17:00:20 | INFO | trading_bot | Auto-short bloqueado para DEEP/USD: Notional insuficiente para DEEPUSDT: 3.985200 < 5.000000
+2026-07-07 17:00:27 | INFO | trading_bot | Auto-short bloqueado para HYPER/USD: Notional insuficiente para HYPERUSDT: 3.936800 < 5.000000
+2026-07-07 17:00:38 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 17:00:43 | INFO | trading_bot | Auto-short bloqueado para GUN/USD: Notional insuficiente para GUNUSDT: 3.999900 < 5.000000
+2026-07-07 17:01:08 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 17:01:18 | INFO | trading_bot | Auto-short bloqueado para DOLO/USD: Notional insuficiente para DOLOUSDT: 3.995200 < 5.000000
+2026-07-07 17:01:25 | INFO | trading_bot | Auto-ejecucion bloqueada para SXT/USD: Notional insuficiente para SXTUSDT: 1.995840 < 5.000000
+2026-07-07 17:01:38 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 17:01:46 | INFO | trading_bot | Auto-short bloqueado para DOOD/USD: Notional insuficiente para DOODUSDT: 3.999468 < 5.000000
+2026-07-07 17:02:08 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 17:02:17 | INFO | trading_bot | Auto-short bloqueado para SKYAI/USD: Notional insuficiente para SKYAIUSDT: 3.965500 < 5.000000
+2026-07-07 17:02:23 | INFO | trading_bot | Auto-ejecucion bloqueada para AGT/USD: Notional insuficiente para AGTUSDT: 1.997840 < 5.000000
+2026-07-07 17:02:37 | INFO | trading_bot | Auto-short bloqueado para MERL/USD: Notional insuficiente para MERLUSDT: 3.989810 < 5.000000
+2026-07-07 17:02:38 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 17:02:43 | INFO | trading_bot | Auto-ejecucion bloqueada para HYPE/USD: Notional insuficiente para HYPEUSDT: 1.401520 < 5.000000
+2026-07-07 17:03:08 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 17:03:38 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 17:04:08 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 17:04:19 | INFO | trading_bot | Auto-short bloqueado para TAG/USD: Notional insuficiente para TAGUSDT: 3.999926 < 5.000000
+2026-07-07 17:04:38 | INFO | trading_bot | Monitoreo multi-cuenta | Binance Demo | abiertas=3 sincronizadas=0 ya_linkeadas=3 reparadas=0
+2026-07-07 17:05:03 | WARNING | trading_bot | Forzando cierre de la aplicacion por solicitud del usuario.

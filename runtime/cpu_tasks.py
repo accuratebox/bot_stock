@@ -63,9 +63,32 @@ def _load_training_samples_ro(db_path: str, label_type: str) -> list[dict[str, A
         "result_15m_fallback_30m",
         "final_label",
     }
-    label_type_norm = str(label_type or "result_15m_fallback_30m").strip().lower()
+    label_type_norm = str(label_type or "result_5m_fallback_15m").strip().lower()
     if label_type_norm not in supported:
-        label_type_norm = "result_15m_fallback_30m"
+        label_type_norm = "result_5m_fallback_15m"
+
+    def _sample_weight(label_source: str, selected_label: str, max_profit: float, max_drawdown: float) -> float:
+        base_weight = 1.0
+        if label_source == "result_5m":
+            base_weight = 1.6
+        elif label_source == "result_15m":
+            base_weight = 1.2
+        elif label_source == "result_30m":
+            base_weight = 1.0
+
+        if selected_label == "win":
+            base_weight += 0.2
+        elif selected_label == "loss":
+            base_weight += 0.1 if label_source == "result_5m" else 0.0
+        else:
+            base_weight -= 0.1
+
+        if max_profit > 0.0:
+            base_weight += min(max_profit / 10.0, 0.25)
+        if max_drawdown < 0.0:
+            base_weight += min(abs(max_drawdown) / 10.0, 0.25)
+
+        return max(base_weight, 0.5)
 
     with _open_readonly_connection(db_path) as connection:
         rows = connection.execute(
@@ -144,6 +167,7 @@ def _load_training_samples_ro(db_path: str, label_type: str) -> list[dict[str, A
                 "label": 1 if selected_label == "win" else 0,
                 "final_label": selected_label,
                 "label_source": label_source,
+                "sample_weight": _sample_weight(label_source, selected_label, max_profit, max_drawdown),
                 "timestamp": str(row["timestamp"] or ""),
                 "confidence_score": float(row["confidence_score"] or 0.0),
                 "max_profit_pct": max_profit,
@@ -156,7 +180,7 @@ def _load_training_samples_ro(db_path: str, label_type: str) -> list[dict[str, A
 def _train_model(payload: dict[str, Any], cancel_flag_path: str, progress_path: str, log_path: str) -> dict[str, Any]:
     db_path = str(payload.get("db_path", ""))
     models_dir = Path(str(payload.get("models_dir", "")))
-    label_type = str(payload.get("label_type", "result_15m_fallback_30m"))
+    label_type = str(payload.get("label_type", "result_5m_fallback_15m"))
     if not db_path:
         raise ValueError("db_path es requerido")
     if not models_dir:
@@ -183,6 +207,7 @@ def _train_model(payload: dict[str, Any], cancel_flag_path: str, progress_path: 
 
     x_train = [build_feature_vector(sample["features"]) for sample in train_samples]
     y_train = [int(sample["label"]) for sample in train_samples]
+    sample_weights = [float(sample.get("sample_weight", 1.0) or 1.0) for sample in train_samples]
     x_test = [build_feature_vector(sample["features"]) for sample in test_samples]
     y_test = [int(sample["label"]) for sample in test_samples]
 
@@ -191,7 +216,7 @@ def _train_model(payload: dict[str, Any], cancel_flag_path: str, progress_path: 
 
     _write_progress(progress_path, 60.0, "RUNNING", {"step": "fitting_model"})
     model = RandomForestClassifier(n_estimators=200, random_state=42, class_weight="balanced")
-    model.fit(x_train, y_train)
+    model.fit(x_train, y_train, sample_weight=sample_weights)
     predictions = [int(value) for value in model.predict(x_test)]
 
     accuracy = float(accuracy_score(y_test, predictions))
@@ -264,7 +289,7 @@ def _train_model(payload: dict[str, Any], cancel_flag_path: str, progress_path: 
 
 def _evaluate_model(payload: dict[str, Any], cancel_flag_path: str, progress_path: str, log_path: str) -> dict[str, Any]:
     db_path = str(payload.get("db_path", ""))
-    label_type = str(payload.get("label_type", "result_15m_fallback_30m"))
+    label_type = str(payload.get("label_type", "result_5m_fallback_15m"))
     model_path = str(payload.get("model_path", ""))
     if not db_path:
         raise ValueError("db_path es requerido")
@@ -291,8 +316,9 @@ def _evaluate_model(payload: dict[str, Any], cancel_flag_path: str, progress_pat
         train_samples = samples[:split_idx]
         x_train = [build_feature_vector(sample["features"]) for sample in train_samples]
         y_train = [int(sample["label"]) for sample in train_samples]
+        sample_weights = [float(sample.get("sample_weight", 1.0) or 1.0) for sample in train_samples]
         model = RandomForestClassifier(n_estimators=200, random_state=42, class_weight="balanced")
-        model.fit(x_train, y_train)
+        model.fit(x_train, y_train, sample_weight=sample_weights)
 
     predictions = [int(value) for value in model.predict(x_test)]
     accuracy = float(accuracy_score(y_test, predictions))
@@ -311,7 +337,7 @@ def _evaluate_model(payload: dict[str, Any], cancel_flag_path: str, progress_pat
 
 def _run_backtest(payload: dict[str, Any], cancel_flag_path: str, progress_path: str, log_path: str) -> dict[str, Any]:
     db_path = str(payload.get("db_path", ""))
-    label_type = str(payload.get("label_type", "result_15m_fallback_30m"))
+    label_type = str(payload.get("label_type", "result_5m_fallback_15m"))
     if not db_path:
         raise ValueError("db_path es requerido")
 

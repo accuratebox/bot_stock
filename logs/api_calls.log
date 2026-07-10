@@ -4435,3 +4435,11 @@
 2026-07-07 07:46:22 | WARNING | trading_bot | No se pudo refrescar estado NYSE: HTTPSConnectionPool(host='www.nyse.com', port=443): Read timed out. (read timeout=20)
 2026-07-07 10:53:27 | INFO | trading_bot | Auto-short bloqueado para ETHUSDT_260925: Activo no soportado en Alpaca
 2026-07-07 11:21:47 | WARNING | trading_bot | Fallo de red/HTTP en market data (HTTPError). Reintentando en 1.0 s
+2026-07-07 14:15:37 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-07 14:15:57 | WARNING | trading_bot | No se pudo refrescar estado NYSE: HTTPSConnectionPool(host='www.nyse.com', port=443): Read timed out. (read timeout=20)
+2026-07-07 14:27:56 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-07 14:28:16 | WARNING | trading_bot | No se pudo refrescar estado NYSE: HTTPSConnectionPool(host='www.nyse.com', port=443): Read timed out. (read timeout=20)
+2026-07-07 14:57:47 | INFO | trading_bot | Auto-short bloqueado para SAPIEN/USD: Notional insuficiente para SAPIENUSDT: 3.932760 < 5.000000
+2026-07-07 15:24:07 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-07 15:24:27 | WARNING | trading_bot | No se pudo refrescar estado NYSE: HTTPSConnectionPool(host='www.nyse.com', port=443): Read timed out. (read timeout=20)
+2026-07-07 16:21:43 | WARNING | trading_bot | Fallo de red/HTTP en market data (HTTPError). Reintentando en 1.0 s

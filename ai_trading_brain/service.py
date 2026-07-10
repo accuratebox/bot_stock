@@ -59,6 +59,7 @@ class AITradingBrainService:
         risk_manager: Any,
         settings: Any,
         logger: Any,
+        runtime_role: str = "combined",
     ) -> None:
         self.broker = broker
         self.market_data = market_data
@@ -67,6 +68,15 @@ class AITradingBrainService:
         self.risk_manager = risk_manager
         self.settings = settings
         self.logger = logger
+        normalized_role = str(runtime_role or "combined").strip().lower()
+        if normalized_role not in {"combined", "trading", "training"}:
+            normalized_role = "combined"
+        self.runtime_role = normalized_role
+        self.trading_enabled = normalized_role in {"combined", "trading"}
+        self.training_enabled = normalized_role in {"combined", "training"}
+        self.scanner_enabled = normalized_role in {"combined", "trading"}
+        self.collection_enabled = normalized_role in {"combined", "trading", "training"}
+        self.model_management_enabled = normalized_role in {"combined", "training"}
         self.database = TradingBrainDatabase(settings.ai_brain_db_path)
         models_dir = Path(settings.ai_models_dir)
         self.registry = ModelRegistry(str(models_dir))
@@ -98,6 +108,7 @@ class AITradingBrainService:
         self._recent_errors: deque[dict[str, Any]] = deque(maxlen=500)
         self._automation_status_cache_lock = threading.Lock()
         self._automation_status_cache: dict[str, tuple[float, dict[str, Any]]] = {}
+        self._entry_submit_lock = threading.Lock()
         self._last_health_snapshot: dict[str, Any] = {}
         self._post_trade_update_hook: Callable[[], None] | None = None
         self._health_lock = threading.Lock()
@@ -211,6 +222,65 @@ class AITradingBrainService:
         self._install_database_write_queue()
         self._db_writer.start()
         self.initialize()
+
+    def can_execute_trades(self) -> bool:
+        return bool(self.trading_enabled)
+
+    def can_train_models(self) -> bool:
+        return bool(self.training_enabled)
+
+    def can_manage_models(self) -> bool:
+        return bool(self.model_management_enabled)
+
+    def _worker_status_label(self, *, enabled: bool, running: bool) -> str:
+        if not enabled:
+            return "Disabled"
+        return "Running" if running else "Stopped"
+
+    def _require_trading_enabled(self) -> None:
+        if not self.trading_enabled:
+            raise ValueError("Ejecucion de trading deshabilitada en este proceso")
+
+    def _require_training_enabled(self) -> None:
+        if not self.training_enabled:
+            raise ValueError("Entrenamiento de modelos deshabilitado en este proceso")
+
+    def _require_model_management_enabled(self) -> None:
+        if not self.model_management_enabled:
+            raise ValueError("Gestion de modelos deshabilitada en este proceso")
+
+    def _training_readiness_snapshot(self) -> dict[str, Any]:
+        min_outcomes_required = 200
+        evaluated_total = int(self.database.count_evaluated_outcomes() or 0)
+        latest_training = self.database.latest_training_run() or {}
+        latest_samples = int(latest_training.get("number_of_samples", 0) or 0)
+        last_trained_outcomes = max(int(self._last_auto_trained_outcomes or 0), latest_samples)
+        new_outcomes = max(evaluated_total - last_trained_outcomes, 0)
+        enough_outcomes = evaluated_total >= min_outcomes_required
+        has_new_outcomes = new_outcomes > 0
+
+        if not self.training_enabled:
+            ready_reason = "Entrenamiento deshabilitado en este proceso"
+        elif not enough_outcomes:
+            ready_reason = f"Faltan outcomes: {evaluated_total}/{min_outcomes_required}"
+        elif not has_new_outcomes and latest_samples > 0:
+            ready_reason = f"Sin datos nuevos para reentrenar ({evaluated_total} outcomes)"
+        elif not has_new_outcomes:
+            ready_reason = f"Listo para primer entrenamiento ({evaluated_total} outcomes)"
+        else:
+            ready_reason = f"Listo para entrenar: {evaluated_total} outcomes, {new_outcomes} nuevos"
+
+        return {
+            "min_outcomes_required": min_outcomes_required,
+            "evaluated_outcomes_total": evaluated_total,
+            "latest_training_samples": latest_samples,
+            "last_trained_outcomes": last_trained_outcomes,
+            "new_outcomes_since_last_training": new_outcomes,
+            "enough_outcomes": enough_outcomes,
+            "has_new_outcomes": has_new_outcomes,
+            "training_ready": bool(self.training_enabled and enough_outcomes and (has_new_outcomes or latest_samples == 0)),
+            "training_ready_reason": ready_reason,
+        }
 
     def set_post_trade_update_hook(self, callback: Callable[[], None] | None) -> None:
         self._post_trade_update_hook = callback
@@ -855,17 +925,24 @@ class AITradingBrainService:
 
     def start_automation(self, account_name: str) -> dict[str, Any]:
         self.refresh_account_context(account_name)
-        self._ensure_vpn_ready_for_trading("Automation start")
+        if self.trading_enabled:
+            self._ensure_vpn_ready_for_trading("Automation start")
         with self._worker_lock:
             self._active_account_for_workers = account_name
-        self.stream_manager.start(account_name)
-        self.data_collector_worker.start()
-        self.signal_scanner_worker.start()
-        self.outcome_labeler_worker.start()
-        self.news_social_worker.start()
-        self.model_trainer_worker.start()
+        if self.scanner_enabled:
+            self.stream_manager.start(account_name)
+        else:
+            self.stream_manager.stop()
+        if self.collection_enabled:
+            self.data_collector_worker.start()
+            self.outcome_labeler_worker.start()
+            self.news_social_worker.start()
+        if self.scanner_enabled:
+            self.signal_scanner_worker.start()
+        if self.training_enabled:
+            self.model_trainer_worker.start()
         self._start_health_monitor()
-        self.logger.info("Workers automaticos iniciados para %s", account_name)
+        self.logger.info("Workers automáticos iniciados para %s (rol=%s)", account_name, self.runtime_role)
         return self.get_automation_status(account_name)
 
     def pause_automation(self) -> dict[str, Any]:
@@ -876,7 +953,7 @@ class AITradingBrainService:
         self.news_social_worker.stop()
         self.model_trainer_worker.stop()
         self._stop_health_monitor()
-        self.logger.info("Workers automaticos en pausa")
+        self.logger.info("Workers automáticos en pausa (rol=%s)", self.runtime_role)
         return self.get_automation_status(self._active_account_for_workers)
 
     def get_automation_status(self, account_name: str) -> dict[str, Any]:
@@ -926,6 +1003,7 @@ class AITradingBrainService:
         scanner_engine = str((runtime or {}).get("scanner_decision_engine", "heuristic") or "heuristic").strip().lower()
         if scanner_engine not in {"heuristic", "model"}:
             scanner_engine = "heuristic"
+        training_readiness = self._training_readiness_snapshot()
 
         broker_open_positions_leverage: list[str] = []
         try:
@@ -991,11 +1069,11 @@ class AITradingBrainService:
         )
 
         payload = {
-            "collector": "Running" if self.data_collector_worker.running else "Stopped",
-            "scanner": "Running" if self.signal_scanner_worker.running else "Stopped",
-            "labeler": "Running" if self.outcome_labeler_worker.running else "Stopped",
-            "news_social": "Running" if self.news_social_worker.running else "Stopped",
-            "trainer": "Running" if self.model_trainer_worker.running else "Stopped",
+            "collector": self._worker_status_label(enabled=self.collection_enabled, running=self.data_collector_worker.running),
+            "scanner": self._worker_status_label(enabled=self.scanner_enabled, running=self.signal_scanner_worker.running),
+            "labeler": self._worker_status_label(enabled=self.collection_enabled, running=self.outcome_labeler_worker.running),
+            "news_social": self._worker_status_label(enabled=self.collection_enabled, running=self.news_social_worker.running),
+            "trainer": self._worker_status_label(enabled=self.training_enabled, running=self.model_trainer_worker.running),
             "last_data_update": self._last_collector_cycle_at,
             "last_news_update": self._last_news_cycle_at,
             "last_training_update": self._last_training_cycle_at,
@@ -1016,6 +1094,14 @@ class AITradingBrainService:
             "training_remaining_seconds": training_remaining_seconds,
             "training_progress_pct": training_progress_pct,
             "training_last_error": str(getattr(self.model_trainer_worker, "last_error", "") or ""),
+            "training_min_outcomes_required": int(training_readiness.get("min_outcomes_required", 200) or 200),
+            "training_latest_samples": int(training_readiness.get("latest_training_samples", 0) or 0),
+            "training_last_trained_outcomes": int(training_readiness.get("last_trained_outcomes", 0) or 0),
+            "training_new_outcomes": int(training_readiness.get("new_outcomes_since_last_training", 0) or 0),
+            "training_enough_outcomes": bool(training_readiness.get("enough_outcomes", False)),
+            "training_has_new_outcomes": bool(training_readiness.get("has_new_outcomes", False)),
+            "training_ready": bool(training_readiness.get("training_ready", False)),
+            "training_ready_reason": str(training_readiness.get("training_ready_reason", "") or ""),
             "model_current": (approved_model if approved_model and approved_model_available else "heuristic"),
             "model_latest_trained": latest_model or "none",
             "model_approved_paper": (approved_model if approved_model and approved_model_available else "manual_pending"),
@@ -1043,6 +1129,7 @@ class AITradingBrainService:
             "threads": self._thread_manager.summary(),
             "websocket": self.stream_manager.status_snapshot(),
             "emergency_mode": self._emergency_mode,
+            "runtime_role": self.runtime_role,
             "emergency_reason": self._emergency_reason,
         }
         with self._automation_status_cache_lock:
@@ -1174,8 +1261,6 @@ class AITradingBrainService:
             focus_stocks = set(focus.get("stocks_symbols", set()))
             return bool(focus_stocks) and symbol_norm in focus_stocks
         if asset == "crypto":
-            if not bool(focus.get("cryptos_only", False)):
-                return False
             focus_cryptos = set(focus.get("cryptos_symbols", set()))
             if not focus_cryptos:
                 return False
@@ -1192,6 +1277,8 @@ class AITradingBrainService:
         symbol: str,
     ) -> bool:
         asset = str(asset_type or "").lower().strip()
+        if asset == "crypto" and set(self._focus_for_account(account_name).get("cryptos_symbols", set())):
+            return self._is_symbol_selected_in_focus(account_name=account_name, asset_type=asset, symbol=symbol)
         runtime_enabled = bool(runtime.get("auto_trade_cryptos_enabled", 1)) if asset == "crypto" else bool(runtime.get("auto_trade_stocks_enabled", 1))
         if runtime_enabled:
             return True
@@ -2322,12 +2409,147 @@ class AITradingBrainService:
             return max(float(getattr(self, "_ai_target_profit_per_operation_stocks", 0.05) or 0.05), 0.0)
         return max(float(getattr(self, "_ai_target_profit_per_operation_stocks", 0.05) or 0.05), 0.0)
 
+    def _margin_per_trade_usdt(self) -> float:
+        margin_usdt = max(float(getattr(self.settings, "margin_per_trade_usdt", 0.0) or 0.0), 0.0)
+        if margin_usdt > 0.0:
+            return margin_usdt
+        legacy_risk_pct = max(float(getattr(self.settings, "risk_per_trade_pct", 0.0) or 0.0), 0.0)
+        configured_notional = max(float(getattr(self.settings, "default_trade_capital", 0.0) or 0.0), 0.0)
+        if legacy_risk_pct > 0.0 and configured_notional > 0.0:
+            return configured_notional * (legacy_risk_pct / 100.0)
+        return 0.0
+
+    def _configured_margin_per_trade_usdt(self, funds: dict[str, Any]) -> float:
+        # Main Config tab value (.env/settings) is authoritative.
+        configured_margin = self._margin_per_trade_usdt()
+        if configured_margin > 0.0:
+            return configured_margin
+
+        # Fallback to runtime DB only when config margin is not set.
+        runtime_margin = max(float((funds or {}).get("max_position_size", 0.0) or 0.0), 0.0)
+        if runtime_margin > 0.0:
+            return runtime_margin
+        return 0.0
+
+    def _entry_notional_capital(self, funds: dict[str, Any], *, asset_type: str = "", leverage: float = 1.0) -> float:
+        if str(asset_type or "").lower() == "crypto":
+            configured_margin = self._configured_margin_per_trade_usdt(funds)
+            if configured_margin > 0.0:
+                return configured_margin * max(float(leverage or 1.0), 1.0)
+
+        configured_capital = max(float(getattr(self.settings, "default_trade_capital", 0.0) or 0.0), 0.0)
+        if configured_capital > 0.0:
+            return configured_capital
+
+        assigned_capital = max(float(funds.get("max_capital_assigned", 0.0) or 0.0), 0.0)
+        return assigned_capital
+
+    @staticmethod
+    def _required_entry_margin(*, notional_capital: float, asset_type: str, leverage: float) -> float:
+        notional = max(float(notional_capital or 0.0), 0.0)
+        if notional <= 0.0:
+            return 0.0
+        if str(asset_type or "").lower() == "crypto":
+            effective_leverage = max(float(leverage or 1.0), 1.0)
+            return notional / effective_leverage
+        return notional
+
+    def _available_margin_for_entry(self, *, account_name: str, funds: dict[str, Any]) -> float:
+        # Broker cash is the source of truth for available margin/capital.
+        # Keep DB funds as fallback when broker account is temporarily unreachable.
+        broker_cash = 0.0
+        try:
+            try:
+                broker_account = self.broker.get_account(force_refresh=True)
+            except TypeError:
+                broker_account = self.broker.get_account()
+            broker_cash = max(float((broker_account or {}).get("cash", 0.0) or 0.0), 0.0)
+        except Exception:
+            broker_cash = 0.0
+        if broker_cash > 0.0:
+            return broker_cash
+        return max(float(funds.get("available_capital", 0.0) or 0.0), 0.0)
+
+    def _margin_per_trade_pct(self) -> float:
+        return max(float(getattr(self.settings, "risk_per_trade_pct", 0.0) or 0.0), 0.0)
+
+    def _entry_leverage(self, *, runtime: dict[str, Any], asset_type: str) -> int:
+        if str(asset_type or "").lower() != "crypto":
+            return 1
+
+        leverage_max = max(int(getattr(self.settings, "crypto_futures_max_leverage", 20) or 20), 1)
+        leverage_default = int(getattr(self.settings, "crypto_futures_default_leverage", 1) or 1)
+
+        leverage = None
+        raw_runtime_leverage = runtime.get("futures_leverage")
+        if raw_runtime_leverage not in (None, ""):
+            try:
+                runtime_leverage = int(float(raw_runtime_leverage))
+            except (TypeError, ValueError):
+                runtime_leverage = 0
+            if runtime_leverage > 0:
+                leverage = runtime_leverage
+
+        if leverage is None and leverage_default > 0:
+            leverage = leverage_default
+        if leverage is None:
+            leverage = 1
+
+        return min(max(int(leverage), 1), leverage_max)
+
+    def _entry_leverage_and_margin(
+        self,
+        *,
+        runtime: dict[str, Any],
+        asset_type: str,
+        notional_capital: float,
+    ) -> tuple[int, float]:
+        leverage = self._entry_leverage(runtime=runtime, asset_type=asset_type)
+
+        required_margin = self._required_entry_margin(
+            notional_capital=notional_capital,
+            asset_type=asset_type,
+            leverage=leverage,
+        )
+        return leverage, required_margin
+
+    def _recommended_futures_leverage(self, runtime: dict[str, Any]) -> int:
+        leverage_default = int(getattr(self.settings, "crypto_futures_default_leverage", 1) or 1)
+        leverage_max = max(int(getattr(self.settings, "crypto_futures_max_leverage", 20) or 20), 1)
+        runtime_leverage = min(self._runtime_futures_leverage(runtime, leverage_default), leverage_max)
+        return max(runtime_leverage, 1)
+
+    def _enforce_open_positions_limit(self, account_name: str) -> None:
+        account = self.refresh_account_context(account_name)
+        account_id = int(account["id"])
+        max_open_positions = self._max_open_positions_runtime()
+        try:
+            try:
+                live_positions = self.broker.get_positions(force_refresh=True)
+            except TypeError:
+                live_positions = self.broker.get_positions()
+            open_positions_count = sum(1 for row in live_positions if abs(float(row.get("qty", 0.0) or 0.0)) > 0.0)
+            if open_positions_count >= max_open_positions:
+                raise ValueError(f"Maximo de posiciones abiertas alcanzado: {open_positions_count}/{max_open_positions}")
+            return
+        except ValueError:
+            raise
+        except Exception:
+            pass
+
+        persisted_open_positions = [
+            row for row in (self.database.list_positions(account_id) or [])
+            if abs(float(row.get("qty", 0.0) or 0.0)) > 0.0
+        ]
+        if len(persisted_open_positions) >= max_open_positions:
+            raise ValueError(f"Maximo de posiciones abiertas alcanzado: {len(persisted_open_positions)}/{max_open_positions}")
+
     def _target_profit_per_unit(self, *, asset_type: str, price: float, account_id: int) -> float:
         operation_target = self._ai_target_profit_per_operation_value(asset_type)
         if price <= 0:
             return operation_target
         funds = self.database.get_bot_funds(account_id) or {}
-        capital = min(float(funds.get("available_capital", 0.0) or 0.0), float(funds.get("max_position_size", 0.0) or 0.0))
+        capital = self._entry_notional_capital(funds)
         estimated_qty = max(capital / price, 1.0) if capital > 0 else 1.0
         return max(operation_target / estimated_qty, 0.0)
 
@@ -2474,6 +2696,7 @@ class AITradingBrainService:
         return rows if limit is None else rows[: max(int(limit), 1)]
 
     def train_model(self) -> dict[str, Any]:
+        self._require_training_enabled()
         evaluated = self.database.count_evaluated_outcomes()
         if evaluated < 200:
             return {
@@ -2485,7 +2708,14 @@ class AITradingBrainService:
 
     def ensure_automation_running(self, account_name: str) -> dict[str, Any]:
         status = self.get_automation_status(account_name)
-        running = all(status.get(key) == "Running" for key in ("collector", "scanner", "labeler", "news_social", "trainer"))
+        required_keys: list[str] = []
+        if self.collection_enabled:
+            required_keys.extend(["collector", "labeler", "news_social"])
+        if self.scanner_enabled:
+            required_keys.append("scanner")
+        if self.training_enabled:
+            required_keys.append("trainer")
+        running = all(status.get(key) == "Running" for key in required_keys)
         if running:
             with self._worker_lock:
                 active_account = str(self._active_account_for_workers or "").strip()
@@ -2496,6 +2726,7 @@ class AITradingBrainService:
         return self.start_automation(account_name)
 
     def approve_latest_model(self) -> str:
+        self._require_model_management_enabled()
         version = self.registry.latest_version()
         if not version:
             raise ValueError("No hay modelo para aprobar")
@@ -2511,6 +2742,7 @@ class AITradingBrainService:
         return None
 
     def approve_model_version(self, version: str) -> str:
+        self._require_model_management_enabled()
         if not version:
             raise ValueError("Version de modelo invalida")
         if version not in self.registry.available_versions():
@@ -2534,6 +2766,7 @@ class AITradingBrainService:
         return version
 
     def freeze_candidate_version(self, version: str) -> str:
+        self._require_model_management_enabled()
         if not version:
             raise ValueError("Version de modelo invalida")
         self.registry.freeze_candidate(version)
@@ -2550,6 +2783,7 @@ class AITradingBrainService:
         return version
 
     def clear_frozen_candidate(self) -> None:
+        self._require_model_management_enabled()
         frozen = self.registry.frozen_candidate()
         self.registry.clear_frozen_candidate()
         self.database.insert_decision_log(
@@ -2564,6 +2798,7 @@ class AITradingBrainService:
         )
 
     def delete_model_version(self, version: str) -> str:
+        self._require_model_management_enabled()
         version_text = str(version or "").strip()
         if not version_text:
             raise ValueError("Version de modelo invalida")
@@ -2584,6 +2819,7 @@ class AITradingBrainService:
         return version_text
 
     def set_model_alias(self, version: str, alias: str) -> str:
+        self._require_model_management_enabled()
         version_text = str(version or "").strip()
         if not version_text:
             raise ValueError("Version de modelo invalida")
@@ -2631,6 +2867,7 @@ class AITradingBrainService:
         }
 
     def rollback_model(self) -> str | None:
+        self._require_model_management_enabled()
         version = self.registry.rollback_to_previous()
         self.database.insert_decision_log(
             {
@@ -2647,9 +2884,13 @@ class AITradingBrainService:
     def sync_positions(self, account_name: str) -> list[dict[str, Any]]:
         account = self.refresh_account_context(account_name)
         account_id = int(account["id"])
+        runtime = self.database.get_runtime_settings(account_id) or {}
         funds = self._reconcile_ai_funds_budget(account_id)
         max_position_size = float(funds.get("max_position_size", getattr(self.settings, "ai_default_max_position_size", 0.0)) or 0.0)
-        positions = self.broker.get_positions()
+        try:
+            positions = self.broker.get_positions(force_refresh=True)
+        except TypeError:
+            positions = self.broker.get_positions()
         open_symbols: set[str] = set()
         persisted: list[dict[str, Any]] = []
         capital_used_live = 0.0
@@ -2664,12 +2905,16 @@ class AITradingBrainService:
             current_price = float(self.market_data.get_last_price(symbol))
             average_cost = float(metrics["average_cost"] or position.get("avg_entry_price", 0.0) or 0.0)
             total_cost_basis = float(metrics["total_cost_basis"] or (average_cost * qty))
-            leverage = max(float(position.get("leverage", 1.0) or 1.0), 1.0)
+            leverage = float(position.get("leverage", 0.0) or 0.0)
+            if asset_type == "crypto":
+                if leverage <= 1.0:
+                    leverage = float(self._recommended_futures_leverage(runtime))
+                leverage = max(leverage, 1.0)
+            else:
+                leverage = 1.0
             notional_used = max(average_cost, 0.0) * abs(float(qty))
             # In futures, budget impact is margin (notional / leverage), not full notional.
             margin_used = notional_used / leverage if asset_type == "crypto" else notional_used
-            if max_position_size > 0.0:
-                margin_used = min(margin_used, max_position_size)
             capital_used_live += max(margin_used, 0.0)
             unrealized_pnl = (current_price - average_cost) * qty if qty > 0 else 0.0
             min_sell_price = self._minimum_sell_price(average_cost)
@@ -2773,6 +3018,7 @@ class AITradingBrainService:
         manual_approved: bool,
         initiated_by: str = "bot_auto",
     ) -> dict[str, Any]:
+        self._require_trading_enabled()
         account = self.refresh_account_context(account_name)
         account_id = int(account["id"])
         runtime = self.database.get_runtime_settings(account_id) or {}
@@ -2822,12 +3068,36 @@ class AITradingBrainService:
             raise ValueError("Se requiere aprobacion manual")
         if not bool(runtime.get("paper_trading", 1)) and not bool(runtime.get("live_trading_enabled", 0)):
             raise ValueError("Trading live deshabilitado")
-        capital = min(float(funds.get("available_capital", 0.0) or 0.0), float(funds.get("max_position_size", 0.0) or 0.0))
-        if capital <= 0:
-            raise ValueError("No hay capital disponible")
+        leverage = self._entry_leverage(runtime=runtime, asset_type=asset_type)
+        notional_capital = self._entry_notional_capital(funds, asset_type=asset_type, leverage=leverage)
+        if notional_capital <= 0:
+            raise ValueError("No hay capital/margen por trade disponible")
         limit_price = float(signal["suggested_limit_price"] or signal["entry_price"] or 0.0)
         if limit_price <= 0:
             raise ValueError("Precio limit invalido")
+
+        required_margin = self._required_entry_margin(
+            notional_capital=notional_capital,
+            asset_type=asset_type,
+            leverage=leverage,
+        )
+        if required_margin <= 0.0:
+            raise ValueError("No hay margen disponible")
+
+        available_margin = self._available_margin_for_entry(account_name=account_name, funds=funds)
+        if available_margin + 1e-9 < required_margin:
+            # Manual closes/cancels in broker can leave stale budget for a short window.
+            # Reconcile once with live broker positions before rejecting entry.
+            try:
+                self.sync_positions(account_name)
+            except Exception:
+                pass
+            funds = self._reconcile_ai_funds_budget(account_id)
+            available_margin = self._available_margin_for_entry(account_name=account_name, funds=funds)
+        if available_margin + 1e-9 < required_margin:
+            raise ValueError(
+                f"Margen insuficiente: requerido={required_margin:.4f}, disponible={available_margin:.4f}"
+            )
 
         take_profit = float(signal.get("take_profit_price", 0.0) or 0.0)
         expected_net_edge = take_profit - limit_price - float(self.settings.ai_fees_buffer) - float(self.settings.ai_slippage_buffer)
@@ -2836,15 +3106,30 @@ class AITradingBrainService:
                 "Compra bloqueada: expectativa de ganancia neta no positiva (riesgo de loss esperado)"
             )
 
-        qty = round(capital / limit_price, 6)
+        qty = round(notional_capital / limit_price, 6)
         if qty <= 0:
             raise ValueError("Cantidad calculada invalida")
         if bool(runtime.get("signal_only_mode", 1)):
-            return {"status": "signal_only", "qty": qty, "limit_price": limit_price}
+            return {
+                "status": "signal_only",
+                "qty": qty,
+                "limit_price": limit_price,
+                "notional_capital": notional_capital,
+                "margin_required": required_margin,
+                "leverage": leverage,
+            }
 
-        self._ensure_vpn_ready_for_trading("Buy order")
-
-        order = self.order_manager.create_limit_order(symbol=str(signal["symbol"]), qty=qty, side="buy", limit_price=limit_price, time_in_force="gtc")
+        with self._entry_submit_lock:
+            self._enforce_open_positions_limit(account_name)
+            self._ensure_vpn_ready_for_trading("Buy order")
+            if asset_type == "crypto" and hasattr(self.broker, "set_futures_leverage"):
+                leverage_result = self.broker.set_futures_leverage(symbol=str(signal["symbol"]), leverage=leverage)
+                applied_leverage = max(int(float((leverage_result or {}).get("leverage", leverage) or leverage)), 1)
+                if applied_leverage != leverage:
+                    raise ValueError(
+                        f"Leverage aplicado distinto al esperado en {signal['symbol']}: {applied_leverage}x != {leverage}x"
+                    )
+            order = self.order_manager.create_limit_order(symbol=str(signal["symbol"]), qty=qty, side="buy", limit_price=limit_price, time_in_force="gtc")
         order_status = str(order.get("status", "submitted") or "submitted")
         filled_price = float(order.get("filled_avg_price", 0.0) or 0.0)
         if not self._is_executed_trade_status(order_status):
@@ -2868,7 +3153,7 @@ class AITradingBrainService:
                 "created_at": self._now_iso(),
             }
         )
-        funds["capital_used"] = float(funds.get("capital_used", 0.0) or 0.0) + (qty * limit_price)
+        funds["capital_used"] = float(funds.get("capital_used", 0.0) or 0.0) + required_margin
         funds["available_capital"] = max(float(funds.get("max_capital_assigned", 0.0) or 0.0) - float(funds["capital_used"]), 0.0)
         self.database.upsert_bot_funds(
             account_id=account_id,
@@ -2894,6 +3179,9 @@ class AITradingBrainService:
             "order": order,
             "qty": qty,
             "limit_price": limit_price,
+            "notional_capital": notional_capital,
+            "margin_required": required_margin,
+            "leverage": leverage,
             "immediate_exit": immediate_exit,
         }
 
@@ -2908,6 +3196,7 @@ class AITradingBrainService:
         manual_approved: bool,
         initiated_by: str = "bot_auto",
     ) -> dict[str, Any]:
+        self._require_trading_enabled()
         account = self.refresh_account_context(account_name)
         account_id = int(account["id"])
         runtime = self.database.get_runtime_settings(account_id) or {}
@@ -2963,39 +3252,69 @@ class AITradingBrainService:
         if not bool(runtime.get("paper_trading", 1)) and not bool(runtime.get("live_trading_enabled", 0)):
             raise ValueError("Trading live deshabilitado")
 
-        leverage_default = int(getattr(self.settings, "crypto_futures_default_leverage", 1) or 1)
-        leverage_max = max(int(getattr(self.settings, "crypto_futures_max_leverage", 20) or 20), 1)
-        leverage = min(self._runtime_futures_leverage(runtime, leverage_default), leverage_max)
-        funds = self._reconcile_ai_funds_budget(account_id)
-
-        capital = min(float(funds.get("available_capital", 0.0) or 0.0), float(funds.get("max_position_size", 0.0) or 0.0))
-        if capital <= 0:
-            raise ValueError("No hay capital disponible")
+        leverage = self._entry_leverage(runtime=runtime, asset_type=asset_type)
+        notional_capital = self._entry_notional_capital(funds, asset_type=asset_type, leverage=leverage)
+        if notional_capital <= 0:
+            raise ValueError("No hay capital/margen por trade disponible")
         limit_price = float(signal.get("suggested_limit_price", 0.0) or signal.get("entry_price", 0.0) or 0.0)
         if limit_price <= 0:
             raise ValueError("Precio limit invalido")
 
-        qty = round((capital * float(leverage)) / limit_price, 6)
+        required_margin = self._required_entry_margin(
+            notional_capital=notional_capital,
+            asset_type=asset_type,
+            leverage=leverage,
+        )
+
+        if required_margin <= 0.0:
+            raise ValueError("No hay margen disponible")
+
+        available_margin = self._available_margin_for_entry(account_name=account_name, funds=funds)
+        if available_margin + 1e-9 < required_margin:
+            # Manual closes/cancels in broker can leave stale budget for a short window.
+            # Reconcile once with live broker positions before rejecting entry.
+            try:
+                self.sync_positions(account_name)
+            except Exception:
+                pass
+            funds = self._reconcile_ai_funds_budget(account_id)
+            available_margin = self._available_margin_for_entry(account_name=account_name, funds=funds)
+        if available_margin + 1e-9 < required_margin:
+            raise ValueError(
+                f"Margen insuficiente: requerido={required_margin:.4f}, disponible={available_margin:.4f}"
+            )
+
+        qty = round(notional_capital / limit_price, 6)
         if qty <= 0:
             raise ValueError("Cantidad calculada invalida")
         if bool(runtime.get("signal_only_mode", 1)):
-            return {"status": "signal_only", "qty": qty, "limit_price": limit_price, "leverage": leverage}
+            return {
+                "status": "signal_only",
+                "qty": qty,
+                "limit_price": limit_price,
+                "leverage": leverage,
+                "notional_capital": notional_capital,
+                "margin_required": required_margin,
+            }
 
-        self._ensure_vpn_ready_for_trading("Short order")
+        with self._entry_submit_lock:
+            self._enforce_open_positions_limit(account_name)
+            self._ensure_vpn_ready_for_trading("Short order")
+            if hasattr(self.broker, "set_futures_leverage"):
+                leverage_result = self.broker.set_futures_leverage(symbol=str(signal["symbol"]), leverage=leverage)
+                applied_leverage = max(int(float((leverage_result or {}).get("leverage", leverage) or leverage)), 1)
+                if applied_leverage != leverage:
+                    raise ValueError(
+                        f"Leverage aplicado distinto al esperado en {signal['symbol']}: {applied_leverage}x != {leverage}x"
+                    )
 
-        if hasattr(self.broker, "set_futures_leverage"):
-            try:
-                self.broker.set_futures_leverage(symbol=str(signal["symbol"]), leverage=leverage)
-            except Exception as ex:
-                self.logger.warning("No se pudo aplicar leverage %sx en %s: %s", leverage, signal["symbol"], ex)
-
-        order = self.order_manager.create_limit_order(
-            symbol=str(signal["symbol"]),
-            qty=qty,
-            side="sell",
-            limit_price=limit_price,
-            time_in_force="gtc",
-        )
+            order = self.order_manager.create_limit_order(
+                symbol=str(signal["symbol"]),
+                qty=qty,
+                side="sell",
+                limit_price=limit_price,
+                time_in_force="gtc",
+            )
         order_status = str(order.get("status", "submitted") or "submitted")
         filled_price = float(order.get("filled_avg_price", 0.0) or 0.0)
         if not self._is_executed_trade_status(order_status):
@@ -3019,12 +3338,25 @@ class AITradingBrainService:
                 "created_at": self._now_iso(),
             }
         )
+        funds["capital_used"] = float(funds.get("capital_used", 0.0) or 0.0) + required_margin
+        funds["available_capital"] = max(float(funds.get("max_capital_assigned", 0.0) or 0.0) - float(funds["capital_used"]), 0.0)
+        self.database.upsert_bot_funds(
+            account_id=account_id,
+            max_capital_assigned=float(funds.get("max_capital_assigned", 0.0) or 0.0),
+            available_capital=float(funds["available_capital"]),
+            capital_used=float(funds["capital_used"]),
+            max_position_size=float(funds.get("max_position_size", 0.0) or 0.0),
+            max_daily_loss=float(funds.get("max_daily_loss", 0.0) or 0.0),
+            enabled=bool(funds.get("enabled", 1)),
+        )
         return {
             "status": "submitted",
             "order": order,
             "qty": qty,
             "limit_price": limit_price,
             "leverage": leverage,
+            "notional_capital": notional_capital,
+            "margin_required": required_margin,
         }
 
     def _place_immediate_ai_target_exit(
@@ -3312,6 +3644,7 @@ class AITradingBrainService:
         manual_approved: bool = True,
         initiated_by: str = "bot_auto",
     ) -> dict[str, Any]:
+        self._require_trading_enabled()
         account = self.refresh_account_context(account_name)
         account_id = int(account["id"])
         runtime = self.database.get_runtime_settings(account_id) or {}
@@ -3452,6 +3785,8 @@ class AITradingBrainService:
         return max(60.0, min(300.0, configured))
 
     def _collector_cycle(self) -> None:
+        if not self.collection_enabled:
+            return
         if self.stream_manager.connected:
             return
         if self.broker.runtime_state.in_cooldown(self.broker.account_name):
@@ -3631,6 +3966,8 @@ class AITradingBrainService:
             )
 
     def _scanner_cycle(self) -> None:
+        if not self.scanner_enabled:
+            return
         self._reset_daily_counters_if_needed()
         with self._worker_lock:
             account_name = self._active_account_for_workers
@@ -3656,6 +3993,7 @@ class AITradingBrainService:
         focus_cryptos_only = bool(focus.get("cryptos_only", False))
         focus_stocks = set(focus.get("stocks_symbols", set()))
         focus_cryptos = set(focus.get("cryptos_symbols", set()))
+        focus_crypto_keys = {self._symbol_key(str(symbol)) for symbol in focus_cryptos if str(symbol).strip()}
         symbols = self._symbols_for_collection(account_name)
         for item in symbols:
             symbol = str(item.get("symbol", "")).upper()
@@ -3663,6 +4001,10 @@ class AITradingBrainService:
 
             if futures_only_mode and str(asset_type).lower() != "crypto":
                 continue
+
+            if asset_type.lower() == "crypto" and focus_crypto_keys:
+                if self._symbol_key(symbol) not in focus_crypto_keys:
+                    continue
 
             if not self._is_effective_auto_enabled_for_symbol(
                 runtime=runtime,
@@ -4355,6 +4697,8 @@ class AITradingBrainService:
                 self.database.upsert_signal_outcome(signal_id=signal_id, symbol=symbol, updates=updates)
 
     def _training_cycle(self) -> None:
+        if not self.training_enabled:
+            return
         self._reset_daily_counters_if_needed()
         if self._training_interval_seconds() <= 0:
             self._last_training_cycle_at = f"{self._now_iso()} | modo manual"
@@ -4407,6 +4751,7 @@ class AITradingBrainService:
         focus = self._focus_for_account(account_name)
         focus_stocks = set(focus.get("stocks_symbols", set()))
         focus_cryptos = set(focus.get("cryptos_symbols", set()))
+        focus_crypto_keys = {self._symbol_key(str(symbol)) for symbol in focus_cryptos if str(symbol).strip()}
         stock_symbols: list[str] = []
         crypto_symbols: list[str] = []
         seen: set[str] = set()
@@ -4416,6 +4761,8 @@ class AITradingBrainService:
                 continue
             seen.add(symbol)
             asset_type = str(item.get("asset_type", "stock")).lower().strip()
+            if asset_type == "crypto" and focus_crypto_keys and self._symbol_key(symbol) not in focus_crypto_keys:
+                continue
             if asset_type == "crypto" or "/" in symbol or symbol.endswith("USD"):
                 crypto_symbols.append(symbol)
             else:
@@ -4449,6 +4796,8 @@ class AITradingBrainService:
             if str(token).strip()
         }
         focus_cryptos = {token for token in focus_cryptos if token}
+        focus_crypto_keys = {self._symbol_key(symbol) for symbol in focus_cryptos}
+        has_crypto_focus = bool(focus_crypto_keys)
 
         for asset in self.database.list_watchlist_assets(active_only=True):
             symbol = str(asset.get("symbol", "")).upper().strip()
@@ -4487,8 +4836,8 @@ class AITradingBrainService:
                 },
             )
 
-        # When crypto focus is not hard-restricted, evaluate the full tradable Binance crypto universe.
-        if is_binance_provider and not focus_cryptos_only:
+        # Only expand to the full crypto universe when no crypto focus was selected.
+        if is_binance_provider and not has_crypto_focus and not focus_cryptos_only:
             try:
                 for asset in self.broker.list_cryptos(status="active", only_tradable=True):
                     symbol = str(asset.get("symbol", "")).upper().strip()
@@ -4504,24 +4853,12 @@ class AITradingBrainService:
             except Exception as ex:
                 self._last_api_error = str(ex)
 
-        # Apply hard filtering only when *_only toggles are enabled.
-        # If user disables "solo", symbol lists are treated as preferences in UI, not strict filters.
-        if focus_stocks_only and focus_stocks:
-            focus_stock_keys = {self._symbol_key(item) for item in focus_stocks}
+        # When a crypto focus exists, make it a hard filter for all backend work.
+        if has_crypto_focus:
             symbols = {
                 key: value
                 for key, value in symbols.items()
-                if not (str(value.get("asset_type", "")).lower().strip() == "stock")
-                or key in focus_stock_keys
-            }
-
-        if focus_cryptos_only and focus_cryptos:
-            focus_crypto_keys = {self._symbol_key(item) for item in focus_cryptos}
-            symbols = {
-                key: value
-                for key, value in symbols.items()
-                if not (str(value.get("asset_type", "")).lower().strip() == "crypto")
-                or key in focus_crypto_keys
+                if not (str(value.get("asset_type", "")).lower().strip() == "crypto") or key in focus_crypto_keys
             }
             for symbol in sorted(focus_cryptos):
                 symbols.setdefault(
@@ -4532,13 +4869,23 @@ class AITradingBrainService:
                     },
                 )
 
+        # Apply hard filtering only when *_only toggles are enabled for stocks.
+        if focus_stocks_only and focus_stocks:
+            focus_stock_keys = {self._symbol_key(item) for item in focus_stocks}
+            symbols = {
+                key: value
+                for key, value in symbols.items()
+                if not (str(value.get("asset_type", "")).lower().strip() == "stock")
+                or key in focus_stock_keys
+            }
+
         if focus_stocks_only:
             symbols = {
                 key: value
                 for key, value in symbols.items()
                 if str(value.get("asset_type", "")).lower().strip() == "stock"
             }
-        if focus_cryptos_only:
+        if focus_cryptos_only and focus_cryptos:
             symbols = {
                 key: value
                 for key, value in symbols.items()
@@ -5271,6 +5618,10 @@ class AITradingBrainService:
             except Exception:
                 broker_cash = 0.0
 
+            # If broker has cash, do not block by stale/limited internal assigned budget.
+            if broker_cash > 0.0:
+                available_capital = broker_cash
+
             if available_capital <= 0.0:
                 return (
                     "No hay fondos asignados "
@@ -5329,19 +5680,44 @@ class AITradingBrainService:
         max_daily_loss = float(funds.get("max_daily_loss", 0.0) or 0.0)
         enabled = bool(funds.get("enabled", 1))
 
-        if max_position_size <= 0.0:
-            return funds
-
         max_open_positions = self._max_open_positions_runtime()
-        desired_assigned = max_position_size * float(max_open_positions)
+        desired_assigned = 0.0
 
-        # If runtime allows more concurrent positions than assigned budget can support,
-        # expand assigned budget so per-position sizing and max-open-positions stay aligned.
+        # Backward-compatible path: legacy per-position budget, if present.
+        if max_position_size > 0.0:
+            desired_assigned = max(desired_assigned, max_position_size * float(max_open_positions))
+
+        # Main path: budget required to allow configured concurrent entries.
+        configured_notional = max(float(getattr(self.settings, "default_trade_capital", 0.0) or 0.0), 0.0)
+        runtime = self.database.get_runtime_settings(account_id) or {}
+        leverage = max(float(self._recommended_futures_leverage(runtime) or 1.0), 1.0)
+        configured_margin_usdt = self._configured_margin_per_trade_usdt(funds)
+        margin_per_trade = configured_margin_usdt if configured_margin_usdt > 0.0 else (configured_notional / leverage if configured_notional > 0.0 else 0.0)
+        if margin_per_trade > 0.0:
+            desired_assigned = max(desired_assigned, margin_per_trade * float(max_open_positions))
+
+        # If broker cash is higher, allow bot to use that available capacity.
+        broker_cash = 0.0
+        try:
+            broker_account = self.broker.get_account(force_refresh=True)
+            broker_cash = max(float((broker_account or {}).get("cash", 0.0) or 0.0), 0.0)
+        except TypeError:
+            try:
+                broker_account = self.broker.get_account()
+                broker_cash = max(float((broker_account or {}).get("cash", 0.0) or 0.0), 0.0)
+            except Exception:
+                broker_cash = 0.0
+        except Exception:
+            broker_cash = 0.0
+        if broker_cash > 0.0:
+            desired_assigned = max(desired_assigned, broker_cash)
+
+        # Keep at least current assigned value unless we need to expand.
+        desired_assigned = max(desired_assigned, max_capital_assigned)
+
         should_expand_budget = (
-            max_open_positions > 1
-            and max_capital_assigned > 0.0
-            and desired_assigned > max_capital_assigned
-            and available_capital <= 0.0
+            max_open_positions > 0
+            and desired_assigned > max_capital_assigned + 1e-9
         )
         if not should_expand_budget:
             return funds

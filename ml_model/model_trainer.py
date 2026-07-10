@@ -1,7 +1,14 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import sys
+from pathlib import Path
 from typing import Any
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from joblib import dump  # noqa: F401
 from sklearn.ensemble import RandomForestClassifier
@@ -20,7 +27,7 @@ class ModelTrainer:
         self.settings = settings
 
     def train_general_model(self) -> dict[str, Any]:
-        label_type = str(getattr(self.settings, "ai_training_label_type", "result_15m_fallback_30m") or "result_15m_fallback_30m")
+        label_type = str(getattr(self.settings, "ai_training_label_type", "result_5m_fallback_15m") or "result_5m_fallback_15m")
         evaluated_outcomes = int(self.database.count_evaluated_outcomes() or 0)
         if evaluated_outcomes < 200:
             return {
@@ -53,11 +60,12 @@ class ModelTrainer:
 
         x_train = [build_feature_vector(sample["features"]) for sample in train_samples]
         y_train = [int(sample["label"]) for sample in train_samples]
+        sample_weights = [float(sample.get("sample_weight", 1.0) or 1.0) for sample in train_samples]
         x_test = [build_feature_vector(sample["features"]) for sample in test_samples]
         y_test = [int(sample["label"]) for sample in test_samples]
 
         model = RandomForestClassifier(n_estimators=200, random_state=42, class_weight="balanced")
-        model.fit(x_train, y_train)
+        model.fit(x_train, y_train, sample_weight=sample_weights)
         predictions = [int(value) for value in model.predict(x_test)]
 
         accuracy = float(accuracy_score(y_test, predictions))
@@ -130,3 +138,13 @@ class ModelTrainer:
             "number_of_samples": len(samples),
             "trained_with_outcomes_count": len(samples),
         }
+
+
+def main() -> None:
+    from apps.model_trainer.main import main as run_model_trainer_app
+
+    run_model_trainer_app()
+
+
+if __name__ == "__main__":
+    main()

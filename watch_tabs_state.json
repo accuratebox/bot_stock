@@ -1,22 +1,12 @@
 [
   {
-    "symbol": "AVAX/USD",
+    "symbol": "SOL/USD",
     "asset_type": "crypto",
     "account": "Binance Demo",
     "bot_actor": "ia",
     "mode": "tracking",
     "auto_rebuy": false,
     "rebuy_capital": "1000.0",
-    "target_profit_per_share": "0.2"
-  },
-  {
-    "symbol": "KAVA/USD",
-    "asset_type": "crypto",
-    "account": "Binance Demo",
-    "bot_actor": "ia",
-    "mode": "tracking",
-    "auto_rebuy": false,
-    "rebuy_capital": "1000.0",
-    "target_profit_per_share": "0.2"
+    "target_profit_per_share": "1.5"
   }
 ]

@@ -91,7 +91,22 @@ class Settings:
     default_interval: str = os.getenv("BOT_INTERVAL", "1m")
 
     stop_loss_pct: float = float(os.getenv("BOT_STOP_LOSS_PCT", "0.5"))
-    risk_per_trade_pct: float = float(os.getenv("BOT_RISK_PER_TRADE_PCT", "1.0"))
+    risk_per_trade_pct: float = float(
+        _env(
+            "BOT_MARGIN_PER_TRADE_PCT",
+            "MARGIN_PER_TRADE_PCT",
+            "BOT_RISK_PER_TRADE_PCT",
+            "RISK_PER_TRADE_PCT",
+            default="1.0",
+        )
+    )
+    margin_per_trade_usdt: float = float(
+        _env(
+            "BOT_MARGIN_PER_TRADE_USDT",
+            "MARGIN_PER_TRADE_USDT",
+            default="0.0",
+        )
+    )
     max_daily_loss: float = float(os.getenv("BOT_MAX_DAILY_LOSS", "200.0"))
 
     max_open_positions: int = int(os.getenv("MAX_OPEN_POSITIONS", "5"))
@@ -161,7 +176,7 @@ class Settings:
     ai_watch_resolution_tie_news_bias: float = float(_env("AI_WATCH_RESOLUTION_TIE_NEWS_BIAS", default="0.12"))
     ai_outcome_win_profit_pct: float = float(_env("AI_OUTCOME_WIN_PROFIT_PCT", default="0.25"))
     ai_outcome_loss_drawdown_pct: float = float(_env("AI_OUTCOME_LOSS_DRAWDOWN_PCT", default="0.25"))
-    ai_training_label_type: str = _env("AI_TRAINING_LABEL_TYPE", default="result_15m_fallback_30m").lower()
+    ai_training_label_type: str = _env("AI_TRAINING_LABEL_TYPE", default="result_5m_fallback_15m").lower()
     ai_auto_train_mode: str = _env("AI_AUTO_TRAIN_MODE", default="12h").lower()
     ai_dev_mode: bool = _env_bool("AI_DEV_MODE", default=False)
     ai_focus_stocks_only: bool = _env_bool("AI_FOCUS_STOCKS_ONLY", default=False)

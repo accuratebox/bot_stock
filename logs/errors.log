@@ -7741,3 +7741,64 @@ ValueError: No hay posicion activa para vender
 2026-07-07 07:47:09 | WARNING | trading_bot | Using fallback REST bars for SOL/USD
 2026-07-07 07:47:14 | WARNING | trading_bot | Using fallback REST bars for XRP/USD
 2026-07-07 11:21:47 | WARNING | trading_bot | Fallo de red/HTTP en market data (HTTPError). Reintentando en 1.0 s
+2026-07-07 14:15:37 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-07 14:15:39 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-07 14:15:39 | WARNING | trading_bot | Using fallback REST bars for AVAX/USD
+2026-07-07 14:15:43 | WARNING | trading_bot | Using fallback REST bars for BTC/USD
+2026-07-07 14:15:45 | WARNING | trading_bot | Using fallback REST bars for DOGE/USD
+2026-07-07 14:15:48 | WARNING | trading_bot | Using fallback REST bars for ETH/USD
+2026-07-07 14:15:57 | WARNING | trading_bot | No se pudo refrescar estado NYSE: HTTPSConnectionPool(host='www.nyse.com', port=443): Read timed out. (read timeout=20)
+2026-07-07 14:16:33 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-07 14:16:35 | WARNING | trading_bot | Using fallback REST bars for LINK/USD
+2026-07-07 14:16:41 | WARNING | trading_bot | Using fallback REST bars for SOL/USD
+2026-07-07 14:16:45 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-07 14:16:45 | WARNING | trading_bot | Using fallback REST bars for XRP/USD
+2026-07-07 14:27:54 | WARNING | trading_bot | Otra instancia del bot ya está activa. Cancelando segundo arranque.
+2026-07-07 14:27:56 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-07 14:28:00 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-07 14:28:00 | WARNING | trading_bot | Using fallback REST bars for AVAX/USD
+2026-07-07 14:28:03 | WARNING | trading_bot | Using fallback REST bars for BTC/USD
+2026-07-07 14:28:06 | WARNING | trading_bot | Using fallback REST bars for DOGE/USD
+2026-07-07 14:28:10 | WARNING | trading_bot | Using fallback REST bars for ETH/USD
+2026-07-07 14:28:16 | WARNING | trading_bot | No se pudo refrescar estado NYSE: HTTPSConnectionPool(host='www.nyse.com', port=443): Read timed out. (read timeout=20)
+2026-07-07 14:28:56 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-07 14:28:56 | WARNING | trading_bot | Using fallback REST bars for LINK/USD
+2026-07-07 14:29:02 | WARNING | trading_bot | Using fallback REST bars for SOL/USD
+2026-07-07 14:29:06 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-07 14:29:06 | WARNING | trading_bot | Using fallback REST bars for XRP/USD
+2026-07-07 14:29:30 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-07 14:29:31 | WARNING | trading_bot | Using fallback REST bars for AVAX/USD
+2026-07-07 14:29:33 | WARNING | trading_bot | Using fallback REST bars for BTC/USD
+2026-07-07 14:29:37 | WARNING | trading_bot | Using fallback REST bars for DOGE/USD
+2026-07-07 14:29:41 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-07 14:29:41 | WARNING | trading_bot | Using fallback REST bars for ETH/USD
+2026-07-07 14:30:28 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-07 14:30:30 | WARNING | trading_bot | Using fallback REST bars for LINK/USD
+2026-07-07 14:30:33 | WARNING | trading_bot | Using fallback REST bars for SOL/USD
+2026-07-07 14:30:37 | WARNING | trading_bot | Using fallback REST bars for XRP/USD
+2026-07-07 15:23:54 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-07 15:23:56 | WARNING | trading_bot | Using fallback REST bars for AVAX/USD
+2026-07-07 15:24:07 | WARNING | trading_bot | Fallo de red/HTTP en market data (ConnectionError). Reintentando en 1.0 s
+2026-07-07 15:24:09 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-07 15:24:10 | WARNING | trading_bot | Using fallback REST bars for AVAX/USD
+2026-07-07 15:24:12 | WARNING | trading_bot | Using fallback REST bars for BTC/USD
+2026-07-07 15:24:16 | WARNING | trading_bot | Using fallback REST bars for DOGE/USD
+2026-07-07 15:24:19 | WARNING | trading_bot | Using fallback REST bars for ETH/USD
+2026-07-07 15:24:27 | WARNING | trading_bot | No se pudo refrescar estado NYSE: HTTPSConnectionPool(host='www.nyse.com', port=443): Read timed out. (read timeout=20)
+2026-07-07 15:25:08 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-07 15:25:09 | WARNING | trading_bot | Using fallback REST bars for LINK/USD
+2026-07-07 15:25:13 | WARNING | trading_bot | Using fallback REST bars for SOL/USD
+2026-07-07 15:25:18 | WARNING | trading_bot | Using fallback REST bars for XRP/USD
+2026-07-07 15:27:17 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-07 15:27:17 | WARNING | trading_bot | Using fallback REST bars for AVAX/USD
+2026-07-07 15:27:24 | WARNING | trading_bot | Using fallback REST bars for BTC/USD
+2026-07-07 15:28:10 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-07 15:28:10 | WARNING | trading_bot | Using fallback REST bars for DOGE/USD
+2026-07-07 15:28:17 | WARNING | trading_bot | Using fallback REST bars for ETH/USD
+2026-07-07 15:28:23 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-07 15:28:23 | WARNING | trading_bot | Using fallback REST bars for LINK/USD
+2026-07-07 15:29:09 | WARNING | trading_bot | WebSocket reconnect triggered by CryptoVolumeManager
+2026-07-07 15:29:09 | WARNING | trading_bot | Using fallback REST bars for SOL/USD
+2026-07-07 15:29:16 | WARNING | trading_bot | Using fallback REST bars for XRP/USD
+2026-07-07 16:21:43 | WARNING | trading_bot | Fallo de red/HTTP en market data (HTTPError). Reintentando en 1.0 s
+2026-07-07 17:05:03 | WARNING | trading_bot | Forzando cierre de la aplicacion por solicitud del usuario.

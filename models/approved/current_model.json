@@ -1,0 +1,9 @@
+{
+  "model_version": "general_model_20260706_050703",
+  "trained_at": "2026-07-06T05:07:03.567346+00:00",
+  "number_of_samples": 20179,
+  "trained_with_outcomes_count": 20179,
+  "label_type": "result_15m_fallback_30m",
+  "dataset_start": "2026-07-04T02:35:06.841202+00:00",
+  "dataset_end": "2026-07-06T04:51:06.837740+00:00"
+}

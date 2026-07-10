@@ -11,15 +11,22 @@ class ModelRegistry:
     def __init__(self, models_dir: str) -> None:
         self.path = Path(models_dir)
         self.path.mkdir(parents=True, exist_ok=True)
+        self.candidates_path = self.path / "candidates"
+        self.candidates_path.mkdir(parents=True, exist_ok=True)
+        self.approved_path = self.path / "approved"
+        self.approved_path.mkdir(parents=True, exist_ok=True)
+        self.current_model_path = self.approved_path / "current_model.pkl"
+        self.current_model_meta_path = self.approved_path / "current_model.json"
         self.meta_path = self.path / "registry.json"
         if not self.meta_path.exists():
             self.meta_path.write_text(
                 json.dumps({"approved": "", "latest": "", "frozen_candidate": "", "aliases": {}}, indent=2),
                 encoding="utf-8",
             )
+        self._ensure_legacy_approved_bundle()
 
     def save_model(self, model: Any, version: str, metadata: dict[str, Any]) -> Path:
-        model_path = self.path / f"{version}.pkl"
+        model_path = self.candidates_path / f"{version}.pkl"
         joblib.dump({"model": model, "metadata": metadata}, model_path)
         state = self._load_state()
         state["latest"] = version
@@ -27,9 +34,19 @@ class ModelRegistry:
         return model_path
 
     def approve_model(self, version: str) -> None:
+        version_text = str(version or "").strip()
+        if not version_text:
+            raise ValueError("Version invalida")
+        source_path = self.model_path_for_version(version_text)
+        if source_path is None or not source_path.exists():
+            raise ValueError(f"Modelo no encontrado: {version_text}")
+        bundle = joblib.load(source_path)
+        joblib.dump(bundle, self.current_model_path)
+        metadata = bundle.get("metadata", {}) if isinstance(bundle, dict) else {}
+        self.current_model_meta_path.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
         state = self._load_state()
-        state["approved"] = version
-        if str(state.get("frozen_candidate", "")) == str(version):
+        state["approved"] = version_text
+        if str(state.get("frozen_candidate", "")) == version_text:
             state["frozen_candidate"] = ""
         self._save_state(state)
 
@@ -69,8 +86,8 @@ class ModelRegistry:
         version_text = str(version or "").strip()
         if not version_text:
             raise ValueError("Version invalida")
-        model_path = self.path / f"{version_text}.pkl"
-        if not model_path.exists():
+        model_path = self.model_path_for_version(version_text)
+        if model_path is None or not model_path.exists():
             raise ValueError(f"Modelo no encontrado: {version_text}")
         model_path.unlink()
 
@@ -92,8 +109,8 @@ class ModelRegistry:
         frozen = str(state.get("frozen_candidate", "") or "")
         if not frozen:
             return ""
-        model_path = self.path / f"{frozen}.pkl"
-        if not model_path.exists():
+        model_path = self.model_path_for_version(frozen)
+        if model_path is None or not model_path.exists():
             return ""
         return frozen
 
@@ -106,19 +123,15 @@ class ModelRegistry:
         return previous
 
     def available_versions(self) -> list[str]:
-        versions = [path.stem for path in self.path.glob("*.pkl")]
-        versions.sort(reverse=True)
-        return versions
+        versions = {path.stem for path in self.candidates_path.glob("*.pkl")}
+        versions.update(path.stem for path in self.path.glob("*.pkl"))
+        return sorted(versions, reverse=True)
 
     def load_approved_bundle(self) -> dict[str, Any] | None:
-        state = self._load_state()
-        version = state.get("approved")
-        if not version:
+        self._ensure_legacy_approved_bundle()
+        if not self.current_model_path.exists():
             return None
-        model_path = self.path / f"{version}.pkl"
-        if not model_path.exists():
-            return None
-        return joblib.load(model_path)
+        return joblib.load(self.current_model_path)
 
     def latest_version(self) -> str:
         return str(self._load_state().get("latest", ""))
@@ -127,11 +140,20 @@ class ModelRegistry:
         return str(self._load_state().get("approved", ""))
 
     def approved_model_available(self) -> bool:
-        version = self.approved_version()
-        if not version:
-            return False
-        model_path = self.path / f"{version}.pkl"
-        return model_path.exists()
+        self._ensure_legacy_approved_bundle()
+        return self.current_model_path.exists()
+
+    def model_path_for_version(self, version: str) -> Path | None:
+        version_text = str(version or "").strip()
+        if not version_text:
+            return None
+        candidate_path = self.candidates_path / f"{version_text}.pkl"
+        if candidate_path.exists():
+            return candidate_path
+        legacy_path = self.path / f"{version_text}.pkl"
+        if legacy_path.exists():
+            return legacy_path
+        return None
 
     def prune_old_versions(self, keep_last: int) -> None:
         versions = self.available_versions()
@@ -170,3 +192,17 @@ class ModelRegistry:
 
     def _save_state(self, state: dict[str, Any]) -> None:
         self.meta_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
+
+    def _ensure_legacy_approved_bundle(self) -> None:
+        if self.current_model_path.exists():
+            return
+        approved_version = self.approved_version()
+        if not approved_version:
+            return
+        source_path = self.model_path_for_version(approved_version)
+        if source_path is None or not source_path.exists():
+            return
+        bundle = joblib.load(source_path)
+        joblib.dump(bundle, self.current_model_path)
+        metadata = bundle.get("metadata", {}) if isinstance(bundle, dict) else {}
+        self.current_model_meta_path.write_text(json.dumps(metadata, indent=2), encoding="utf-8")

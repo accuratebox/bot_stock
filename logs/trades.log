@@ -1973,3 +1973,8 @@
 2026-07-07 08:19:24 | INFO | trading_bot | Auto-ejecucion bloqueada para ORDER/USD: Cantidad calculada invalida
 2026-07-07 10:48:28 | INFO | trading_bot | Auto-short bloqueado para ORDER/USD: Cantidad invalida para ORDERUSDT tras ajustar step/minQty
 2026-07-07 13:13:57 | INFO | trading_bot | Auto-ejecucion bloqueada para ORDER/USD: Cantidad calculada invalida
+2026-07-07 14:17:37 | INFO | trading_bot | Auto-ejecucion IA | IOTA/USD | BUY_SMALL | score=66.54 | result=submitted
+2026-07-07 14:24:51 | INFO | trading_bot | Auto-ejecucion IA | ID/USD | BUY_SMALL | score=66.61 | result=submitted
+2026-07-07 14:25:45 | INFO | trading_bot | Auto-ejecucion IA | BLUR/USD | BUY_SMALL | score=68.73 | result=submitted
+2026-07-07 14:25:52 | INFO | trading_bot | Auto-ejecucion IA | 1000PEPE/USD | BUY_SMALL | score=68.67 | result=submitted
+2026-07-07 15:00:43 | INFO | trading_bot | Auto-short bloqueado para ORDER/USD: Notional insuficiente para ORDERUSDT: 3.987770 < 5.000000

@@ -247,7 +247,12 @@ class BotControlWindow:
         # Config panel variables
         self.config_capital_var = tk.StringVar(value=str(settings.default_trade_capital))
         self.config_target_total_usd_var = tk.StringVar(value=str(getattr(settings, "target_total_usd", settings.target_profit_per_share)))
-        self.config_risk_pct_var = tk.StringVar(value=str(settings.risk_per_trade_pct))
+        default_margin_usdt = max(float(getattr(settings, "margin_per_trade_usdt", 0.0) or 0.0), 0.0)
+        if default_margin_usdt <= 0.0:
+            legacy_risk_pct = max(float(getattr(settings, "risk_per_trade_pct", 0.0) or 0.0), 0.0)
+            if legacy_risk_pct > 0.0:
+                default_margin_usdt = max(float(settings.default_trade_capital), 0.0) * (legacy_risk_pct / 100.0)
+        self.config_margin_usdt_var = tk.StringVar(value=str(default_margin_usdt))
         self.config_max_daily_loss_var = tk.StringVar(value=str(settings.max_daily_loss))
         self.config_max_open_pos_var = tk.StringVar(value=str(settings.max_open_positions))
         self.config_stock_allow_hold_var = tk.IntVar(value=1 if bool(getattr(settings, "stock_allow_hold", True)) else 0)
@@ -665,8 +670,8 @@ class BotControlWindow:
         ttk.Label(general_lf, text="Target total USD (bot principal)").grid(row=0, column=2, sticky="w", padx=4, pady=4)
         ttk.Entry(general_lf, textvariable=self.config_target_total_usd_var, width=12).grid(row=0, column=3, padx=4, pady=4, sticky="w")
 
-        ttk.Label(general_lf, text="Riesgo por trade (%)").grid(row=1, column=0, sticky="w", padx=4, pady=4)
-        ttk.Entry(general_lf, textvariable=self.config_risk_pct_var, width=15).grid(row=1, column=1, padx=4, pady=4)
+        ttk.Label(general_lf, text="Margen por trade (USDT)").grid(row=1, column=0, sticky="w", padx=4, pady=4)
+        ttk.Entry(general_lf, textvariable=self.config_margin_usdt_var, width=15).grid(row=1, column=1, padx=4, pady=4)
 
         ttk.Label(general_lf, text="Pérdida máxima diaria ($)").grid(row=2, column=0, sticky="w", padx=4, pady=4)
         ttk.Entry(general_lf, textvariable=self.config_max_daily_loss_var, width=15).grid(row=2, column=1, padx=4, pady=4)
@@ -712,7 +717,7 @@ class BotControlWindow:
         ttk.Button(
             general_lf,
             text="Guardar pausas IA",
-            command=lambda: self._run_async(self._save_ai_runtime_controls),
+            command=self._save_ai_runtime_controls,
         ).grid(row=7, column=1, sticky="w", padx=4, pady=(0, 4))
 
         quota_lf = ttk.LabelFrame(scrollable_frame, text="Cuota mensual CryptoPanic", padding=10)
@@ -798,54 +803,6 @@ class BotControlWindow:
             pady=4,
         )
 
-        # TIER 1: BTC/ETH
-        tier1_lf = ttk.LabelFrame(scrollable_frame, text="🟡 Tier 1 (BTC/ETH) - Principales", padding=10)
-        tier1_lf.pack(fill="x", padx=8, pady=6)
-
-        ttk.Label(tier1_lf, text="Stop Loss (%)").grid(row=0, column=0, sticky="w", padx=4, pady=4)
-        ttk.Entry(tier1_lf, textvariable=self.config_btc_sl_var, width=12).grid(row=0, column=1, padx=4, pady=4)
-
-        ttk.Label(tier1_lf, text="Target 1 (%)").grid(row=1, column=0, sticky="w", padx=4, pady=4)
-        ttk.Entry(tier1_lf, textvariable=self.config_btc_tp1_var, width=12).grid(row=1, column=1, padx=4, pady=4)
-
-        ttk.Label(tier1_lf, text="Target 2 (%)").grid(row=2, column=0, sticky="w", padx=4, pady=4)
-        ttk.Entry(tier1_lf, textvariable=self.config_btc_tp2_var, width=12).grid(row=2, column=1, padx=4, pady=4)
-
-        ttk.Label(tier1_lf, text="Target Máximo (%)").grid(row=3, column=0, sticky="w", padx=4, pady=4)
-        ttk.Entry(tier1_lf, textvariable=self.config_btc_max_tp_var, width=12).grid(row=3, column=1, padx=4, pady=4)
-
-        # TIER 2: ALT-COINS
-        tier2_lf = ttk.LabelFrame(scrollable_frame, text="🟠 Tier 2 (ALT-coins) - SOL, XRP, LINK, etc", padding=10)
-        tier2_lf.pack(fill="x", padx=8, pady=6)
-
-        ttk.Label(tier2_lf, text="Stop Loss (%)").grid(row=0, column=0, sticky="w", padx=4, pady=4)
-        ttk.Entry(tier2_lf, textvariable=self.config_alt_sl_var, width=12).grid(row=0, column=1, padx=4, pady=4)
-
-        ttk.Label(tier2_lf, text="Target 1 (%)").grid(row=1, column=0, sticky="w", padx=4, pady=4)
-        ttk.Entry(tier2_lf, textvariable=self.config_alt_tp1_var, width=12).grid(row=1, column=1, padx=4, pady=4)
-
-        ttk.Label(tier2_lf, text="Target 2 (%)").grid(row=2, column=0, sticky="w", padx=4, pady=4)
-        ttk.Entry(tier2_lf, textvariable=self.config_alt_tp2_var, width=12).grid(row=2, column=1, padx=4, pady=4)
-
-        ttk.Label(tier2_lf, text="Target Máximo (%)").grid(row=3, column=0, sticky="w", padx=4, pady=4)
-        ttk.Entry(tier2_lf, textvariable=self.config_alt_max_tp_var, width=12).grid(row=3, column=1, padx=4, pady=4)
-
-        # TIER 3: MEME COINS
-        tier3_lf = ttk.LabelFrame(scrollable_frame, text="🔴 Tier 3 (MEME) - PEPE, BONK, SHIB, etc", padding=10)
-        tier3_lf.pack(fill="x", padx=8, pady=6)
-
-        ttk.Label(tier3_lf, text="Stop Loss (%)").grid(row=0, column=0, sticky="w", padx=4, pady=4)
-        ttk.Entry(tier3_lf, textvariable=self.config_meme_sl_var, width=12).grid(row=0, column=1, padx=4, pady=4)
-
-        ttk.Label(tier3_lf, text="Target 1 (%)").grid(row=1, column=0, sticky="w", padx=4, pady=4)
-        ttk.Entry(tier3_lf, textvariable=self.config_meme_tp1_var, width=12).grid(row=1, column=1, padx=4, pady=4)
-
-        ttk.Label(tier3_lf, text="Target 2 (%)").grid(row=2, column=0, sticky="w", padx=4, pady=4)
-        ttk.Entry(tier3_lf, textvariable=self.config_meme_tp2_var, width=12).grid(row=2, column=1, padx=4, pady=4)
-
-        ttk.Label(tier3_lf, text="Target Máximo (%)").grid(row=3, column=0, sticky="w", padx=4, pady=4)
-        ttk.Entry(tier3_lf, textvariable=self.config_meme_max_tp_var, width=12).grid(row=3, column=1, padx=4, pady=4)
-
         # Buttons
         buttons_frame = ttk.Frame(scrollable_frame)
         buttons_frame.pack(fill="x", padx=8, pady=12)
@@ -872,7 +829,12 @@ class BotControlWindow:
     def _refresh_config_values(self) -> None:
         """Recarga los valores actuales desde settings"""
         self.config_capital_var.set(str(settings.default_trade_capital))
-        self.config_risk_pct_var.set(str(settings.risk_per_trade_pct))
+        margin_usdt = max(float(getattr(settings, "margin_per_trade_usdt", 0.0) or 0.0), 0.0)
+        if margin_usdt <= 0.0:
+            legacy_risk_pct = max(float(getattr(settings, "risk_per_trade_pct", 0.0) or 0.0), 0.0)
+            if legacy_risk_pct > 0.0:
+                margin_usdt = max(float(settings.default_trade_capital), 0.0) * (legacy_risk_pct / 100.0)
+        self.config_margin_usdt_var.set(str(margin_usdt))
         self.config_target_total_usd_var.set(str(getattr(settings, "target_total_usd", settings.target_profit_per_share)))
         self.config_max_daily_loss_var.set(str(settings.max_daily_loss))
         self.config_max_open_pos_var.set(str(settings.max_open_positions))
@@ -1033,31 +995,32 @@ class BotControlWindow:
         import re
 
         try:
+            def _safe_assign(obj: Any, name: str, value: Any) -> None:
+                try:
+                    setattr(obj, name, value)
+                    return
+                except Exception:
+                    pass
+                try:
+                    object.__setattr__(obj, name, value)
+                except Exception:
+                    pass
+
             # Recolectar valores
             values = {
                 "DEFAULT_TRADE_CAPITAL": self.config_capital_var.get(),
+                "AI_DEFAULT_MAX_POSITION_SIZE": self.config_margin_usdt_var.get(),
                 "TARGET_MODE": "TOTAL_USD",
                 "TARGET_TOTAL_USD": self.config_target_total_usd_var.get(),
                 "TARGET_PROFIT_PER_SHARE": self.config_target_total_usd_var.get(),
-                "BOT_RISK_PER_TRADE_PCT": self.config_risk_pct_var.get(),
+                "BOT_MARGIN_PER_TRADE_USDT": self.config_margin_usdt_var.get(),
+                "MARGIN_PER_TRADE_USDT": self.config_margin_usdt_var.get(),
                 "BOT_MAX_DAILY_LOSS": self.config_max_daily_loss_var.get(),
                 "MAX_OPEN_POSITIONS": self.config_max_open_pos_var.get(),
                 "STOCK_ALLOW_HOLD": "True" if bool(self.config_stock_allow_hold_var.get()) else "False",
                 "STOCK_ALLOW_STOP_LOSS": "True" if bool(self.config_stock_allow_stop_loss_var.get()) else "False",
                 "STOCK_NO_AUTO_SELL_BELOW_AVG_COST": "True" if bool(self.config_stock_no_auto_sell_below_avg_cost_var.get()) else "False",
                 "STOCK_AUTO_SELL_PROFIT_PCT": self.config_stock_auto_sell_profit_pct_var.get(),
-                "CRYPTO_BTC_ETH_STOP_LOSS_PCT": self.config_btc_sl_var.get(),
-                "CRYPTO_BTC_ETH_TP1_PCT": self.config_btc_tp1_var.get(),
-                "CRYPTO_BTC_ETH_TP2_PCT": self.config_btc_tp2_var.get(),
-                "CRYPTO_BTC_ETH_MAX_TP_PCT": self.config_btc_max_tp_var.get(),
-                "CRYPTO_ALT_STOP_LOSS_PCT": self.config_alt_sl_var.get(),
-                "CRYPTO_ALT_TP1_PCT": self.config_alt_tp1_var.get(),
-                "CRYPTO_ALT_TP2_PCT": self.config_alt_tp2_var.get(),
-                "CRYPTO_ALT_MAX_TP_PCT": self.config_alt_max_tp_var.get(),
-                "CRYPTO_MEME_STOP_LOSS_PCT": self.config_meme_sl_var.get(),
-                "CRYPTO_MEME_TP1_PCT": self.config_meme_tp1_var.get(),
-                "CRYPTO_MEME_TP2_PCT": self.config_meme_tp2_var.get(),
-                "CRYPTO_MEME_MAX_TP_PCT": self.config_meme_max_tp_var.get(),
                 "AI_TARGET_PROFIT_PER_OPERATION": self.config_ai_target_profit_stocks_var.get(),
                 "AI_TARGET_PROFIT_PER_OPERATION_STOCKS": self.config_ai_target_profit_stocks_var.get(),
                 "AI_TARGET_PROFIT_PER_OPERATION_CRYPTOS": self.config_ai_target_profit_cryptos_var.get(),
@@ -1069,23 +1032,13 @@ class BotControlWindow:
             # Validar que sean números
             numeric_keys = {
                 "DEFAULT_TRADE_CAPITAL",
+                "AI_DEFAULT_MAX_POSITION_SIZE",
                 "TARGET_TOTAL_USD",
-                "BOT_RISK_PER_TRADE_PCT",
+                "BOT_MARGIN_PER_TRADE_USDT",
+                "MARGIN_PER_TRADE_USDT",
                 "BOT_MAX_DAILY_LOSS",
                 "MAX_OPEN_POSITIONS",
                 "STOCK_AUTO_SELL_PROFIT_PCT",
-                "CRYPTO_BTC_ETH_STOP_LOSS_PCT",
-                "CRYPTO_BTC_ETH_TP1_PCT",
-                "CRYPTO_BTC_ETH_TP2_PCT",
-                "CRYPTO_BTC_ETH_MAX_TP_PCT",
-                "CRYPTO_ALT_STOP_LOSS_PCT",
-                "CRYPTO_ALT_TP1_PCT",
-                "CRYPTO_ALT_TP2_PCT",
-                "CRYPTO_ALT_MAX_TP_PCT",
-                "CRYPTO_MEME_STOP_LOSS_PCT",
-                "CRYPTO_MEME_TP1_PCT",
-                "CRYPTO_MEME_TP2_PCT",
-                "CRYPTO_MEME_MAX_TP_PCT",
                 "AI_TARGET_PROFIT_PER_OPERATION",
                 "AI_TARGET_PROFIT_PER_OPERATION_STOCKS",
                 "AI_TARGET_PROFIT_PER_OPERATION_CRYPTOS",
@@ -1132,14 +1085,20 @@ class BotControlWindow:
                 request_days=str(values.get("CRYPTOPANIC_REQUEST_DAYS", "mon,tue,wed,thu,fri")),
             )
             try:
-                settings.max_open_positions = max(int(float(values.get("MAX_OPEN_POSITIONS", settings.max_open_positions) or settings.max_open_positions)), 1)
+                _safe_assign(settings, "default_trade_capital", max(float(values.get("DEFAULT_TRADE_CAPITAL", getattr(settings, "default_trade_capital", 0.0)) or getattr(settings, "default_trade_capital", 0.0)), 0.0))
+                margin_usdt = max(float(values.get("BOT_MARGIN_PER_TRADE_USDT", getattr(settings, "margin_per_trade_usdt", 0.0)) or getattr(settings, "margin_per_trade_usdt", 0.0)), 0.0)
+                _safe_assign(settings, "margin_per_trade_usdt", margin_usdt)
+                _safe_assign(settings, "ai_default_max_position_size", margin_usdt)
+                _safe_assign(settings, "max_daily_loss", max(float(values.get("BOT_MAX_DAILY_LOSS", getattr(settings, "max_daily_loss", 0.0)) or getattr(settings, "max_daily_loss", 0.0)), 0.0))
+                _safe_assign(settings, "max_open_positions", max(int(float(values.get("MAX_OPEN_POSITIONS", getattr(settings, "max_open_positions", 1)) or getattr(settings, "max_open_positions", 1))), 1))
             except Exception:
                 pass
             try:
-                settings.target_mode = "TOTAL_USD"
-                settings.target_total_usd = max(float(values.get("TARGET_TOTAL_USD", settings.target_total_usd) or settings.target_total_usd), 0.0)
-                settings.target_profit_per_share = settings.target_total_usd
-                self._target_profit_cached = settings.target_total_usd
+                target_total = max(float(values.get("TARGET_TOTAL_USD", getattr(settings, "target_total_usd", 0.0)) or getattr(settings, "target_total_usd", 0.0)), 0.0)
+                _safe_assign(settings, "target_mode", "TOTAL_USD")
+                _safe_assign(settings, "target_total_usd", target_total)
+                _safe_assign(settings, "target_profit_per_share", target_total)
+                self._target_profit_cached = target_total
             except Exception:
                 pass
             target_stock = float(values.get("AI_TARGET_PROFIT_PER_OPERATION_STOCKS", values.get("AI_TARGET_PROFIT_PER_OPERATION", "0.05")) or 0.05)
@@ -1151,6 +1110,8 @@ class BotControlWindow:
             self.ai_target_profit_var.set(str(target_stock))
             self.ai_target_profit_stocks_var.set(str(target_stock))
             self.ai_target_profit_cryptos_var.set(str(target_crypto))
+            self._sync_ai_budget_from_general_config()
+            self._save_ai_ui_state()
             self._refresh_cryptopanic_quota_display()
             self._apply_runtime_settings()
 
@@ -1163,6 +1124,42 @@ class BotControlWindow:
         except Exception as ex:
             self.logger.exception("Error guardando configuración: %s", ex)
             self.root.after(0, self._show_error, f"❌ Error guardando configuración: {ex}")
+
+    def _sync_ai_budget_from_general_config(self) -> None:
+        try:
+            capital_per_trade = max(float(self.config_capital_var.get().strip() or "0"), 0.0)
+            margin_per_trade = max(float(self.config_margin_usdt_var.get().strip() or "0"), 0.0)
+            max_open_positions = max(int(float(self.config_max_open_pos_var.get().strip() or "1")), 1)
+            # Interpret "capital asignado" as per-operation budget, not pooled account budget.
+            assigned_capital = max(capital_per_trade, margin_per_trade)
+
+            self.ai_max_position_var.set(str(margin_per_trade))
+            self.ai_max_capital_var.set(str(assigned_capital))
+
+            account_name = self._ai_automation_account_name()
+            self.ai_trading_brain.update_runtime_controls(
+                account_name=account_name,
+                max_capital_assigned=assigned_capital,
+                max_position_size=margin_per_trade,
+                max_daily_loss=float(self.ai_max_daily_loss_var.get().strip() or 0.0),
+                enabled=bool(self.ai_bot_enabled_var.get()),
+                signal_only_mode=bool(self.ai_signal_only_var.get()),
+                paper_trading=bool(self.ai_paper_trading_var.get()),
+                live_trading_enabled=False,
+                manual_approval_required=bool(self.ai_manual_approval_var.get()),
+                kill_switch=bool(self.ai_kill_switch_var.get()),
+                auto_trade_stocks_enabled=bool(self.ai_auto_trade_stocks_var.get()),
+                auto_trade_cryptos_enabled=bool(self.ai_auto_trade_cryptos_var.get()),
+                scanner_decision_engine=str(self.ai_decision_engine_var.get() or "heuristic"),
+                futures_only_mode=bool(self.ai_futures_only_mode_var.get()),
+                futures_leverage=max(int(float(self.ai_futures_leverage_var.get().strip() or "1")), 1),
+                futures_require_technical=bool(self.ai_futures_require_technical_var.get()),
+                futures_require_news=bool(self.ai_futures_require_news_var.get()),
+                futures_enable_long=bool(self.ai_futures_enable_long_var.get()),
+                futures_enable_short=bool(self.ai_futures_enable_short_var.get()),
+            )
+        except Exception as ex:
+            self.logger.warning("No se pudo sincronizar presupuesto IA desde configuración general: %s", ex)
 
     def _build_ai_window(self) -> None:
         window = tk.Toplevel(self.root)
@@ -1873,6 +1870,14 @@ class BotControlWindow:
             self.ai_focus_stock_selected = self._parse_symbols_csv(self.ai_focus_stocks_symbols_var.get())
             self.ai_focus_crypto_selected = self._parse_symbols_csv(self.ai_focus_cryptos_symbols_var.get())
             self._sync_focus_symbol_vars_from_selected()
+            if hasattr(self, "ai_trading_brain") and selected_account:
+                self.ai_trading_brain.update_focus_symbols(
+                    account_name=selected_account,
+                    focus_stocks_only=bool(self.ai_focus_stocks_only_var.get()),
+                    focus_cryptos_only=bool(self.ai_focus_cryptos_only_var.get()),
+                    focus_stocks_symbols=self.ai_focus_stocks_symbols_var.get().strip(),
+                    focus_cryptos_symbols=self.ai_focus_cryptos_symbols_var.get().strip(),
+                )
 
             diag = raw.get("ai_diag", {}) if isinstance(raw.get("ai_diag", {}), dict) else {}
             diag_by_account = raw.get("ai_diag_by_account", {}) if isinstance(raw.get("ai_diag_by_account", {}), dict) else {}
@@ -2458,12 +2463,9 @@ class BotControlWindow:
         if self._power_inhibitor is not None:
             self._power_inhibitor.stop()
             self._power_inhibitor = None
-        if self._emergency_close_process is not None:
-            try:
-                self._emergency_close_process.terminate()
-            except Exception:
-                pass
-            self._emergency_close_process = None
+        # Do not terminate emergency helper here: it may be in charge of relaunching main.py.
+        # When the app exits normally, helper self-closes after detecting target PID is gone.
+        self._emergency_close_process = None
         if self.ai_window is not None and self.ai_window.winfo_exists():
             self.ai_window.destroy()
             self.ai_window = None
@@ -3167,7 +3169,13 @@ class BotControlWindow:
                             self._monitor_last_db_error = str(ex)
                             self.logger.warning("No se pudo encolar persistencia de training_run: %s", ex)
                     self._safe_after(0, self._refresh_ai_views)
-                    self._show_success(f"CPU task finalizada: {cpu_name}", False)
+                    if cpu_name == "train_model" and bool(payload.get("trained", False)) and isinstance(payload.get("training_run"), dict):
+                        self._show_success(
+                            f"Entrenamiento finalizado: {self._build_training_completion_brief(payload.get('training_run') or {})}",
+                            False,
+                        )
+                    else:
+                        self._show_success(f"CPU task finalizada: {cpu_name}", False)
             elif event_status == "CANCELLED":
                 cpu_name = str((event.metadata or {}).get("cpu_task_name", action_name) or action_name)
                 self._cpu_task_ids_by_name.pop(cpu_name, None)
@@ -6805,6 +6813,7 @@ class BotControlWindow:
         self._ai_news_autofill_text = ""
 
     def _refresh_ai_views(self) -> None:
+        self._load_ai_ui_state()
         account_name = self._ai_automation_account_name()
         if account_name:
             self._ensure_ai_automation_running(account_name)
@@ -6887,6 +6896,8 @@ class BotControlWindow:
             selected_row = candidate_rows[0] if candidate_rows else training
             selected_version = str(selected_row.get("model_version", latest or approved or "") or "")
 
+        approved_run = self._training_run_by_version(approved) if approved else None
+
         self.ai_model_selected_var.set(selected_version)
         self.ai_model_alias_var.set(self._model_alias_for_version(selected_version))
 
@@ -6913,6 +6924,9 @@ class BotControlWindow:
                     f"win={float(row.get('win_rate', 0.0) or 0.0):.3f} | approved_paper={bool(row.get('approved_for_paper', 0))}"
                 )
 
+        lines.append("")
+        lines.extend(self._build_model_capacity_lines(selected_row or training, approved_run, candidate_rows))
+
         self._set_text_widget(self.ai_model_text, "\n".join(lines))
 
     def _pause_ai_automation(self) -> None:
@@ -6928,6 +6942,27 @@ class BotControlWindow:
         account_name = self._ai_automation_account_name()
         if not account_name:
             account_name = self.account_var.get().strip()
+
+        # If main Config tab is being used, prioritize that margin input.
+        try:
+            capital_per_trade = max(float(self.config_capital_var.get().strip() or "0"), 0.0)
+            margin_per_trade = max(float(self.config_margin_usdt_var.get().strip() or "0"), 0.0)
+            if margin_per_trade > 0.0:
+                self.ai_max_position_var.set(str(margin_per_trade))
+                self.ai_max_capital_var.set(str(max(capital_per_trade, margin_per_trade)))
+                # Persist to .env so restart keeps the same margin from Config tab.
+                self._write_env_values(
+                    {
+                        "BOT_MARGIN_PER_TRADE_USDT": str(margin_per_trade),
+                        "MARGIN_PER_TRADE_USDT": str(margin_per_trade),
+                    }
+                )
+                os.environ["BOT_MARGIN_PER_TRADE_USDT"] = str(margin_per_trade)
+                os.environ["MARGIN_PER_TRADE_USDT"] = str(margin_per_trade)
+                settings.margin_per_trade_usdt = margin_per_trade
+        except Exception:
+            pass
+
         self.ai_trading_brain.update_runtime_controls(
             account_name=account_name,
             max_capital_assigned=float(self.ai_max_capital_var.get().strip() or 0.0),
@@ -6987,7 +7022,13 @@ class BotControlWindow:
         )
         self.ai_target_profit_var.set(str(target_stock))
         self._apply_runtime_settings()
-        self._refresh_ai_views()
+        # Avoid blocking UI with full dashboard refresh (it can hit network and freeze/crash).
+        if hasattr(self, "ai_runtime_text"):
+            try:
+                status = self.ai_trading_brain.get_automation_status(account_name)
+                self._refresh_ai_runtime_view(status=status)
+            except Exception:
+                pass
         if show_message:
             self.root.after(0, self._show_success, f"AI Trading Brain actualizado para cuenta: {account_name}", False)
 
@@ -7286,6 +7327,8 @@ class BotControlWindow:
         runtime = dashboard.get("runtime") or {}
         self.ai_max_capital_var.set(str(funds.get("max_capital_assigned", settings.ai_default_max_capital_assigned)))
         self.ai_max_position_var.set(str(funds.get("max_position_size", settings.ai_default_max_position_size)))
+        if hasattr(self, "config_margin_usdt_var"):
+            self.config_margin_usdt_var.set(str(getattr(settings, "margin_per_trade_usdt", funds.get("max_position_size", 0.0))))
         self.ai_max_daily_loss_var.set(str(funds.get("max_daily_loss", settings.ai_default_max_daily_loss)))
         stock_target = float(getattr(self.ai_trading_brain, "_ai_target_profit_per_operation_stocks", getattr(settings, "ai_target_profit_per_operation_stocks", getattr(settings, "ai_target_profit_per_operation", 0.05))))
         crypto_target = float(getattr(self.ai_trading_brain, "_ai_target_profit_per_operation_cryptos", getattr(settings, "ai_target_profit_per_operation_cryptos", getattr(settings, "ai_target_profit_per_operation", 0.05))))
@@ -7338,8 +7381,11 @@ class BotControlWindow:
         if threading.get_ident() != self._ui_thread_ident:
             self._safe_after(0, self._save_ai_runtime_controls)
             return
-
-        self._persist_ai_runtime_controls(show_message=True)
+        try:
+            self._persist_ai_runtime_controls(show_message=True)
+        except Exception as ex:
+            self.logger.exception("Error guardando controles IA")
+            self._show_error(f"No se pudieron guardar pausas IA: {ex}", False)
 
     def _open_futures_risk_window(self) -> None:
         if self.futures_risk_window is not None and self.futures_risk_window.winfo_exists():
@@ -7471,6 +7517,12 @@ class BotControlWindow:
         self._set_text_widget(self.ai_dashboard_text, "\n".join(lines))
 
     def _refresh_ai_signals_view(self) -> None:
+        self._load_ai_ui_state()
+        account_name = self.account_var.get().strip()
+        focus = self.ai_trading_brain.get_focus_symbols(account_name) if account_name else {}
+        focus_crypto_symbols = self._parse_symbols_csv(str(focus.get("cryptos_symbols_raw", "") or ""))
+        focus_crypto_keys = {symbol.upper().replace(" ", "") for symbol in focus_crypto_symbols if symbol}
+
         signals = self.ai_trading_brain.list_signals(limit=60)
         if not signals:
             self._set_text_widget(self.ai_signal_text, "Sin señales generadas.")
@@ -7481,6 +7533,9 @@ class BotControlWindow:
         by_symbol: dict[str, dict[str, Any]] = {}
         for item in signals:
             symbol = str(item.get("symbol", "N/A"))
+            asset_type = str(item.get("asset_type", "") or "").lower().strip()
+            if asset_type == "crypto" and focus_crypto_keys and symbol.upper().replace(" ", "") not in focus_crypto_keys:
+                continue
             current = by_symbol.get(symbol)
             candidate_score = float(item.get("confidence_score", 0.0) or 0.0)
             current_score = float(current.get("confidence_score", 0.0) or 0.0) if current else -1.0
@@ -7504,6 +7559,13 @@ class BotControlWindow:
         board = self.ai_trading_brain.get_scalping_board(limit_stocks=6, limit_cryptos=3)
         stocks_board = board.get("stocks", [])
         cryptos_board = board.get("cryptos", [])
+
+        if focus_crypto_keys:
+            cryptos_board = [
+                row
+                for row in cryptos_board
+                if str(row.get("symbol", "") or "").upper().replace(" ", "") in focus_crypto_keys
+            ]
 
         stock_names = " | ".join(str(item.get("symbol", "N/A")) for item in stocks_board)
         crypto_names = " | ".join(str(item.get("symbol", "N/A")) for item in cryptos_board)
@@ -7616,6 +7678,8 @@ class BotControlWindow:
         if widget is None:
             return
 
+        self._load_ai_ui_state()
+
         account_name = self.account_var.get().strip()
         if not account_name:
             self._set_text_widget(widget, "Selecciona una cuenta para ver el monitoreo crypto IA.")
@@ -7627,6 +7691,9 @@ class BotControlWindow:
             self._set_text_widget(widget, f"No se pudo leer watchlist crypto: {ex}")
             return
 
+        focus = self.ai_trading_brain.get_focus_symbols(account_name)
+        focus_crypto_symbols = self._parse_symbols_csv(str(focus.get("cryptos_symbols_raw", "") or ""))
+
         crypto_symbols = sorted(
             {
                 str(row.get("symbol", "")).upper()
@@ -7635,13 +7702,27 @@ class BotControlWindow:
             }
         )
 
+        if focus_crypto_symbols:
+            focus_lookup = {symbol.upper().replace(" ", "") for symbol in focus_crypto_symbols}
+            crypto_symbols = [
+                symbol
+                for symbol in crypto_symbols
+                if symbol.upper().replace(" ", "") in focus_lookup
+            ]
+
         if not crypto_symbols:
-            self._set_text_widget(widget, "No hay cryptos activas en la watchlist para monitoreo IA.")
+            if focus_crypto_symbols:
+                self._set_text_widget(widget, "No hay cryptos foco activas en la watchlist para monitoreo IA.")
+            else:
+                self._set_text_widget(widget, "No hay cryptos activas en la watchlist para monitoreo IA.")
             return
 
         lines: list[str] = []
         lines.append(f"Cuenta: {account_name}")
-        lines.append(f"Cryptos monitoreadas: {', '.join(crypto_symbols)}")
+        if focus_crypto_symbols:
+            lines.append(f"Cryptos foco: {', '.join(crypto_symbols)}")
+        else:
+            lines.append(f"Cryptos monitoreadas: {', '.join(crypto_symbols)}")
         lines.append("")
 
         for index, symbol in enumerate(crypto_symbols, start=1):
@@ -8141,6 +8222,8 @@ class BotControlWindow:
             f"Ultimo evento de aprobacion/rollback: {governance_event}",
             f"Mejor candidato actual: {self._describe_best_candidate(best_candidate)}",
             "",
+            *self._build_model_capacity_lines(selected_row or training, approved_run, candidate_rows),
+            "",
             "Candidatos recientes (fecha | version | estado | semaforo | score | sugerencia):",
         ]
         if approved_baseline_missing:
@@ -8233,24 +8316,36 @@ class BotControlWindow:
             raise ValueError("No hay version seleccionada")
         return self._ai_model_version_map.get(selected, selected.split("|", 1)[0].strip())
 
+    def _require_model_training_ui(self) -> None:
+        if not bool(getattr(self.ai_trading_brain, "can_train_models", lambda: True)()):
+            raise ValueError("Model Trainer corre como app independiente. Trading Bot no entrena modelos.")
+
+    def _require_model_management_ui(self) -> None:
+        if not bool(getattr(self.ai_trading_brain, "can_manage_models", lambda: True)()):
+            raise ValueError("La aprobación/cambio de modelos solo se permite desde Model Trainer.")
+
     def _approve_ai_model_selected(self) -> None:
+        self._require_model_management_ui()
         version = self._selected_ai_model_version()
         approved = self.ai_trading_brain.approve_model_version(version)
         self._refresh_ai_views()
         self.root.after(0, self._show_success, f"Modelo aprobado: {approved}", False)
 
     def _freeze_ai_model_selected(self) -> None:
+        self._require_model_management_ui()
         version = self._selected_ai_model_version()
         frozen = self.ai_trading_brain.freeze_candidate_version(version)
         self._refresh_ai_views()
         self.root.after(0, self._show_success, f"Candidato congelado: {frozen}", False)
 
     def _unfreeze_ai_model_candidate(self) -> None:
+        self._require_model_management_ui()
         self.ai_trading_brain.clear_frozen_candidate()
         self._refresh_ai_views()
         self.root.after(0, self._show_success, "Candidato descongelado", False)
 
     def _delete_ai_model_selected(self) -> None:
+        self._require_model_management_ui()
         version = self._selected_ai_model_version()
         if not messagebox.askyesno(
             "Eliminar modelo",
@@ -8262,6 +8357,7 @@ class BotControlWindow:
         self.root.after(0, self._show_success, f"Modelo eliminado: {deleted}", False)
 
     def _save_ai_model_alias(self) -> None:
+        self._require_model_management_ui()
         version = self._selected_ai_model_version()
         alias = self.ai_model_alias_var.get().strip()
         saved = self.ai_trading_brain.set_model_alias(version, alias)
@@ -8417,6 +8513,85 @@ class BotControlWindow:
             + win_rate * 0.13
             + pf_score * 0.25
             + drawdown_score * 0.10
+        )
+
+    def _model_rank_text(self, version: str, candidate_rows: list[dict[str, Any]]) -> str:
+        if not version or not candidate_rows:
+            return "N/A"
+        ranked = sorted(candidate_rows, key=lambda row: self._score_model_candidate(row), reverse=True)
+        for idx, row in enumerate(ranked, start=1):
+            if str(row.get("model_version", "") or "") == version:
+                return f"#{idx} de {len(ranked)}"
+        return "N/A"
+
+    def _build_model_capacity_lines(
+        self,
+        selected_row: dict[str, Any],
+        approved_run: dict[str, Any] | None,
+        candidate_rows: list[dict[str, Any]],
+    ) -> list[str]:
+        accuracy = float(selected_row.get("accuracy", 0.0) or 0.0)
+        precision = float(selected_row.get("precision", 0.0) or 0.0)
+        recall = float(selected_row.get("recall", 0.0) or 0.0)
+        win_rate = float(selected_row.get("win_rate", 0.0) or 0.0)
+        profit_factor = float(selected_row.get("profit_factor", 0.0) or 0.0)
+        drawdown = abs(float(selected_row.get("max_drawdown", 0.0) or 0.0))
+        sample_count = int(selected_row.get("number_of_samples", 0) or 0)
+        outcomes_count = int(selected_row.get("trained_with_outcomes_count", sample_count) or sample_count)
+        label_type = str(selected_row.get("label_type", "N/A") or "N/A")
+        model_version = str(selected_row.get("model_version", "") or "")
+
+        learned_behaviors: list[str] = []
+        if precision >= 0.60:
+            learned_behaviors.append("filtrar entradas con alta precision")
+        elif precision >= 0.50:
+            learned_behaviors.append("filtrar entradas con precision moderada")
+        else:
+            learned_behaviors.append("filtrar entradas con precision baja")
+
+        if recall >= 0.60:
+            learned_behaviors.append("capturar gran parte de oportunidades")
+        elif recall >= 0.45:
+            learned_behaviors.append("capturar oportunidades de forma balanceada")
+        else:
+            learned_behaviors.append("capturar pocas oportunidades")
+
+        if profit_factor >= 1.20 and drawdown <= 0.12:
+            risk_profile = "rentable con riesgo controlado"
+        elif profit_factor >= 1.0 and drawdown <= 0.18:
+            risk_profile = "aceptable, pero mejorable en riesgo/retorno"
+        else:
+            risk_profile = "de riesgo elevado o retorno insuficiente"
+
+        approved_cmp = "N/A"
+        if approved_run is not None:
+            approved_score = self._score_model_candidate(approved_run)
+            selected_score = self._score_model_candidate(selected_row)
+            approved_cmp = f"delta_score={selected_score - approved_score:+.3f}"
+
+        rank_text = self._model_rank_text(model_version, candidate_rows)
+        learned_text = ", ".join(learned_behaviors)
+        return [
+            "Capacidad aprendida del modelo seleccionado:",
+            f"- Que aprendio: {learned_text}.",
+            f"- Perfil operativo: {risk_profile} (win={win_rate:.3f}, pf={profit_factor:.3f}, dd={drawdown:.3f}).",
+            f"- Cobertura: muestras={sample_count}, outcomes={outcomes_count}, etiqueta={label_type}.",
+            f"- Ranking frente a candidatos: {rank_text}.",
+            f"- Comparacion con el actual/aprobado: {approved_cmp}.",
+            f"- Confiabilidad base (acc/prec/rec): {accuracy:.3f}/{precision:.3f}/{recall:.3f}.",
+        ]
+
+    def _build_training_completion_brief(self, training_run: dict[str, Any]) -> str:
+        version = str(training_run.get("model_version", "N/A") or "N/A")
+        accuracy = float(training_run.get("accuracy", 0.0) or 0.0)
+        precision = float(training_run.get("precision", 0.0) or 0.0)
+        recall = float(training_run.get("recall", 0.0) or 0.0)
+        win_rate = float(training_run.get("win_rate", 0.0) or 0.0)
+        profit_factor = float(training_run.get("profit_factor", 0.0) or 0.0)
+        drawdown = float(training_run.get("max_drawdown", 0.0) or 0.0)
+        return (
+            f"{version} | acc={accuracy:.3f}, prec={precision:.3f}, rec={recall:.3f}, "
+            f"win={win_rate:.3f}, pf={profit_factor:.3f}, dd={drawdown:.3f}"
         )
 
     def _describe_best_candidate(self, row: dict[str, Any] | None) -> str:
@@ -8582,16 +8757,19 @@ class BotControlWindow:
         }
 
     def _train_ai_model(self) -> None:
+        self._require_model_training_ui()
         payload = self._cpu_task_payload_base()
         self._submit_cpu_named_task("train_model", payload=payload, priority="HIGH")
         self._show_success("Entrenamiento en CPU separado iniciado.", False)
 
     def _run_ai_backtest(self) -> None:
+        self._require_model_training_ui()
         payload = self._cpu_task_payload_base()
         self._submit_cpu_named_task("run_backtest", payload=payload, priority="NORMAL")
         self._show_success("Backtesting en CPU separado iniciado.", False)
 
     def _evaluate_ai_model(self) -> None:
+        self._require_model_training_ui()
         payload = self._cpu_task_payload_base()
         selected = str(self.ai_model_selected_var.get() or "").strip()
         model_version = self._ai_model_version_map.get(selected, selected)
@@ -8603,22 +8781,27 @@ class BotControlWindow:
         self._show_success("Evaluacion de modelo en CPU separado iniciada.", False)
 
     def _generate_ai_historical_features(self) -> None:
+        self._require_model_training_ui()
         payload = self._cpu_task_payload_base()
         self._submit_cpu_named_task("generate_historical_features", payload=payload, priority="LOW")
         self._show_success("Generacion historica de features en CPU separado iniciada.", False)
 
     def _optimize_ai_strategy(self) -> None:
+        self._require_model_training_ui()
         payload = self._cpu_task_payload_base()
         self._submit_cpu_named_task("optimize_strategy", payload=payload, priority="LOW")
         self._show_success("Optimizacion de estrategia en CPU separado iniciada.", False)
 
     def _cancel_ai_training_task(self) -> None:
+        self._require_model_training_ui()
         self._cancel_cpu_named_task("train_model")
 
     def _cancel_ai_backtest_task(self) -> None:
+        self._require_model_training_ui()
         self._cancel_cpu_named_task("run_backtest")
 
     def _cancel_ai_cpu_tasks(self) -> None:
+        self._require_model_training_ui()
         for name in (
             "train_model",
             "run_backtest",
@@ -8632,11 +8815,13 @@ class BotControlWindow:
                 continue
 
     def _approve_ai_model(self) -> None:
+        self._require_model_management_ui()
         version = self.ai_trading_brain.approve_latest_model()
         self._refresh_ai_views()
         self.root.after(0, self._show_success, f"Modelo aprobado: {version}", False)
 
     def _rollback_ai_model(self) -> None:
+        self._require_model_management_ui()
         version = self.ai_trading_brain.rollback_model()
         self._refresh_ai_views()
         self.root.after(0, self._show_success, f"Rollback de modelo: {version or 'sin cambios'}", False)
@@ -8945,6 +9130,11 @@ class BotControlWindow:
     def _apply_runtime_settings(self) -> None:
         target_profit = self._safe_target_profit_value()
         self.position_manager.set_target_profit_per_share(target_profit)
+        try:
+            max_daily_loss = max(float(self.config_max_daily_loss_var.get().strip() or str(getattr(settings, "max_daily_loss", 0.0))), 0.0)
+            self.risk_manager.max_daily_loss = max_daily_loss
+        except Exception:
+            pass
         for runtime in list(self._account_runtimes.values()):
             try:
                 runtime_pm = runtime.get("position_manager")

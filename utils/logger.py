@@ -13,7 +13,7 @@ class _KeywordFilter(logging.Filter):
         return any(token in text for token in self.keywords)
 
 
-def get_logger(name: str) -> Logger:
+def get_logger(name: str, app_scope: str = "trading") -> Logger:
     logger = logging.getLogger(name)
     if logger.handlers:
         return logger
@@ -25,7 +25,8 @@ def get_logger(name: str) -> Logger:
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    logs_dir = Path("logs")
+    scope = str(app_scope or "trading").strip().lower()
+    logs_dir = Path("logs") / scope
     logs_dir.mkdir(parents=True, exist_ok=True)
 
     console_handler = logging.StreamHandler()
@@ -36,9 +37,10 @@ def get_logger(name: str) -> Logger:
     bot_handler.setFormatter(formatter)
     logger.addHandler(bot_handler)
 
-    legacy_handler = logging.FileHandler("trading_bot.log")
-    legacy_handler.setFormatter(formatter)
-    logger.addHandler(legacy_handler)
+    if scope == "trading":
+        legacy_handler = logging.FileHandler("trading_bot.log")
+        legacy_handler.setFormatter(formatter)
+        logger.addHandler(legacy_handler)
 
     errors_handler = logging.FileHandler(logs_dir / "errors.log")
     errors_handler.setLevel(logging.WARNING)

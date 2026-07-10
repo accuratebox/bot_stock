@@ -280,6 +280,12 @@ class PositionManager:
         }
 
     def get_target_total_usd_for_symbol(self, symbol: str) -> float:
+        # Runtime/UI target is authoritative so already-open positions adapt immediately
+        # when the user changes the target in configuration.
+        runtime_target = float(self.target_total_usd or 0.0)
+        if runtime_target > 0:
+            return runtime_target
+
         entry = self.journal.get_open_entry_by_symbol(symbol)
         if entry is not None:
             for key in ("target_total_usd", "target_profit_total", "target_profit_per_share"):
@@ -423,9 +429,24 @@ class PositionManager:
             if snapshot.qty <= 0:
                 continue
 
-            existing_order = self._find_pending_exit_order(snapshot.symbol, side=snapshot.side)
-            if existing_order is not None:
+            pending_exit_orders = self._list_pending_exit_orders(snapshot.symbol, side=snapshot.side)
+            covered_qty = sum(self._pending_exit_remaining_qty(order) for order in pending_exit_orders)
+            required_qty = max(float(snapshot.qty or 0.0), 0.0)
+            if required_qty > 0.0 and covered_qty >= (required_qty * 0.995):
                 continue
+            if pending_exit_orders:
+                cancel_info = self._cancel_pending_exit_orders(snapshot.symbol, side=snapshot.side)
+                if int(cancel_info.get("remaining", 0) or 0) > 0:
+                    actions.append(
+                        {
+                            "symbol": snapshot.symbol,
+                            "action": "LIMIT_EXIT_PENDING",
+                            "reason": "reconcile_partial_exit_cancel_failed",
+                            "covered_qty": covered_qty,
+                            "required_qty": required_qty,
+                        }
+                    )
+                    continue
 
             try:
                 result = self._place_immediate_target_exit(
@@ -853,8 +874,11 @@ class PositionManager:
                 "reason": "qty_zero",
             }
 
-        existing_order = self._find_pending_exit_order(symbol, side=side)
-        if existing_order is not None:
+        pending_exit_orders = self._list_pending_exit_orders(symbol, side=side)
+        covered_qty = sum(self._pending_exit_remaining_qty(order) for order in pending_exit_orders)
+        required_qty = max(float(qty or 0.0), 0.0)
+        if required_qty > 0.0 and covered_qty >= (required_qty * 0.995):
+            existing_order = pending_exit_orders[0]
             return {
                 "symbol": symbol,
                 "action": "LIMIT_EXIT_PENDING",
@@ -862,6 +886,19 @@ class PositionManager:
                 "order_id": str(existing_order.get("id", "")),
                 "limit_price": float(existing_order.get("limit_price", current_price) or current_price),
             }
+        if pending_exit_orders:
+            cancel_info = self._cancel_pending_exit_orders(symbol, side=side)
+            if int(cancel_info.get("remaining", 0) or 0) > 0:
+                first_order = pending_exit_orders[0]
+                return {
+                    "symbol": symbol,
+                    "action": "LIMIT_EXIT_PENDING",
+                    "reason": f"{reason_sell}_partial_cover_cancel_failed",
+                    "order_id": str(first_order.get("id", "")),
+                    "limit_price": float(first_order.get("limit_price", current_price) or current_price),
+                    "covered_qty": covered_qty,
+                    "required_qty": required_qty,
+                }
 
         target_plan = self._build_target_plan(
             side=side,
@@ -872,7 +909,37 @@ class PositionManager:
             target_price_delta=target_price_delta,
         )
         if not bool(target_plan.get("valid", False)):
-            raise ValueError(", ".join(target_plan.get("warnings", []) or [str(target_plan.get("status", "target_invalid"))]))
+            warnings = list(target_plan.get("warnings", []) or [str(target_plan.get("status", "target_invalid"))])
+            if reason_sell == "reconcile_missing_target_limit":
+                # Recovery fallback for legacy/recovered trades with missing target fields.
+                # Keep target close to entry while still covering minimum buffer and side direction.
+                base_entry = max(float(avg_entry_price or current_price or 0.0), 0.0)
+                if base_entry > 0.0 and qty > 0.0:
+                    buffer_per_unit = self._fees_and_slippage_buffer_usd() / max(float(qty), 1e-9)
+                    # Keep fallback delta in a safe range for low-price symbols:
+                    # at least 0.1% of entry, at most 2% of entry.
+                    min_delta = max(buffer_per_unit, base_entry * 0.001)
+                    min_delta = min(min_delta, base_entry * 0.02)
+                    side_key = str(side or "long").lower().strip()
+                    if side_key == "short":
+                        fallback_price = max(base_entry - min_delta, base_entry * 0.5, 1e-8)
+                    else:
+                        fallback_price = base_entry + min_delta
+                    target_plan = {
+                        "valid": True,
+                        "target_mode": "FALLBACK_RECONCILE",
+                        "target_total_usd": max(min_delta * float(qty), 0.0),
+                        "target_price_delta": min_delta,
+                        "target_price": fallback_price,
+                        "expected_gross_profit_usd": max(min_delta * float(qty), 0.0),
+                        "expected_net_profit_usd": max(min_delta * float(qty), 0.0) - self._fees_and_slippage_buffer_usd(),
+                        "take_profit_available": False,
+                        "warnings": warnings,
+                    }
+                else:
+                    raise ValueError(", ".join(warnings))
+            else:
+                raise ValueError(", ".join(warnings))
         limit_price = float(target_plan.get("target_price", 0.0) or 0.0)
         order_side = self._exit_side_for_position(side)
         order = self.order_manager.create_limit_order(
@@ -976,21 +1043,54 @@ class PositionManager:
         return self._close_position(snapshot, reason_sell="manual_sell", force=True)
 
     def _close_profitable_position(self, snapshot: PositionSnapshot, reason_sell: str) -> dict[str, Any]:
+        reason_key = str(reason_sell or "").strip().lower()
+        if reason_key == "take_profit_available":
+            return self._place_limit_exit(
+                snapshot,
+                reason_sell=reason_sell,
+                replace_existing=True,
+                use_marketable_limit=True,
+            )
         return self._place_limit_exit(snapshot, reason_sell=reason_sell)
 
-    def _place_limit_exit(self, snapshot: PositionSnapshot, reason_sell: str) -> dict[str, Any]:
+    def _place_limit_exit(
+        self,
+        snapshot: PositionSnapshot,
+        reason_sell: str,
+        *,
+        replace_existing: bool = False,
+        use_marketable_limit: bool = False,
+    ) -> dict[str, Any]:
         if snapshot.state == "LOSS" and self.settings.never_sell_at_loss:
             return {"symbol": snapshot.symbol, "action": "HOLD", "reason": "never_sell_at_loss"}
 
-        existing_order = self._find_pending_exit_order(snapshot.symbol, side=snapshot.side)
-        if existing_order is not None:
-            return {
-                "symbol": snapshot.symbol,
-                "action": "LIMIT_EXIT_PENDING",
-                "reason": reason_sell,
-                "order_id": str(existing_order.get("id", "")),
-                "limit_price": float(existing_order.get("limit_price", snapshot.current_price) or snapshot.current_price),
-            }
+        pending_exit_orders = self._list_pending_exit_orders(snapshot.symbol, side=snapshot.side)
+        covered_qty = sum(self._pending_exit_remaining_qty(order) for order in pending_exit_orders)
+        required_qty = max(float(snapshot.qty or 0.0), 0.0)
+        full_coverage = required_qty > 0.0 and covered_qty >= (required_qty * 0.995)
+        if pending_exit_orders:
+            if full_coverage and not replace_existing:
+                existing_order = pending_exit_orders[0]
+                return {
+                    "symbol": snapshot.symbol,
+                    "action": "LIMIT_EXIT_PENDING",
+                    "reason": reason_sell,
+                    "order_id": str(existing_order.get("id", "")),
+                    "limit_price": float(existing_order.get("limit_price", snapshot.current_price) or snapshot.current_price),
+                }
+
+            cancel_info = self._cancel_pending_exit_orders(snapshot.symbol, side=snapshot.side)
+            if int(cancel_info.get("remaining", 0) or 0) > 0:
+                existing_order = pending_exit_orders[0]
+                return {
+                    "symbol": snapshot.symbol,
+                    "action": "LIMIT_EXIT_PENDING",
+                    "reason": f"{reason_sell}_replace_failed",
+                    "order_id": str(existing_order.get("id", "") or ""),
+                    "limit_price": float(existing_order.get("limit_price", snapshot.current_price) or snapshot.current_price),
+                    "covered_qty": covered_qty,
+                    "required_qty": required_qty,
+                }
 
         target_plan = self._build_target_plan(
             side=snapshot.side,
@@ -1008,6 +1108,13 @@ class PositionManager:
                 "warnings": list(target_plan.get("warnings", []) or []),
             }
         limit_price = float(target_plan.get("target_price", 0.0) or 0.0)
+        if use_marketable_limit:
+            quote = self.market_data.get_latest_quote(snapshot.symbol)
+            limit_price = self._suggest_force_limit_exit_price(
+                side=snapshot.side,
+                current_price=snapshot.current_price,
+                quote=quote,
+            )
         order_side = self._exit_side_for_position(snapshot.side)
         order = self.order_manager.create_limit_order(
             symbol=snapshot.symbol,
@@ -1034,7 +1141,14 @@ class PositionManager:
             "warnings": list(target_plan.get("warnings", []) or []),
         }
 
-    def _find_pending_exit_order(self, symbol: str, *, side: str, suppress_errors: bool = True) -> dict[str, Any] | None:
+    @staticmethod
+    def _pending_exit_remaining_qty(order: dict[str, Any]) -> float:
+        total_qty = max(float(order.get("qty", 0.0) or 0.0), 0.0)
+        filled_qty = max(float(order.get("filled_qty", 0.0) or 0.0), 0.0)
+        remaining = total_qty - filled_qty
+        return max(remaining, 0.0)
+
+    def _list_pending_exit_orders(self, symbol: str, *, side: str, suppress_errors: bool = True) -> list[dict[str, Any]]:
         target = self._symbol_key(symbol)
         order_side = self._exit_side_for_position(side)
         pending_statuses = {
@@ -1052,17 +1166,61 @@ class PositionManager:
         except Exception:
             if not suppress_errors:
                 raise
-            return None
+            return []
 
+        result: list[dict[str, Any]] = []
         for order in orders:
-            side = str(order.get("side", "")).lower().strip()
+            side_value = str(order.get("side", "")).lower().strip()
             status = str(order.get("status", "")).lower().strip()
-            if side != order_side or status not in pending_statuses:
+            if side_value != order_side or status not in pending_statuses:
                 continue
             if self._symbol_key(str(order.get("symbol", ""))) != target:
                 continue
-            return order
-        return None
+            result.append(order)
+        return result
+
+    def _cancel_pending_exit_orders(
+        self,
+        symbol: str,
+        *,
+        side: str,
+        suppress_errors: bool = True,
+        max_attempts: int = 6,
+        sleep_seconds: float = 0.25,
+    ) -> dict[str, int]:
+        pending = self._list_pending_exit_orders(symbol, side=side, suppress_errors=suppress_errors)
+        cancelled = 0
+        failed = 0
+        for order in pending:
+            order_id = str(order.get("id", "") or "").strip()
+            if not order_id:
+                continue
+            try:
+                if self.order_manager.cancel_order(order_id):
+                    cancelled += 1
+                else:
+                    failed += 1
+            except Exception:
+                failed += 1
+
+        remaining = 0
+        for _ in range(max_attempts):
+            remaining_orders = self._list_pending_exit_orders(symbol, side=side, suppress_errors=suppress_errors)
+            remaining = len(remaining_orders)
+            if remaining <= 0:
+                break
+            time.sleep(sleep_seconds)
+
+        return {
+            "found": len(pending),
+            "cancelled": cancelled,
+            "failed": failed,
+            "remaining": max(int(remaining), 0),
+        }
+
+    def _find_pending_exit_order(self, symbol: str, *, side: str, suppress_errors: bool = True) -> dict[str, Any] | None:
+        orders = self._list_pending_exit_orders(symbol, side=side, suppress_errors=suppress_errors)
+        return orders[0] if orders else None
 
     def get_pending_exit_order(self, symbol: str, *, side: str, suppress_errors: bool = True) -> dict[str, Any] | None:
         return self._find_pending_exit_order(symbol, side=side, suppress_errors=suppress_errors)
@@ -1112,11 +1270,17 @@ class PositionManager:
         return round(float(target_plan.get("target_price", 0.0) or 0.0), 6)
 
     @staticmethod
-    def _suggest_force_limit_exit_price(current_price: float, quote: dict[str, Any] | None) -> float:
+    def _suggest_force_limit_exit_price(side: str, current_price: float, quote: dict[str, Any] | None) -> float:
+        side_key = str(side or "long").lower().strip()
         bid_price = 0.0
+        ask_price = 0.0
         if quote is not None:
             bid_price = float(quote.get("bid", 0.0) or 0.0)
-        base_price = bid_price if bid_price > 0 else float(current_price)
+            ask_price = float(quote.get("ask", 0.0) or 0.0)
+        if side_key == "short":
+            base_price = ask_price if ask_price > 0 else float(current_price)
+        else:
+            base_price = bid_price if bid_price > 0 else float(current_price)
         if base_price <= 0:
             raise ValueError("No se pudo determinar precio limite de salida")
         return round(base_price, 6)

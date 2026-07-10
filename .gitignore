@@ -3,3 +3,18 @@ __pycache__/
 *.pyc
 ai_trading_brain.sqlite
 ai_trading_brain.backup_before_5m_cleanup_*.sqlite
+ai_trading_brain.sqlite-wal
+ai_trading_brain.sqlite-shm
+
+# Runtime and logs
+runtime/ui_heartbeat_*.json
+runtime/*.lock
+logs/
+
+# Local launchers created on desktop/project
+*.desktop
+
+# Large local ML artifacts
+models/**/*.pkl
+models/candidates/
+models/approved/current_model.pkl
